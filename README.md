@@ -1,5 +1,5 @@
 # AmiBase
-Webbased desktop environment
+Webbased desktop environment  
 Yes: yet another one 
 
 Icons, windows, menus, drag&drop,...
