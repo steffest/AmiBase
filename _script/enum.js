@@ -1,0 +1,3 @@
+var EVENT = {
+    ACTIVATE_DESKTOP_ELEMENT: 1
+};

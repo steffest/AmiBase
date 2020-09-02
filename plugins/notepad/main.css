@@ -1,0 +1,9 @@
+textarea{
+    border: none;
+    background-color: #edfbed;
+}
+
+textarea:focus{
+    border: none;
+    outline: none;
+}

@@ -1,0 +1,175 @@
+#desktop .window{
+    z-index: 10;
+    position: absolute;
+    border: 2px solid #658FC3;
+    width: 240px;
+    height: 200px;
+    resize: both;
+    box-shadow: -1px -1px 0 0 rgba(255, 255, 255, 0.8), 1px 1px 0 0 rgba(0, 0, 0, 0.8);
+    background-color: rgba(206, 205, 205, 0.9);
+    user-select: none;
+    will-change: transform;
+
+    .inner{
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: 19px;
+        overflow: auto;
+    }
+
+
+    .bar{
+        background-color: #658FC3;
+        color: white;
+        padding: 2px;
+        border-bottom: 1px solid black;
+        position: relative;
+        padding-left: 20px;
+        height: 19px;
+        
+        .caption{
+            display: inline-block;
+            font-size: 12px;
+            font-family: sans-serif;
+        }
+
+        .close{
+            width: 14px;
+            height: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: absolute;
+            left: 1px;
+            top: 1px;
+
+            &:before{
+                content: "";
+                width: 4px;
+                height: 4px;
+                background-color: white;
+                border: 1px solid rgba(0, 0, 0, 0.67);
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                margin: -2px 0 0 -2px;
+            }
+
+            &:hover{
+                border: 1px solid white;
+            }
+        }
+
+    }
+}
+
+
+#desktop .window .inner.droptargetactive{
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+
+
+#desktop .window .inner::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+}
+#desktop .window .inner::-webkit-scrollbar-button {
+    width: 0;
+    height: 0;
+}
+#desktop .window .inner::-webkit-scrollbar-thumb {
+    background: #658fc3;
+    border: 1px solid #ffffff;
+    border-bottom-color: black;
+    border-right-color: black;
+}
+#desktop .window .inner::-webkit-scrollbar-thumb:hover {
+    background: #719cd1;
+}
+#desktop .window .inner::-webkit-scrollbar-thumb:active {
+    background: #5b85b6;
+}
+#desktop .window .inner::-webkit-scrollbar-track {
+    background: #7a7a7a;
+    border: 0;
+}
+
+#desktop .window .inner::-webkit-scrollbar-corner {
+    background: #7a7a7a;
+}
+
+
+#desktop .window .sizer,
+#desktop .window .sizer:before{
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 14px;
+    height: 14px;
+    border: 7px solid white;
+    border-left-color: transparent;
+    border-top-color: transparent;
+    z-index: 10;
+}
+
+body.defaultpointer #desktop .window .sizer{
+    cursor: nw-resize;
+}
+
+#desktop .window .sizer:before{
+    content: "";
+    left: -7px;
+    top: -6px;
+    border-bottom-color: #658FC3;
+    border-right-color: #658FC3;
+}
+
+body.defaultpointer{
+    #desktop .window .bar{
+        cursor: move;
+
+        .close{
+            cursor: pointer;
+        }
+    }
+}
+
+
+#desktop .window.inactive{
+   .inner{
+       pointer-events: none;
+   }
+
+    .bar {
+        background-color: #b9c3c2;
+    }
+}
+
+#desktop .window.inactivecontent{
+    .inner{
+        pointer-events: none;
+    }
+}
+
+#globalDragItem{
+    position: absolute;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0;
+}
+
+#globalDragItem.visible{
+    opacity: 1;
+}
+
+.dragsource{
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.dragsource.dragging{
+    opacity: 0.2;
+    pointer-events: none;
+}
+

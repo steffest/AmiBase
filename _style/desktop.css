@@ -1,0 +1,40 @@
+#desktop{
+    background-color: #697f88;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    overflow: hidden;
+}
+
+#mousepointer{
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    z-index: 100000;
+    pointer-events: none;
+    background-image: url("../_img/cursor/pointer_white.svg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: top left;
+    color: #ec6a44;
+    transform: translate(-20px,-20px);
+}
+
+#selectBox{
+    border: 1px dashed rgba(255, 255, 255, 0.47);
+    position: absolute;
+    display: none;
+    background-color: rgba(60, 90, 117, 0.3);
+}
+
+#selectBox.active{
+    display: block;
+}
+
+iframe{
+    border: 0;
+    width: 100%;
+    height: 100%;
+}

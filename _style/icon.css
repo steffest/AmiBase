@@ -1,0 +1,36 @@
+.icon {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 5px;
+  font-family: sans-serif;
+  text-align: center;
+}
+.icon .image {
+  width: 40px;
+  height: 40px;
+  background-color: #b7b5b7;
+  border-radius: 10px;
+  display: block;
+  margin: auto;
+}
+.icon .label {
+  font-size: 11px;
+  background-color: transparent;
+  border: none;
+  color: white;
+  padding: 4px 0;
+  position: absolute;
+  left: 50%;
+  user-select: none;
+}
+.icon .label span {
+  display: block;
+  position: relative;
+  left: -50%;
+}
+.icon.active .image {
+  box-shadow: 0 0 2px 2px yellow;
+}
+
+/*# sourceMappingURL=icon.css.map */

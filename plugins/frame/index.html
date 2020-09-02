@@ -1,0 +1,67 @@
+<html>
+<head>
+    
+</head>
+<body>
+
+Hello
+
+<script>
+
+    var windowId;
+    console.log(window.parent);
+	window.parent.postMessage({
+        command: "register",
+        url: window.location.href
+    },"*");
+
+	window.addEventListener("message", function (event) {
+        handleMessage(event.data,event);
+	}, false);
+
+    var mainMenu = [
+        {
+            label:"From app",
+            action: "test",
+            items:[
+                {
+                    label:"test2",
+                    action: "test2"
+                }
+            ]
+        },
+        {
+            label:"File",
+            items:[
+                {
+                    label:"Open",
+                    message: "file_open"
+                },
+                {
+                    label:"Save",
+                    action: "test2"
+                }
+            ]
+        }
+    ];
+
+
+
+    function handleMessage(message){
+        console.log("Got Message in Frame",message);
+
+        if (message.registered){
+            windowId = message.id;
+            window.parent.postMessage({
+                command: "setMenu",
+                windowId: windowId,
+                data: mainMenu
+            },"*");
+
+        }
+    }
+
+    
+</script>
+</body>
+</html>

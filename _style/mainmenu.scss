@@ -1,0 +1,42 @@
+.topbar{
+  position: absolute;
+  z-index: 100;
+  background-color: silver;
+  height: 20px;
+  left: 0;
+  right: 0;
+  top: 0;
+
+  .menuitem{
+    height: 20px;
+    user-select: none;
+    display: inline-block;
+
+    label{
+      display: inline-block;
+      padding: 0 10px;
+      font-size: 12px;
+      line-height: 20px;
+
+      &:hover{
+        background-color: white;
+        cursor: pointer;
+      }
+    }
+
+
+    .submenu{
+      display: none;
+      position: absolute;
+      background-color: grey;
+
+      .menuitem{
+        display: block;
+      }
+
+      &.active{
+        display: block;
+      }
+    }
+  }
+}

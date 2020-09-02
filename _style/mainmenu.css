@@ -1,0 +1,37 @@
+.topbar {
+  position: absolute;
+  z-index: 100;
+  background-color: silver;
+  height: 20px;
+  left: 0;
+  right: 0;
+  top: 0;
+}
+.topbar .menuitem {
+  height: 20px;
+  user-select: none;
+  display: inline-block;
+}
+.topbar .menuitem label {
+  display: inline-block;
+  padding: 0 10px;
+  font-size: 12px;
+  line-height: 20px;
+}
+.topbar .menuitem label:hover {
+  background-color: white;
+  cursor: pointer;
+}
+.topbar .menuitem .submenu {
+  display: none;
+  position: absolute;
+  background-color: grey;
+}
+.topbar .menuitem .submenu .menuitem {
+  display: block;
+}
+.topbar .menuitem .submenu.active {
+  display: block;
+}
+
+/*# sourceMappingURL=mainmenu.css.map */
