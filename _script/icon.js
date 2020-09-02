@@ -5,7 +5,7 @@ var AmiIcon = function(config){
         zIndex: 0
     };
 
-    var icon = $div("icon");
+    var icon = $div("icon " + (Settings.useDelayedDrag?"delayed":""));
     var img = $div("image");
     var label = $div("label","","<span>" + config.label + "</span>");
     me.iconType = config.type;
@@ -21,7 +21,7 @@ var AmiIcon = function(config){
 
     me.element = icon;
     me.setPosition(50,50);
-    UI.enableDrag(me);
+    UI.enableDrag(me,true);
 
     me.setIndex = function(zIndex){
         me.zIndex = zIndex+1;
@@ -50,6 +50,27 @@ var AmiIcon = function(config){
     me.isActive = function(){
         return  icon.classList.contains("active");
     };
+
+    me.hide = function(){
+        icon.classList.add("hidden");
+    };
+    me.show = function(){
+        icon.classList.remove("hidden");
+        icon.classList.remove("ghost");
+    };
+    me.ghost = function(){
+        icon.classList.add("ghost");
+    };
+    me.clone = function(){
+        // returns a clone with absolute position coordinates relative to the desktop
+        var clone = icon.cloneNode(true);
+        var pos =  icon.getBoundingClientRect();
+        clone.style.left = pos.left + "px";
+        clone.style.top = pos.top + "px";
+        clone.style.transform = "";
+        return clone;
+    };
+
 
     //icon.onmousedown = function(){
     //    me.activate();

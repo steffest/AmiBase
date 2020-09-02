@@ -6,6 +6,10 @@
     font-family: sans-serif;
     text-align: center;
 
+    &.delayed{
+        transition: opacity 0.4s ease;
+    }
+
     .image{
         width: 40px;
         height: 40px;
@@ -37,6 +41,10 @@
         .image{
             box-shadow: 0 0 2px 2px yellow;
         }
+    }
+
+    &.ghost{
+        opacity: 0.3;
     }
 
 

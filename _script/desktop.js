@@ -1,16 +1,23 @@
 var Desktop = function(){
-    var me = {
-        type: 'desktop'
-    };
+    var me = AmiWindow({
+        type: 'desktop',
+        paddingLeft: 20,
+        paddingTop: 30
+    });
+
+    me.left = 0;
+    me.top = 0;
+
     var container;
     var windows=[];
-    var icons=[];
     var focusElement={};
     var selectedElements=[];
     var selectBox;
 
     me.init = function(){
-        container = $div("desktop","desktop");
+        container = me.getInner();
+        container.classList.add("desktop");
+        container.id = "desktop";
         document.body.appendChild(container);
 
         container.addEventListener("mousedown",function(e){
@@ -19,10 +26,8 @@ var Desktop = function(){
             }
         });
 
-        selectBox = $div("selectBox","selectBox");
-        container.appendChild(selectBox);
-
         UI.enableSelection(me,container);
+        me.setDropTarget(container);
     };
 
     me.createWindow = function(config){
@@ -38,16 +43,6 @@ var Desktop = function(){
         return window;
     };
 
-    me.createIcon = function(config){
-        if (typeof config === "string") config={
-            label: config
-        };
-
-        var icon = AmiIcon(config);
-        container.appendChild(icon.element);
-        icons.push(icon);
-        return icon;
-    };
 
     me.openDrawer = function(config){
         var window = windows.find(function(w){return w.id === config.id});
@@ -79,21 +74,10 @@ var Desktop = function(){
         windows.forEach(function(item){
             max = Math.max(max,item.zIndex);
         });
-        icons.forEach(function(item){
+        me.getIcons().forEach(function(item){
             max = Math.max(max,item.zIndex);
         });
         return max;
-    };
-
-    me.cleanUp = function(){
-        var left= 50;
-        var top= 50;
-
-        icons.forEach(function(icon){
-            icon.setPosition(left,top);
-            top += 70;
-        })
-
     };
 
     me.setFocusElement = function(elm){
@@ -120,49 +104,12 @@ var Desktop = function(){
 
     };
 
+
     me.getFocusElement = function(){
         return focusElement;
     };
 
-    me.setSelectBox = function(x,y,w,h){
-        if (w<0){
-            w=-w;
-            x-=w;
-        }
-        if (h<0){
-            h=-h;
-            y-=h;
-        }
-        selectBox.style.width = w + "px";
-        selectBox.style.height = h + "px";
-        selectBox.style.left = x + "px";
-        selectBox.style.top = y + "px";
 
-        if (!selectBox.classList.contains("active")){
-            selectBox.classList.add("active");
-            selectBox.style.zIndex = me.getTopZindex()+1;
-        }
-
-        icons.forEach(function(icon){
-            if (icon.left>x && icon.left<x+w && icon.top>y && icon.top<y+h){
-                icon.activate(true);
-            }else{
-                icon.deActivate(true);
-            }
-        });
-    };
-
-    me.removeSelectBox = function(){
-        selectBox.classList.remove("active");
-    };
-
-    me.getSelectedIcons = function(){
-        var result = [];
-        icons.forEach(function(icon){
-            if (icon.isActive()) result.push(icon);
-        });
-        return result;
-    };
 
     return me;
 }();

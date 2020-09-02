@@ -6,6 +6,9 @@
   font-family: sans-serif;
   text-align: center;
 }
+.icon.delayed {
+  transition: opacity 0.4s ease;
+}
 .icon .image {
   width: 40px;
   height: 40px;
@@ -31,6 +34,9 @@
 }
 .icon.active .image {
   box-shadow: 0 0 2px 2px yellow;
+}
+.icon.ghost {
+  opacity: 0.3;
 }
 
 /*# sourceMappingURL=icon.css.map */

@@ -100,19 +100,6 @@ var Applications = function(){
         frame.addEventListener("mouseleave",function(){
            window.deActivateContent(true);
         });
-        window.element.addEventListener("mouseenter",function(){
-            if (!Mouse.isDown){
-                window.activateContent(true);
-            }
-        });
-        window.getInner().addEventListener("mousemove",function(){
-            if (!Mouse.isDown){
-                window.activateContent(true);
-            }
-        });
-        window.element.addEventListener("click",function(){
-            window.activate(true);
-        });
         Security.registerUrl(url,window);
         frame.src = url;
     }

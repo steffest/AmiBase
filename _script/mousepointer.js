@@ -1,7 +1,7 @@
 var Mouse = function(){
     var me = {};
 
-    var useCustomMousePointer = false;
+    var useCustomMousePointer = Settings.useCustomMousePointer;
     var mousePointer;
 
     me.init = function () {

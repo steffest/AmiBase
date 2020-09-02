@@ -16,6 +16,7 @@ var UI = function(){
     var isDragging;
     var isResizing;
     var isSelecting;
+    var selectingComponent;
 
     me.init = function(){
         Mouse.init();
@@ -35,13 +36,15 @@ var UI = function(){
                 item.activate(true);
             });
 
+            if (globalDragItem) me.handleDrop();
+            if (selectingComponent) selectingComponent.removeSelectBox();
+
             dragItems=[];
             resizeItems=[];
-
-            if (globalDragItem) me.handleDrop();
-            Desktop.removeSelectBox();
             Mouse.isDown = false;
             document.body.classList.remove("mousedown");
+
+            selectingComponent = undefined;
         });
 
 
@@ -52,16 +55,23 @@ var UI = function(){
             if (isDragging){
                 e.preventDefault();
 
-                dragItems.forEach(function(item){
+                if (globalDragItem){
                     var x = e.clientX - UIData.startDragX;
                     var y = e.clientY - UIData.startDragY;
-                    UIChanges.push({
-                        element: item,
-                        position:true,
-                        left: item.startLeft + x,
-                        top: item.startTop + y,
+                    me.handleGlobalDrag(x,y,e.target);
+                }else{
+                    dragItems.forEach(function(item){
+                        var x = e.clientX - UIData.startDragX;
+                        var y = e.clientY - UIData.startDragY;
+                        UIChanges.push({
+                            element: item,
+                            position:true,
+                            left: item.startLeft + x,
+                            top: item.startTop + y,
+                        });
                     });
-                });
+                }
+
 
             }
 
@@ -95,31 +105,39 @@ var UI = function(){
         function startDrag(e) {
             if (component.activate) component.activate(); // bring to front;
             if (component.deActivateContent) component.deActivateContent(); // but deactivate inner content
+
+
             if (component.type === "icon"){
-                dragItems = Desktop.getSelectedIcons();
+                dragItems = component.parent.getSelectedIcons();
             }else{
                 dragItems.push(component);
             }
 
             isDragging = true;
-
             if (copy){
+
                 globalDragItem = document.getElementById("globalDragItem");
                 if (globalDragItem) globalDragItem.remove();
+                globalDragItem = $div("","globalDragItem");
 
-                globalDragItem = cloneElement(item);
-                globalDragItem.id = "globalDragItem";
 
-                var pos = getElementPosition(item);
-                globalDragItem.style.left = pos.left + "px";
-                globalDragItem.style.top = pos.top + "px";
-                globalDragItem.startX = pos.left;
-                globalDragItem.startY = pos.top;
+                dragItems.forEach(function(item){
+                    globalDragItem.appendChild(item.clone());
+                    if (!Settings.useDelayedDrag){
+                        item.ghost();
+                        globalDragItem.classList.add("visible");
+                    }
+                });
+
+                globalDragItem.startX = 0;
+                globalDragItem.startY = 0;
+                globalDragItem.style.transform = "translate(0px,0px)";
+
 
                 document.body.appendChild(globalDragItem);
                 currentDragItem = globalDragItem;
-                globalDragSource = item;
-                globalDragSource.classList.add("dragsource")
+                //globalDragSource = component;
+                //globalDragSource.classList.add("dragsource")
             }
 
             e = e || window.event;
@@ -134,52 +152,63 @@ var UI = function(){
 
     };
 
-    me.handleDrag = function(e){
+    me.enableDrop = function(element,onDrop){
+        element.classList.add("droptarget");
+        element.onDrop = onDrop;
+    };
+
+    me.handleGlobalDrag = function(x,y,target){
         if (currentDropTarget && currentDropTarget.classList.contains("droptargetactive")){
             currentDropTarget.classList.remove("droptargetactive");
         }
-        currentDropTarget = e.target;
-        if (currentDropTarget.classList.contains("droptarget")){
+        currentDropTarget = target.closest(".droptarget");
+        if (currentDropTarget){
             currentDropTarget.classList.add("droptargetactive");
         }
 
-        var deltaX =  globalDragItem.offsetLeft - globalDragItem.startX;
-        var deltaY =  globalDragItem.offsetTop - globalDragItem.startY;
+        var deltaX =  x + globalDragItem.startX;
+        var deltaY =  y + globalDragItem.startY;
 
-        if (Math.abs(deltaX)>5 || Math.abs(deltaY)>5){
-            globalDragItem.classList.add("visible");
-            if (globalDragSource) globalDragSource.classList.add("dragging")
+        globalDragItem.style.transform = "translate(" + deltaX + "px," + deltaY + "px)";
+        globalDragItem.deltaX = deltaX;
+        globalDragItem.deltaY = deltaY;
+
+        if (Settings.useDelayedDrag){
+            if ((Math.abs(deltaX)>5 || Math.abs(deltaY)>5) && !globalDragItem.classList.contains("visible")){
+                globalDragItem.classList.add("visible");
+                dragItems.forEach(function(item){
+                    item.ghost();
+                });
+            }
         }
+
 
     };
 
     me.handleDrop = function(){
-        var deltaX =  globalDragItem.offsetLeft - globalDragItem.startX;
-        var deltaY =  globalDragItem.offsetTop - globalDragItem.startY;
-
         if (currentDropTarget){
             currentDropTarget.classList.remove("droptargetactive");
-            if (globalDragSource){
 
-                if (currentDropTarget.contains(globalDragSource)){
-                    // moved in same parent
-                    globalDragSource.style.left = (globalDragSource.offsetLeft + deltaX) + "px";
-                    globalDragSource.style.top = (globalDragSource.offsetTop + deltaY) + "px";
-                }else{
-                    // dragged to another parent
-                    if (currentDropTarget.ondrop) (currentDropTarget.ondrop(globalDragSource,globalDragItem));
-                }
+            if (currentDropTarget.onDrop){
+                currentDropTarget.onDrop(dragItems,globalDragItem.deltaX,globalDragItem.deltaY);
             }
-
         }
 
+        dragItems.forEach(function(item){
+            item.show();
+        });
 
-        if (globalDragSource){
-            globalDragSource.classList.remove("dragsource");
-            globalDragSource.classList.remove("dragging");
+        if (Settings.useDelayedDrag){
+            globalDragItem.classList.remove("visible");
+            setTimeout(function(){
+                globalDragItem.remove();
+                globalDragItem = undefined;
+            },400);
+        }else{
+            globalDragItem.remove();
+            globalDragItem = undefined;
         }
 
-        globalDragItem.remove();
         currentDropTarget = undefined;
         globalDragSource = undefined;
 
@@ -217,6 +246,7 @@ var UI = function(){
         function startSelection(e){
            if (e.target === element){
                isSelecting = true;
+               selectingComponent = component;
                component.startSelectX = e.clientX;
                component.startSelectY = e.clientY;
            }
@@ -224,12 +254,12 @@ var UI = function(){
 
         function updateSelection(e){
             if (isSelecting){
-                component.selectX = e.clientX;
-                component.selectY = e.clientY;
-                var w = component.selectX-component.startSelectX;
-                var h = component.selectY-component.startSelectY;
+                selectingComponent.selectX = e.clientX;
+                selectingComponent.selectY = e.clientY;
+                var w = selectingComponent.selectX-selectingComponent.startSelectX;
+                var h = selectingComponent.selectY-selectingComponent.startSelectY;
 
-                Desktop.setSelectBox(component.startSelectX,component.startSelectY,w,h);
+                selectingComponent.setSelectBox(selectingComponent.startSelectX,selectingComponent.startSelectY,w,h);
             }
 
         }

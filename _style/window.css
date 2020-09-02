@@ -136,25 +136,4 @@ body.defaultpointer #desktop .window .bar .close {
   pointer-events: none;
 }
 
-#globalDragItem {
-  position: absolute;
-  z-index: 1000;
-  pointer-events: none;
-  opacity: 0;
-}
-
-#globalDragItem.visible {
-  opacity: 1;
-}
-
-.dragsource {
-  opacity: 1;
-  transition: opacity 0.3s ease-in-out;
-}
-
-.dragsource.dragging {
-  opacity: 0.2;
-  pointer-events: none;
-}
-
 /*# sourceMappingURL=window.css.map */
