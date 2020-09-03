@@ -1,0 +1,76 @@
+body.theme_tangerine #desktop {
+  background: url("Wallpapers/boing_soft_1.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: bottom left;
+}
+body.theme_tangerine #desktop .window {
+  background: url("Patterns/bluegray_stripe_light.png");
+}
+body.theme_tangerine .topbar {
+  background-color: #ECECEC;
+  border-bottom: 1px solid #A69E93;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  height: 25px;
+}
+body.theme_tangerine .topbar .menuitem label {
+  padding: 2px 10px;
+}
+body.theme_tangerine .topbar .menuitem .submenu {
+  background-color: #ecebeb;
+  margin-top: 0;
+  border: 1px solid #b5c6ce;
+  box-shadow: 0 0 2px rgba(57, 63, 66, 0.4);
+  white-space: nowrap;
+}
+body.theme_tangerine .icon .image {
+  width: 48px;
+  height: 48px;
+  background-color: transparent;
+  border-radius: 2px;
+  background-image: url("icons/sheet.png");
+  background-position: -16px -18px;
+  background-repeat: no-repeat;
+}
+body.theme_tangerine .icon .image.notepad {
+  background-position: -16px -272px;
+}
+body.theme_tangerine .icon .image.bassoon {
+  background-position: -784px -80px;
+}
+body.theme_tangerine .icon .image.postmessage {
+  background-position: -784px -16px;
+}
+body.theme_tangerine .icon .image.googledocs {
+  background-position: -656px -272px;
+}
+body.theme_tangerine .icon .image.uae {
+  background-position: -144px -16px;
+}
+body.theme_tangerine .icon .label {
+  text-shadow: 0 0 2px black;
+}
+body.theme_tangerine .icon.active .image {
+  box-shadow: none;
+  background-position: -80px -18px;
+}
+body.theme_tangerine .icon.active .image.notepad {
+  background-position: -80px -272px;
+}
+body.theme_tangerine .icon.active .image.bassoon {
+  background-position: -784px -80px;
+}
+body.theme_tangerine .icon.active .image.postmessage {
+  background-position: -784px -16px;
+}
+body.theme_tangerine .icon.active .image.googledocs {
+  background-position: -720px -272px;
+}
+body.theme_tangerine .icon.active .image.uae {
+  background-position: -208px -16px;
+}
+body.theme_tangerine .icon.active .label {
+  text-shadow: 0 0 2px yellow;
+}
+
+/*# sourceMappingURL=theme.css.map */

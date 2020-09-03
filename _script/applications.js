@@ -19,13 +19,13 @@ var Applications = function(){
 
     }
     
-    me.load = function(plugin,window){
-        console.log("loading " + plugin + " into " + window.getCaption());
+    me.load = function(pluginName,window){
+        console.log("loading " + pluginName + " into " + window.getCaption());
         window.setContent("loading");
 
-        if (plugin.indexOf(":")>0){
-            var pluginType = plugin.split(":")[0];
-            plugin = plugin.split(":")[1];
+        if (pluginName.indexOf(":")>0){
+            var pluginType = pluginName.split(":")[0];
+            pluginName = pluginName.split(":")[1];
         }else{
             pluginType = "plugin"
         }
@@ -33,45 +33,73 @@ var Applications = function(){
         switch (pluginType) {
             case "plugin":
                 // this is a trusted plugin, we can just load all files in the root space
-                var pluginPath = "plugins/" + plugin + "/";
-                FetchService.json(pluginPath + "config.json",function(config){
-                    if (config){
-                        console.error(config);
-                        if (config.width && config.height){
-                            window.setSize(config.width,config.height);
+                var plugin = plugins[pluginName];
+                if (plugin){
+                    console.log("plugin already loaded");
+                    var config = plugin.config;
+                    if (config.width && config.height) window.setSize(config.width,config.height);
+                    if (config.index){
+                        if (config.index.indexOf("://")){
+                            loadFrame(config.index,window);
+                        }else{
+                            window.setContent(plugin.html);
                         }
-                        if (config.index){
-                            if (config.index.indexOf("://")>0){
-                                loadFrame(config.index,window);
-                            }else{
-                                FetchService.html(pluginPath + config.index,function(html){
-                                    window.setContent(html);
-                                });
-                            }
-                        }
-                        if (config.scripts){
-                            var initDone = false;
-                            config.scripts.forEach(function(src){
-                                loadScript(pluginPath + src,function(){
-                                    if (!initDone && mainContext[plugin + '_plugin_init']){
-                                        mainContext[plugin + '_plugin_init'](window);
-                                        initDone=true;
-                                    }
-                                });
-                            })
-                        }
-                        if (config.styles){
-                            config.styles.forEach(function(src){
-                                loadCss(pluginPath + src);
-                            })
-                        }
-                    }else{
-                        console.error("Error: Plugin " + plugin + " not found");
+                        if (plugin.onInit) mainContext[plugin.onInit](window);
                     }
-                });
+                }else{
+                    plugin={};
+                    var pluginPath = "plugins/" + pluginName + "/";
+                    FetchService.json(pluginPath + "config.json",function(config){
+                        if (config){
+                            console.error(config);
+                            plugin.config=config;
+                            if (config.width && config.height) window.setSize(config.width,config.height);
+
+                            function initScripts(){
+                                if (config.scripts){
+                                    var initDone = false;
+                                    config.scripts.forEach(function(src){
+                                        loadScript(pluginPath + src,function(){
+                                            if (!initDone && mainContext[pluginName + '_plugin_init']){
+                                                mainContext[pluginName + '_plugin_init'](window);
+                                                plugin.onInit = pluginName + '_plugin_init';
+                                                plugins[pluginName] = plugin;
+                                                initDone=true;
+                                            }
+                                        });
+                                    })
+                                }else{
+                                    plugins[pluginName] = plugin;
+                                }
+                            }
+
+                            if (config.index){
+                                if (config.index.indexOf("://")>0){
+                                    loadFrame(config.index,window);
+                                }else{
+                                    FetchService.html(pluginPath + config.index,function(html){
+                                        plugin.html = html;
+                                        window.setContent(html);
+                                        initScripts();
+                                    });
+                                }
+                            }else{
+                                initScripts();
+                            }
+
+                            if (config.styles){
+                                config.styles.forEach(function(src){
+                                    loadCss(pluginPath + src);
+                                })
+                            }
+                        }else{
+                            console.error("Error: Plugin " + pluginName + " not found");
+                        }
+                    });
+                }
                 break;
             case "frame":
-                pluginPath = "plugins/" + plugin + "/";
+                pluginPath = "plugins/" + pluginName + "/";
                 FetchService.json(pluginPath + "config.json",function(config){
                     if (config){
                         console.error(config);
@@ -84,7 +112,7 @@ var Applications = function(){
                             loadFrame(frameUrl,window);
                         }
                     }else{
-                        console.error("Error: Plugin " + plugin + " not found");
+                        console.error("Error: Plugin " + pluginName + " not found");
                     }
                 });
                 break;

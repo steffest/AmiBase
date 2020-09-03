@@ -1,19 +1,43 @@
 .topbar {
   position: absolute;
   z-index: 100;
-  background-color: silver;
+  background-color: #ECECEC;
   height: 20px;
   left: 0;
   right: 0;
   top: 0;
 }
+.topbar .homebutton {
+  user-select: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 130px;
+  padding: 0 10px;
+  font-size: 12px;
+  border-right: 1px solid rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+}
+.topbar .homebutton small {
+  opacity: 0.6;
+  font-size: 9px;
+}
+.topbar .homebutton:hover {
+  background-color: white;
+}
+.topbar .menu {
+  position: absolute;
+  top: 0;
+  left: 130px;
+}
 .topbar .menuitem {
-  height: 20px;
   user-select: none;
   display: inline-block;
 }
 .topbar .menuitem label {
-  display: inline-block;
+  display: block;
   padding: 0 10px;
   font-size: 12px;
   line-height: 20px;
@@ -25,7 +49,8 @@
 .topbar .menuitem .submenu {
   display: none;
   position: absolute;
-  background-color: grey;
+  background-color: white;
+  border: 1px solid silver;
 }
 .topbar .menuitem .submenu .menuitem {
   display: block;

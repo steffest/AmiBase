@@ -63,8 +63,12 @@ var MainMenu = function(){
 
     me.init = function(){
         var topbar = $div("topbar");
+
+        var homebutton =$div("homebutton","","<div>AmiBase <small>v" + Settings.version + "</small></div>");
+
         root=$div("menu");
 
+        topbar.appendChild(homebutton);
         topbar.appendChild(root);
         document.body.appendChild(topbar);
 

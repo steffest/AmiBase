@@ -6,7 +6,7 @@ var AmiIcon = function(config){
     };
 
     var icon = $div("icon " + (Settings.useDelayedDrag?"delayed":""));
-    var img = $div("image");
+    var img = $div("image " + cleanString(config.label));
     var label = $div("label","","<span>" + config.label + "</span>");
     me.iconType = config.type;
 

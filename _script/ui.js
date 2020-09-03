@@ -6,7 +6,7 @@ var UI = function(){
     var currentDragItem;
     var currentDropTarget;
     var globalDragItem;
-    var globalDragSource;
+    var globalDropTimer;
     var currentResizeItem;
     var layout=[];
     var lastUpdateCall;
@@ -116,6 +116,7 @@ var UI = function(){
             isDragging = true;
             if (copy){
 
+                clearTimeout(globalDropTimer);
                 globalDragItem = document.getElementById("globalDragItem");
                 if (globalDragItem) globalDragItem.remove();
                 globalDragItem = $div("","globalDragItem");
@@ -136,8 +137,6 @@ var UI = function(){
 
                 document.body.appendChild(globalDragItem);
                 currentDragItem = globalDragItem;
-                //globalDragSource = component;
-                //globalDragSource.classList.add("dragsource")
             }
 
             e = e || window.event;
@@ -200,9 +199,11 @@ var UI = function(){
 
         if (Settings.useDelayedDrag){
             globalDragItem.classList.remove("visible");
-            setTimeout(function(){
-                globalDragItem.remove();
-                globalDragItem = undefined;
+            globalDropTimer = setTimeout(function(){
+                if (globalDragItem){
+                    globalDragItem.remove();
+                    globalDragItem = undefined;
+                }
             },400);
         }else{
             globalDragItem.remove();
@@ -210,7 +211,6 @@ var UI = function(){
         }
 
         currentDropTarget = undefined;
-        globalDragSource = undefined;
 
 
 

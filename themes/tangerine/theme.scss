@@ -1,0 +1,82 @@
+body.theme_tangerine{
+  #desktop{
+    background: url("Wallpapers/boing_soft_1.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: bottom left;
+
+    .window{
+      background: url("Patterns/bluegray_stripe_light.png");
+    }
+  }
+
+  .topbar{
+    background-color: #ECECEC;
+    border-bottom: 1px solid #A69E93;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+    height: 25px;
+
+    .menuitem{
+      label{
+        padding: 2px 10px;
+      }
+
+      .submenu{
+        background-color: #ecebeb;
+        margin-top: 0;
+        border: 1px solid #b5c6ce;
+        box-shadow: 0 0 2px rgba(57,63,66,0.4);
+        white-space: nowrap;
+      }
+    }
+
+    .menu{
+
+    }
+
+
+  }
+
+
+  .icon{
+    .image{
+      width: 48px;
+      height: 48px;
+      background-color: transparent;
+      border-radius: 2px;
+
+      background-image: url("icons/sheet.png");
+      background-position: -16px -18px;
+      background-repeat: no-repeat;
+
+      &.notepad{ background-position: -16px -272px;}
+      &.bassoon{ background-position: -784px -80px;}
+      &.postmessage{ background-position: -784px -16px;}
+      &.googledocs{ background-position: -656px -272px;}
+      &.uae{ background-position: -144px -16px;}
+    }
+
+    .label{
+      text-shadow: 0 0 2px black;
+    }
+
+    &.active{
+      .image{
+        box-shadow: none;
+        background-position: -80px -18px;
+
+        &.notepad{ background-position: -80px -272px;}
+        &.bassoon{ background-position: -784px -80px;}
+        &.postmessage{ background-position: -784px -16px;}
+        &.googledocs{ background-position: -720px -272px;}
+        &.uae{ background-position: -208px -16px;}
+      }
+
+      .label{
+        text-shadow: 0 0 2px yellow;
+      }
+    }
+  }
+
+
+}

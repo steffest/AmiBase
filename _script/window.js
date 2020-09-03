@@ -85,8 +85,9 @@ var AmiWindow = function(config){
             h=-h;
             y-=h;
         }
-        x = x-me.left-inner.offsetLeft;
-        y = y-me.top-inner.offsetTop;
+        x = x-me.left-inner.offsetLeft+inner.scrollLeft;
+        y = y-me.top-inner.offsetTop+inner.scrollTop;
+
         selectBox.style.width = w + "px";
         selectBox.style.height = h + "px";
         selectBox.style.left = x + "px";
@@ -124,9 +125,11 @@ var AmiWindow = function(config){
     me.setDropTarget = function(target){
         UI.enableDrop(target,function(droppedItems,deltaX,deltaY){
             droppedItems.forEach(function(item){
+                var left = item.left + deltaX;
+                var top = item.top + deltaY;
                 if (item.parent.id === me.id){
                     // move inside parent
-                    item.setPosition(item.left + deltaX,item.top + deltaY);
+
                 }else{
                     // drop in other window
                     console.log("moving item to new parent");
@@ -135,11 +138,17 @@ var AmiWindow = function(config){
                     me.addIcon(item);
                     var newPos = item.element.getBoundingClientRect();
 
-                    // get new coordinates
+                    // get new coordinates offset relative to new parent;
                     var cX = newPos.left-oldPos.left;
                     var cY = newPos.top-oldPos.top;
-                    item.setPosition(item.left + (deltaX-cX),item.top + (deltaY-cY));
+                    left -= cX;
+                    top -= cY;
                 }
+
+                if (left<0) left=0;
+                if (top<0) top=0;
+
+                item.setPosition(left,top);
             });
         });
     };
