@@ -1,4 +1,22 @@
 body.theme_tangerine{
+
+  /* grid */
+  $offsetLeft: -16px;
+  $offsetTop: -16px;
+  $gridsize:-64px;
+
+
+  @function col($index) {
+    @return ($gridsize*($index - 1) + $offsetLeft);
+  }
+  @function row($index) {
+    @return ($gridsize*($index - 1) + $offsetTop);
+  }
+  @function grid($col,$row) {
+    @return col($col) row($row);
+  }
+
+
   #desktop{
     background: url("Wallpapers/boing_soft_1.jpg");
     background-repeat: no-repeat;
@@ -49,6 +67,15 @@ body.theme_tangerine{
       background-position: -16px -18px;
       background-repeat: no-repeat;
 
+      &.drawer{ background-position: grid(1,1)}
+      &.drawer.prefs{ background-position: grid(1,2)}
+
+      &.drive{ background-position: grid(3,4)}
+
+      &.file.musicmod{ background-position: grid(13,2)}
+
+
+      &.ram.drive{ background-position: grid(1,4)}
       &.notepad{ background-position: -16px -272px;}
       &.bassoon{ background-position: -784px -80px;}
       &.postmessage{ background-position: -784px -16px;}
@@ -58,12 +85,22 @@ body.theme_tangerine{
 
     .label{
       text-shadow: 0 0 2px black;
+      padding: 0;
     }
 
     &.active{
       .image{
         box-shadow: none;
-        background-position: -80px -18px;
+        background-position: -80px -16px;
+
+        &.drawer{filter: contrast(120%) saturate(120%); background-position: grid(2,1)}
+        &.drawer.prefs{ filter: contrast(150%) saturate(150%);background-position: grid(1,2)}
+
+
+        &.drive{ background-position: grid(4,4)}
+        &.ram.drive{ background-position: grid(2,4)}
+
+
 
         &.notepad{ background-position: -80px -272px;}
         &.bassoon{ background-position: -784px -80px;}

@@ -46,15 +46,17 @@ var FetchService = (function() {
 		})
 	};
 
-	me.json = function(url,next){
-		if (typeof next == "undefined") next=function(){};
-		me.ajax({
-			url : url,
-			cache: false,
-			datatype: "json",
-			headers: [{key:"Accept", value:"application/json"}],
-			success: function(data){next(data)},
-			error: function(xhr){next(undefined,xhr)}
+	me.json = function(url,callback){
+		return new Promise(function(resolve,reject){
+			var next = callback || resolve;
+			me.ajax({
+				url : url,
+				cache: false,
+				datatype: "json",
+				headers: [{key:"Accept", value:"application/json"}],
+				success: function(data){next(data)},
+				error: function(xhr){next(undefined,xhr)}
+			});
 		});
 	};
 

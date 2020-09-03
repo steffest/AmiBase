@@ -30,6 +30,23 @@ var MainMenu = function(){
                     action: "test2"
                 }
             ]
+        },
+        {
+            label:"Theme",
+            items:[
+                {
+                    label:"Light",
+                    action: function(){
+                        Desktop.loadTheme("tangerine");
+                    }
+                },
+                {
+                    label:"Dark",
+                    action: function(){
+                        Desktop.loadTheme("dark");
+                    }
+                }
+            ]
         }
     ];
 

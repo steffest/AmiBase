@@ -93,6 +93,11 @@ var UI = function(){
         });
 
 
+        document.body.addEventListener("dragenter", handleDragenter, false);
+        document.body.addEventListener("dragover", handleDragover, false);
+        document.body.addEventListener("drop", handleDrop, false);
+
+
         render();
 
 
@@ -264,6 +269,27 @@ var UI = function(){
 
         }
     };
+
+
+    function handleDragenter(e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
+
+    function handleDragover(e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
+
+    function handleDrop(e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        var dt = e.dataTransfer;
+        var files = dt.files;
+
+        Desktop.handleUpload(files);
+    }
 
 
 

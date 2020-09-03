@@ -1,0 +1,34 @@
+[
+  {
+    "type": "drive",
+    "label" :  "RAM"
+  },
+  {
+    "type": "drive",
+    "label" :  "System",
+    "width": 400,
+    "height": 300,
+    "items": [
+      {
+        "type": "drawer",
+        "label": "Office",
+        "items" : [
+          {"label": "Google Docs","type":"url","url":"https://docs.google.com/document/d/1F00_QG2_06jTGPv1K67g_1QgiixdfhDyhlQJxVwwrWY/edit"},
+          {"label": "Google SpreadSheet", "type":"url","url":"https://docs.google.com/spreadsheets/d/1JZIeLTLouXFoJ_ZuGywWQHsF0xbPdpBOnaZljzL5SRM/edit"}
+        ]
+      },
+      {
+        "type": "drawer",
+        "label": "Graphics",
+        "items" : [
+          {"label": "Piskel","type":"url","url":"https://www.piskelapp.com/p/agxzfnBpc2tlbC1hcHByEwsSBlBpc2tlbBiAgKDrjfv0CAw/edit"},
+          {"label": "Icon Editor","type":"url","url":"https://www.stef.be/amiga/ICO/dithering/Amiga-icon-editor/"}
+        ]
+      },
+      {
+        "type": "drawer",
+        "label": "Prefs"
+      }
+    ]
+  }
+]

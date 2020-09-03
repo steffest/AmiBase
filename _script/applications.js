@@ -137,26 +137,6 @@ var Applications = function(){
 
     }
 
-    function loadScript(src,onload){
-        var script = document.createElement('script');
-        script.src = src;
-        if (onload) {
-            script.onload = onload;
-            script.onreadystatechange = script;
-        }
-        document.body.appendChild(script);
-    }
-
-    function loadCss(src,onload){
-        var head  = document.getElementsByTagName('head')[0];
-        var link  = document.createElement('link');
-        link.rel  = 'stylesheet';
-        link.type = 'text/css';
-        link.href = src;
-        head.appendChild(link);
-    }
-
-
     function handleMessage(message,event){
         console.log("Got Message",message);
         if (typeof message === "string"){

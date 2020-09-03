@@ -1,0 +1,13 @@
+{
+  "dependencies": ["binaryStream.js"],
+  "scripts": [
+    ["detect.js"],
+    [
+      "filehandlers/mod.js",
+      "filehandlers/iff.js",
+      "filehandlers/icon.js"
+    ]
+  ],
+  "styles": [],
+  "templates" : []
+}

@@ -6,7 +6,7 @@ var AmiIcon = function(config){
     };
 
     var icon = $div("icon " + (Settings.useDelayedDrag?"delayed":""));
-    var img = $div("image " + cleanString(config.label));
+    var img = $div("image " + cleanString(config.label) + " " + config.type + " " + (config.className || "unknown"));
     var label = $div("label","","<span>" + config.label + "</span>");
     me.iconType = config.type;
 
@@ -77,14 +77,27 @@ var AmiIcon = function(config){
     //};
 
     icon.ondblclick = function(){
+        if (me.iconType === "drive"){
+            config.id = config.id||uuid();
+            Desktop.openDrive(config);
+        }
         if (me.iconType === "drawer"){
-            Desktop.openDrawer({caption:config.label,url:config.url});
+            config.id = config.id||uuid();
+            Desktop.openDrawer(config);
         }
         if (me.iconType === "program"){
-            Desktop.launchProgram({url:config.url});
+            Desktop.launchProgram(config);
         }
         if (me.iconType === "url"){
-            Desktop.launchUrl({url:config.url});
+            Desktop.launchUrl(config);
+        }
+        if (me.iconType === "file"){
+            if (config.data && config.data.handler){
+                var action = config.data.handler.handle(config.file);
+                if (action && action.plugin){
+                    Desktop.launchProgram("plugin:" + action.plugin);
+                }
+            }
         }
     };
 

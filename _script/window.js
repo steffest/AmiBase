@@ -1,9 +1,15 @@
 var AmiWindow = function(config){
+    if (typeof config === "string") config={
+        caption: config
+    };
+
     var me = {
         type: config.type || "window",
-        id: uuid(),
+        id: config.id || uuid(),
         zIndex: 0,
     };
+
+    config.caption = config.caption||config.label;
 
     var icons = [];
     var menu;
@@ -25,7 +31,7 @@ var AmiWindow = function(config){
     inner.appendChild(selectBox);
 
     close.onclick = function(){
-        window.remove();
+        Desktop.removeWindow(me);
     };
 
     me.getInner = function(){
@@ -242,6 +248,9 @@ var AmiWindow = function(config){
         me.dragHandle = windowBar;
         me.resizeHandle = sizer;
         me.setPosition(200,200);
+        if(config.width && config.height){
+            me.setSize(config.width,config.height);
+        }
         UI.enableDrag(me);
         UI.enableResize(me);
         UI.enableSelection(me,inner);

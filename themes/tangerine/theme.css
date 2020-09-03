@@ -1,3 +1,6 @@
+body.theme_tangerine {
+  /* grid */
+}
 body.theme_tangerine #desktop {
   background: url("Wallpapers/boing_soft_1.jpg");
   background-repeat: no-repeat;
@@ -32,6 +35,21 @@ body.theme_tangerine .icon .image {
   background-position: -16px -18px;
   background-repeat: no-repeat;
 }
+body.theme_tangerine .icon .image.drawer {
+  background-position: -16px -16px;
+}
+body.theme_tangerine .icon .image.drawer.prefs {
+  background-position: -16px -80px;
+}
+body.theme_tangerine .icon .image.drive {
+  background-position: -144px -208px;
+}
+body.theme_tangerine .icon .image.file.musicmod {
+  background-position: -784px -80px;
+}
+body.theme_tangerine .icon .image.ram.drive {
+  background-position: -16px -208px;
+}
 body.theme_tangerine .icon .image.notepad {
   background-position: -16px -272px;
 }
@@ -49,10 +67,25 @@ body.theme_tangerine .icon .image.uae {
 }
 body.theme_tangerine .icon .label {
   text-shadow: 0 0 2px black;
+  padding: 0;
 }
 body.theme_tangerine .icon.active .image {
   box-shadow: none;
-  background-position: -80px -18px;
+  background-position: -80px -16px;
+}
+body.theme_tangerine .icon.active .image.drawer {
+  filter: contrast(120%) saturate(120%);
+  background-position: -80px -16px;
+}
+body.theme_tangerine .icon.active .image.drawer.prefs {
+  filter: contrast(150%) saturate(150%);
+  background-position: -16px -80px;
+}
+body.theme_tangerine .icon.active .image.drive {
+  background-position: -208px -208px;
+}
+body.theme_tangerine .icon.active .image.ram.drive {
+  background-position: -80px -208px;
 }
 body.theme_tangerine .icon.active .image.notepad {
   background-position: -80px -272px;

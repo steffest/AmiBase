@@ -38,3 +38,35 @@ function cleanString(s){
     s=s.split(" ").join("").toLowerCase();
     return s;
 }
+
+function loadScript(src,onload){
+    var script = document.createElement('script');
+    script.src = src;
+    if (onload) {
+        script.onload = onload;
+        //script.onreadystatechange = onload;
+    }
+    document.body.appendChild(script);
+}
+
+async function loadScriptAndWait(src){
+    return new Promise(function(resolve){
+        var script = document.createElement('script');
+        script.src = src;
+        if (onload) {
+            script.onload = resolve;
+            //script.onreadystatechange = onload;
+        }
+        document.body.appendChild(script);
+    });
+}
+
+function loadCss(src,onload){
+    var head  = document.getElementsByTagName('head')[0];
+    var link  = document.createElement('link');
+    link.rel  = 'stylesheet';
+    link.type = 'text/css';
+    link.href = src;
+    if (onload) link.onload = onload;
+    head.appendChild(link);
+}
