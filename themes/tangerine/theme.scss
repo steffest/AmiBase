@@ -72,7 +72,9 @@ body.theme_tangerine{
 
       &.drive{ background-position: grid(3,4)}
 
+      &.file{ background-position: grid(11,5)}
       &.file.musicmod{ background-position: grid(13,2)}
+      &.file.adf{ background-position: grid(14,2)}
 
 
       &.ram.drive{ background-position: grid(1,4)}
@@ -100,7 +102,8 @@ body.theme_tangerine{
         &.drive{ background-position: grid(4,4)}
         &.ram.drive{ background-position: grid(2,4)}
 
-
+        &.file{ background-position: grid(12,5)}
+        &.file.adf{ filter: contrast(140%) saturate(140%); background-position: grid(14,2)}
 
         &.notepad{ background-position: -80px -272px;}
         &.bassoon{ background-position: -784px -80px;}

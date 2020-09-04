@@ -71,6 +71,7 @@ var System = function(){
     };
 
     loadScripts = function(pluginPath,list,next){
+        console.error("load",list);
         if (list && list.length){
             var loadCount = 0;
             var loadTarget = list.length;
@@ -95,9 +96,11 @@ var System = function(){
                         loadScript(pluginPath + src,function(){
                             loadCount++;
                             if (loadCount>=loadTarget){
-                                if (list.length) loadNextGroup();
-                            }else{
-                                if (next) next();
+                                if (list.length){
+                                    loadNextGroup();
+                                }else{
+                                    if (next) next();
+                                }
                             }
                         });
                     })
@@ -110,14 +113,16 @@ var System = function(){
         }
 
     };
+    me.loadScripts = loadScripts;
 
 
     // first try to detect filetype by inspecting content
     // then fallback on extention
-     me.detectFileType = async function(arrayBuffer, name,next){
+     me.detectFileType = async function(arrayBuffer, name){
          await me.loadLibrary("filetypes");
          return new Promise(function(resolve){
              var file = new BinaryStream(arrayBuffer,true); // set to True if coming from Amiga
+             file.name = name;
              var result = FileType.detect(file,name);
              resolve(result);
          });

@@ -70,6 +70,9 @@ var AmiIcon = function(config){
         clone.style.transform = "";
         return clone;
     };
+    me.getConfig = function(){
+        return config;
+    };
 
 
     //icon.onmousedown = function(){
@@ -93,10 +96,24 @@ var AmiIcon = function(config){
         }
         if (me.iconType === "file"){
             if (config.data && config.data.handler){
+                //console.error(config);
                 var action = config.data.handler.handle(config.file);
-                if (action && action.plugin){
-                    Desktop.launchProgram("plugin:" + action.plugin);
+                if (!action && config.data.actions) action=config.data.actions[0];
+                if (action){
+                    if (action.plugin){
+                        Desktop.launchProgram({
+                            url: "plugin:" + action.plugin,
+                            onload: function(window){
+                                console.log("app loaded");
+                                Applications.sendMessage(action.plugin,"openfile",config,window);
+                            }
+                        });
+                    }
+                }else{
+                    // fall back to hex editor?
                 }
+            }else{
+                if (config.onOpen) config.onOpen();
             }
         }
     };

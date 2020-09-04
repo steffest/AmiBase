@@ -4,7 +4,7 @@ var MUSICMOD = function(){
         name: "mod tracker file",
         version: "0.0.1",
         fileTypes:{
-            MOD: {name: "Mod Music Module", actions:["Play in Tracker"], className:"musicmod"},
+            MOD: {name: "Mod Music Module", actions:[{label: "Play in Tracker","plugin":"bassoon"}], className:"musicmod"},
             XM: {name: "XM Music Module", actions:["Play in Tracker"], className:"musicmod"},
         },
         registeredFileExtentions:{
@@ -47,7 +47,7 @@ var MUSICMOD = function(){
     };
 
     me.handle = function(file,action){
-        console.error("handle",file);
+        console.log("handle mod",file);
         return {plugin: "bassoon"};
     };
 

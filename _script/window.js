@@ -38,6 +38,11 @@ var AmiWindow = function(config){
         return inner;
     };
 
+    me.clear = function(){
+        inner.innerHTML = "";
+        icons=[];
+    };
+
     me.createIcon = function(config){
         var icon = AmiIcon(config);
         return me.addIcon(icon);
@@ -62,11 +67,16 @@ var AmiWindow = function(config){
         var left= 10 + (config.paddingLeft || 0);
         var top= 20 + (config.paddingTop || 0);
 
+        var h = me.height||300;
+
         icons.forEach(function(icon){
             icon.setPosition(left,top);
             top += 70;
+            if (top>h){
+                left+=70;
+                top = 20 + (config.paddingTop || 0);
+            }
         })
-
     };
 
     me.getIcons = function(){
@@ -133,29 +143,41 @@ var AmiWindow = function(config){
             droppedItems.forEach(function(item){
                 var left = item.left + deltaX;
                 var top = item.top + deltaY;
+                var doMove = false;
                 if (item.parent.id === me.id){
                     // move inside parent
-
+                    doMove = true;
                 }else{
                     // drop in other window
-                    console.log("moving item to new parent");
-                    var oldPos = item.element.getBoundingClientRect();
-                    item.parent.removeIcon(item);
-                    me.addIcon(item);
-                    var newPos = item.element.getBoundingClientRect();
+                    if (me.isApplication){
+                        me.sendMessage("dropfile",item);
+                    }else{
+                        console.log("moving item to new parent");
+                        var oldPos = item.element.getBoundingClientRect();
+                        item.parent.removeIcon(item);
+                        me.addIcon(item);
+                        var newPos = item.element.getBoundingClientRect();
 
-                    // get new coordinates offset relative to new parent;
-                    var cX = newPos.left-oldPos.left;
-                    var cY = newPos.top-oldPos.top;
-                    left -= cX;
-                    top -= cY;
+                        // get new coordinates offset relative to new parent;
+                        var cX = newPos.left-oldPos.left;
+                        var cY = newPos.top-oldPos.top;
+                        left -= cX;
+                        top -= cY;
+
+
+                        doMove = true;
+                    }
                 }
 
-                if (left<0) left=0;
-                if (top<0) top=0;
+                if (doMove){
+                    if (left<0) left=0;
+                    if (top<0) top=0;
 
-                item.setPosition(left,top);
+                    item.setPosition(left,top);
+                }
+
             });
+            //me.activate();
         });
     };
 
@@ -227,7 +249,6 @@ var AmiWindow = function(config){
         };
 
         me.setMenu = function(_menu){
-            console.error(_menu);
             menu = _menu
         };
 
@@ -243,14 +264,40 @@ var AmiWindow = function(config){
             }
         };
 
+        // send a message to the inner frame of the window
+        me.sendMessage = function(message,data){
+            if (me.messageTarget){
+                var messageData;
+                console.error("messagedata",data);
+                if (data){
+
+                    if (data.type === "icon"){
+                        data = data.getConfig();
+                        console.error(data);
+                    }
+
+                    if (data.type === "file"){
+                        messageData = {
+                            filename: data.fileName,
+                            data: data.data.file.buffer
+                        };
+                    }
+                }
+                me.messageTarget.postMessage({
+                    message: message,
+                    data: messageData
+                },me.messageOrigin);
+            }
+        };
+
 
         me.element = window;
         me.dragHandle = windowBar;
         me.resizeHandle = sizer;
         me.setPosition(200,200);
-        if(config.width && config.height){
-            me.setSize(config.width,config.height);
-        }
+        config.width = config.width||240;
+        config.height = config.height||200;
+        me.setSize(config.width,config.height);
         UI.enableDrag(me);
         UI.enableResize(me);
         UI.enableSelection(me,inner);

@@ -6,22 +6,27 @@ var Applications = function(){
     window.addEventListener("message", receiveMessage, false);
 
     function receiveMessage(event) {
-        //console.error("got message");
-        //console.log(event);
-
         var message = event.data;
-
-        if (message === "hello"){
-            event.source.postMessage("hi there yourself!", event.origin);
-        }
-
         handleMessage(message,event);
-
     }
+
+    me.sendMessage = function(pluginName,message,data,window){
+        // first check if application has registered the message directly
+        var plugin = getPlugin(pluginName);
+        var action;
+        if (plugin && plugin.actions && plugin.actions[message]){
+            action = plugin.actions[message] || plugin.actions["sendMessage"];
+        }else{
+            // sending message to window
+           if(window) window.sendMessage(message,data);
+        }
+        if (action) action(data);
+    };
+
     
-    me.load = function(pluginName,window){
-        console.log("loading " + pluginName + " into " + window.getCaption());
-        window.setContent("loading");
+    me.load = function(pluginName,appWindow){
+        console.log("loading " + pluginName + " into " + appWindow.getCaption());
+        appWindow.setContent("loading");
 
         if (pluginName.indexOf(":")>0){
             var pluginType = pluginName.split(":")[0];
@@ -37,37 +42,36 @@ var Applications = function(){
                 if (plugin){
                     console.log("plugin already loaded");
                     var config = plugin.config;
-                    if (config.width && config.height) window.setSize(config.width,config.height);
+                    if (config.width && config.height) appWindow.setSize(config.width,config.height);
                     if (config.index){
                         if (config.index.indexOf("://")){
-                            loadFrame(config.index,window);
+                            loadFrame(config.index,appWindow);
                         }else{
-                            window.setContent(plugin.html);
+                            appWindow.setContent(plugin.html);
                         }
-                        if (plugin.onInit) mainContext[plugin.onInit](window);
+                        if (plugin.onInit) mainContext[plugin.onInit](appWindow);
+                    }else{
+                        if (plugin.onInit) mainContext[plugin.onInit](appWindow);
                     }
                 }else{
                     plugin={};
                     var pluginPath = "plugins/" + pluginName + "/";
                     FetchService.json(pluginPath + "config.json",function(config){
                         if (config){
-                            console.error(config);
                             plugin.config=config;
-                            if (config.width && config.height) window.setSize(config.width,config.height);
+                            if (config.width && config.height) appWindow.setSize(config.width,config.height);
 
                             function initScripts(){
                                 if (config.scripts){
                                     var initDone = false;
-                                    config.scripts.forEach(function(src){
-                                        loadScript(pluginPath + src,function(){
-                                            if (!initDone && mainContext[pluginName + '_plugin_init']){
-                                                mainContext[pluginName + '_plugin_init'](window);
-                                                plugin.onInit = pluginName + '_plugin_init';
-                                                plugins[pluginName] = plugin;
-                                                initDone=true;
-                                            }
-                                        });
-                                    })
+                                    System.loadScripts(pluginPath,config.scripts,function(){
+                                        if (!initDone && mainContext[pluginName + '_plugin_init']){
+                                            plugin.onInit = pluginName + '_plugin_init';
+                                            plugins[pluginName] = plugin;
+                                            mainContext[plugin.onInit](appWindow);
+                                            initDone=true;
+                                        }
+                                    });
                                 }else{
                                     plugins[pluginName] = plugin;
                                 }
@@ -75,11 +79,11 @@ var Applications = function(){
 
                             if (config.index){
                                 if (config.index.indexOf("://")>0){
-                                    loadFrame(config.index,window);
+                                    loadFrame(config.index,appWindow);
                                 }else{
                                     FetchService.html(pluginPath + config.index,function(html){
                                         plugin.html = html;
-                                        window.setContent(html);
+                                        appWindow.setContent(html);
                                         initScripts();
                                     });
                                 }
@@ -102,14 +106,13 @@ var Applications = function(){
                 pluginPath = "plugins/" + pluginName + "/";
                 FetchService.json(pluginPath + "config.json",function(config){
                     if (config){
-                        console.error(config);
                         if (config.width && config.height){
-                            window.setSize(config.width,config.height);
+                            appWindow.setSize(config.width,config.height);
                         }
                         if (config.index){
                             var frameUrl = config.index;
                             if (config.index.indexOf("://")<0) frameUrl = pluginPath + frameUrl;
-                            loadFrame(frameUrl,window);
+                            loadFrame(frameUrl,appWindow);
                         }
                     }else{
                         console.error("Error: Plugin " + pluginName + " not found");
@@ -124,6 +127,7 @@ var Applications = function(){
     function loadFrame(url,window){
         var frame = document.createElement("iframe");
         window.setContent(frame);
+        window.isApplication = true;
 
         frame.addEventListener("mouseleave",function(){
            window.deActivateContent(true);
@@ -133,8 +137,25 @@ var Applications = function(){
     }
     me.loadFrame = loadFrame;
 
-    function loadText(url,next){
+    me.registerApplicationActions = function(pluginName,actions){
+        var plugin = getPlugin(pluginName);
+        if (plugin){
+            plugin.actions = actions;
+        }else{
+            console.warn("plugin " + pluginName + " not found");
+        }
+    };
 
+    me.getPlugins = function(){
+        return plugins;
+    };
+
+    function getPlugin(pluginName){
+        if (pluginName.indexOf(":")>0){
+            pluginName = pluginName.split(":")[1];
+        }
+
+        return plugins[pluginName];
     }
 
     function handleMessage(message,event){
@@ -159,10 +180,14 @@ var Applications = function(){
                     case "register":
                        var isRegistered = Security.registerWindow(message.url);
                        if (isRegistered){
+                           var window = isRegistered.window;
+                           window.messageTarget = event.source;
+                           window.messageOrigin = event.origin;
                            event.source.postMessage({
                                registered: true,
                                id:isRegistered.id
                            }, event.origin);
+                           if (isRegistered.onload) isRegistered.onload(window);
                        }else{
                            console.error("Can't register app, url " + message.url + " was not launched from here.");
                            event.source.postMessage({
@@ -170,10 +195,16 @@ var Applications = function(){
                            }, event.origin);
                        }
                         break;
+                    case "ready":
+                        // app is completely loaded and ready for input
+                        if (appWindow.onload) appWindow.onload(appWindow);
+                        break;
+                    case "focus":
+                        appWindow.activate();
+                        break;
                     case "setMenu":
-                        console.error(appWindow);
                         appWindow.setMenu(message.data);
-                        MainMenu.setMenu(message.data);
+                        MainMenu.setMenu(message.data,appWindow);
                         break;
                 }
             }

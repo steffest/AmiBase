@@ -44,8 +44,14 @@ body.theme_tangerine .icon .image.drawer.prefs {
 body.theme_tangerine .icon .image.drive {
   background-position: -144px -208px;
 }
+body.theme_tangerine .icon .image.file {
+  background-position: -656px -272px;
+}
 body.theme_tangerine .icon .image.file.musicmod {
   background-position: -784px -80px;
+}
+body.theme_tangerine .icon .image.file.adf {
+  background-position: -848px -80px;
 }
 body.theme_tangerine .icon .image.ram.drive {
   background-position: -16px -208px;
@@ -86,6 +92,13 @@ body.theme_tangerine .icon.active .image.drive {
 }
 body.theme_tangerine .icon.active .image.ram.drive {
   background-position: -80px -208px;
+}
+body.theme_tangerine .icon.active .image.file {
+  background-position: -720px -272px;
+}
+body.theme_tangerine .icon.active .image.file.adf {
+  filter: contrast(140%) saturate(140%);
+  background-position: -848px -80px;
 }
 body.theme_tangerine .icon.active .image.notepad {
   background-position: -80px -272px;

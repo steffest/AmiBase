@@ -153,7 +153,6 @@ var IFF = function(){
 
 	me.detect=function(file){
 		var id = file.readString(4,0);
-		console.error(id);
 		if (id === "FORM"){
 			var size = file.readDWord();
 			if ((size + 8) <= file.length){

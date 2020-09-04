@@ -5,7 +5,8 @@
     [
       "filehandlers/mod.js",
       "filehandlers/iff.js",
-      "filehandlers/icon.js"
+      "filehandlers/icon.js",
+      "filehandlers/base.js"
     ]
   ],
   "styles": [],

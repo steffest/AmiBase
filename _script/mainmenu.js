@@ -4,6 +4,7 @@ var MainMenu = function(){
     var root;
     var menuActive;
     var activeSubmenu;
+    var currentMenuTarget;
 
     var mainMenu = [
         {
@@ -102,7 +103,7 @@ var MainMenu = function(){
                     break;
                 case "window":
                     if (focusElement.getMenu()){
-                        me.setMenu(focusElement.getMenu());
+                        me.setMenu(focusElement.getMenu(),focusElement);
                     }else{
                         me.setMenu(mainMenu);
                     }
@@ -112,12 +113,13 @@ var MainMenu = function(){
 
     };
 
-    me.setMenu = function(menu){
+    me.setMenu = function(menu,window){
         root.innerHTML = "";
         menu.forEach(function(item){
             root.appendChild(createMenuItem(item));
         });
         menuActive=false;
+        currentMenuTarget = window;
     };
 
     me.hideMenu = function(){
@@ -131,6 +133,11 @@ var MainMenu = function(){
 
     function createMenuItem(struct){
         var elm = $div("menuitem");
+        if (struct.label === "-"){
+            elm.classList.add("divider");
+            return elm;
+        }
+
         elm.innerHTML = "<label>" + struct.label + "</label>";
         elm.onclick = function(){
             handleMenuClick(struct);
@@ -172,6 +179,8 @@ var MainMenu = function(){
                 }
             }
             if (item.message){
+                if (currentMenuTarget) currentMenuTarget.sendMessage(item.message);
+
 
             }
         }

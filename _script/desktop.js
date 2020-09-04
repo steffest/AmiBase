@@ -20,6 +20,7 @@ var Desktop = function(){
         container.classList.add("desktop");
         container.id = "desktop";
         document.body.appendChild(container);
+        me.height = document.body.offsetHeight;
 
         container.addEventListener("mousedown",function(e){
             if (e.target.id === "desktop"){
@@ -45,7 +46,6 @@ var Desktop = function(){
         if (window){
             window.activate();
         }else{
-            console.error("create");
             window = Desktop.createWindow(config);
             if (config.items){
                 // static structure
@@ -55,6 +55,7 @@ var Desktop = function(){
                 window.cleanUp();
             }
         }
+        if (config.onOpen) config.onOpen(window);
     };
     me.openDrive = me.openDrawer;
 
@@ -67,6 +68,9 @@ var Desktop = function(){
         var window = windows.find(function(w){return w.id === config.id});
         var label = config.label || config.url.split(":")[1];
         var w = Desktop.createWindow(label);
+        if (config.onload) {
+            w.onload = config.onload;
+        }
         Applications.load(config.url,w);
     };
 
@@ -113,6 +117,7 @@ var Desktop = function(){
         if (focusElement.id !== elm.id){
             if (undoSelection) if (focusElement.deActivate) focusElement.deActivate();
             focusElement = elm;
+            console.error(focusElement);
             EventBus.trigger(EVENT.ACTIVATE_DESKTOP_ELEMENT);
         }
 
@@ -132,10 +137,10 @@ var Desktop = function(){
 
             var reader = new FileReader();
             reader.onload = async function(){
-                console.error(file.name);
+                //console.error(file.name);
                 var filetype = await System.detectFileType(reader.result,file.name);
 
-                Desktop.createIcon({label: file.name, type:"file",className: filetype.className, data: filetype});
+                Desktop.createIcon({label: file.name, type:"file",className: filetype.className, data: filetype, fileName: file.name});
                 Desktop.cleanUp();
 
                 console.error(filetype);
@@ -145,6 +150,29 @@ var Desktop = function(){
             };
             reader.readAsArrayBuffer(file);
         }
+    };
+
+    me.handleFileOpen = function(fileInfo){
+        console.log(fileInfo);
+        var action;
+        if (fileInfo.handler) action = fileInfo.handler.handle(fileInfo.file);
+
+        if (!action && fileInfo.actions) action=fileInfo.actions[0];
+        console.log(action);
+        if (action){
+            if (action.plugin){
+                Desktop.launchProgram({
+                    url: "plugin:" + action.plugin,
+                    onload: function(){
+                        Applications.sendMessage(action.plugin,"openfile",fileInfo);
+                    }
+                });
+            }
+        }else{
+            // fall back to hex editor?
+        }
+
+
     };
 
     me.loadContent = function(url){

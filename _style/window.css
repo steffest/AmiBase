@@ -125,11 +125,14 @@ body.defaultpointer #desktop .window .bar .close {
   cursor: pointer;
 }
 
+#desktop .window.inactive {
+  opacity: 0.6;
+}
 #desktop .window.inactive .inner {
   pointer-events: none;
 }
 #desktop .window.inactive .bar {
-  background-color: #b9c3c2;
+  /*background-color: #b9c3c2;*/
 }
 
 #desktop .window.inactivecontent .inner {

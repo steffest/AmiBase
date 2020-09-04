@@ -17,7 +17,7 @@ var Security = function(){
             if (p>=0)  basePath =  basePath.substr(0,p+1);
             url = basePath + url;
         }
-        console.error("registering url " + url);
+        console.log("registering url " + url);
         registeredWindows.push({
             id: _window.id,
             url: url,
@@ -30,7 +30,7 @@ var Security = function(){
        console.log("registering window ", url);
        var w = registeredWindows.find(function(item){return item.url === url});
        if (window){
-           return w.window;
+           return w;
        }else{
            console.error("window for " + url + " not found");
        }
