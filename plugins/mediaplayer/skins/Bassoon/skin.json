@@ -1,0 +1,118 @@
+{
+  "width": 380,
+  "height" : 188,
+  "items" : [
+    { "name" : "close",
+      "left": 360,
+      "top": 4,
+      "width": 14,
+      "height" : 14,
+      "texture" : [261,251],
+      "hover" : [277,251],
+      "down" : [291,251]
+    },
+    { "name" : "play",
+      "left": 6,
+      "top": 151,
+      "width": 61,
+      "height" : 31,
+      "texture" : [7,235],
+      "hover" : [70,235],
+      "down" : [196,234],
+      "state" : {
+        "active": {
+          "texture" : [87,186],
+          "hover" : [29,186],
+          "down" : [58,186]
+        }
+      }
+    },
+    { "name" : "pause",
+      "left": 69,
+      "top": 151,
+      "width": 61,
+      "height" : 31,
+      "texture" : [7,204],
+      "hover" : [70,204],
+      "down" : [196,203]
+    },
+    { "name" : "stop",
+      "left": 132,
+      "top": 151,
+      "width": 61,
+      "height" : 31,
+      "texture" : [7,204],
+      "hover" : [133,204],
+      "down" : [196,203]
+    },
+    { "name" : "progress",
+      "left": 7,
+      "minLeft": 7,
+      "maxLeft": 312,
+      "top": 112,
+      "width": 27,
+      "height" : 9,
+      "zIndex" : 11,
+      "texture" : [328,356],
+      "hover" : [328,369],
+      "down" : [328,368]
+    },
+    { "name" : "progressHighLight",
+      "left": 8,
+      "top": 112,
+      "width": 0,
+      "maxWidth" : 328,
+      "height" : 7,
+      "texture" : [10,293],
+      "inActive" : true
+    },
+    { "name" : "volume",
+      "left": 202,
+      "minLeft": 202,
+      "maxLeft": 313,
+      "top": 159,
+      "width": 30,
+      "height" : 19,
+      "zIndex" : 11,
+      "texture" : [289,345],
+      "hover" : [289,366]
+    },
+    { "name" : "volumeHighLight",
+      "left": 202,
+      "top": 160,
+      "width": 183,
+      "height" : 17,
+      "texture" : [8,318],
+      "inActive" : true
+    },
+    { "name" : "mute",
+      "left": 162,
+      "top": 123,
+      "width": 19,
+      "height" : 20,
+      "state" : {
+        "active": {
+          "texture" : [243,225],
+          "hover" : [243,225],
+          "down" : [262,160]
+        }
+      },
+      "texture" : [243,125],
+      "hover" : [243,125],
+      "down" : [262,160]
+    }
+  ],
+  "analyser": {
+    "width":135,
+    "height": 68,
+    "left" : 202,
+    "top" : 36,
+    "bar": {
+      "color" : "#74CB56B0",
+      "colorPeak" : "#CBBF9EB0",
+      "width" : 3,
+      "gap" : 1,
+      "count" : 24
+    }
+  }
+}

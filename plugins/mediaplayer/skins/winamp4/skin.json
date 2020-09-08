@@ -1,0 +1,121 @@
+{
+  "width": 354,
+  "height" : 160,
+  "items" : [
+    { "name" : "close",
+      "left": 336,
+      "top": 4,
+      "width": 12,
+      "height" : 11,
+      "texture" : [198,277],
+      "hover" : [210,277],
+      "down" : [222,277],
+      "active" : [234,277]
+    },
+    { "name" : "play",
+      "left": 33,
+      "top": 127,
+      "width": 29,
+      "height" : 29,
+      "texture" : [0,186],
+      "hover" : [29,186],
+      "down" : [58,186],
+      "state" : {
+        "active": {
+          "texture" : [87,186],
+          "hover" : [29,186],
+          "down" : [58,186]
+        }
+      }
+    },
+    { "name" : "pause",
+      "left": 64,
+      "top": 127,
+      "width": 29,
+      "height" : 29,
+      "texture" : [232,186],
+      "hover" : [261,186],
+      "down" : [290,186],
+      "active" : [319,186]
+    },
+    { "name" : "stop",
+      "left": 95,
+      "top": 127,
+      "width": 29,
+      "height" : 29,
+      "texture" : [116,186],
+      "hover" : [145,186],
+      "down" : [174,186],
+      "active" : [203,186]
+    },
+    { "name" : "progress",
+      "left": 7,
+      "minLeft": 7,
+      "maxLeft": 227,
+      "top": 108,
+      "width": 33,
+      "height" : 13,
+      "zIndex" : 11,
+      "texture" : [276,241],
+      "hover" : [309,241],
+      "down" : [309,254],
+      "active" : [276,241]
+    },
+    { "name" : "progressHighLight",
+      "left": 7,
+      "top": 108,
+      "width": 0,
+      "height" : 13,
+      "texture" : [83,228],
+      "inActive" : true
+    },
+    { "name" : "volume",
+      "left": 181,
+      "minLeft": 181,
+      "maxLeft": 252,
+      "top": 144,
+      "width": 19,
+      "height" : 11,
+      "zIndex" : 11,
+      "texture" : [282,266],
+      "hover" : [301,266]
+    },
+    { "name" : "volumeHighLight",
+      "left": 184,
+      "top": 146,
+      "width": 83,
+      "height" : 9,
+      "texture" : [0,226],
+      "inActive" : true
+    },
+    { "name" : "mute",
+      "left": 162,
+      "top": 135,
+      "width": 19,
+      "height" : 20,
+      "state" : {
+        "active": {
+          "texture" : [243,160],
+          "hover" : [243,160],
+          "down" : [262,160]
+        }
+      },
+      "texture" : [224,160],
+      "hover" : [243,160],
+      "down" : [262,160]
+    }
+  ],
+  "analyser": {
+    "width": 71,
+    "height": 24,
+    "left" : 218,
+    "top" : 34,
+    "bar": {
+      "color" : "#AAC4F5",
+      "colorPeak" : "#DFE0E6",
+      "width" : 3,
+      "gap" : 1,
+      "count" : 15
+    }
+  }
+}

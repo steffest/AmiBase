@@ -1,0 +1,22 @@
+.mediaplayer {
+  position: absolute;
+  z-index: 1;
+  width: 354px;
+  height: 160px;
+  background-image: url("winamp4.png");
+  background-repeat: no-repeat;
+}
+.mediaplayer .button {
+  position: absolute;
+  z-index: 10;
+  background-image: url("winamp4.png");
+  background-repeat: no-repeat;
+}
+.mediaplayer canvas.analyser {
+  position: absolute;
+  z-index: 10;
+  left: 218px;
+  top: 34px;
+}
+
+/*# sourceMappingURL=skin.css.map */

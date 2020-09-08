@@ -1,0 +1,22 @@
+.mediaplayer{
+  position: absolute;
+  z-index: 1;
+  width: 380px;
+  height: 188px;
+  background-image: url("skin.png");
+  background-repeat: no-repeat;
+
+  .button{
+    position: absolute;
+    z-index: 10;
+    background-image: url("skin.png");
+    background-repeat: no-repeat;
+  }
+
+  canvas.analyser{
+    position: absolute;
+    z-index: 10;
+    left: 218px;
+    top:34px;
+  }
+}
