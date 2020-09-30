@@ -1,0 +1,16 @@
+a "File" is a structure point to a file and or its content.
+
+There can be 4 pointers to where to get the file:
+
+file = {
+    file: pointer to binarystream with the content of the file. This is the case for example when "uploading" files
+        from the local filesystem in the browser, of when reading from in memory filesystem like e.g. ADF
+    url: when the file is accesible over a HTTP link
+    path: When the file is on some AMIBase mounted file system (e.g. laozi)
+    body: pointer to string when the content of the file is text instead of binary
+}
+
+An "attachment" to a icon structure is also of this type.
+
+TODO: investigate if urls and paths can be reduced to the same thing. probably not really because files can have both a path and a url
+TODO: investigate wheter text files can be some special form of binary file

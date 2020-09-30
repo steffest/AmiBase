@@ -7,26 +7,29 @@ var Applications = function(){
 
     function receiveMessage(event) {
         var message = event.data;
+        if (message === "process-tick") return; // message form audioclock
         handleMessage(message,event);
     }
 
-    me.sendMessage = function(pluginName,message,data,window){
+    me.sendMessage = function(window,message,data){
         // first check if application has registered the message directly
-        var plugin = getPlugin(pluginName);
+        var plugin = getPlugin(window.plugin);
         var action;
         if (plugin && plugin.actions && plugin.actions[message]){
             action = plugin.actions[message] || plugin.actions["sendMessage"];
+            // Do we need to send the icon or the data?
+            if (action) action(data);
         }else{
             // sending message to window
            if(window) window.sendMessage(message,data);
         }
-        if (action) action(data);
     };
 
     
     me.load = function(pluginName,appWindow){
         console.log("loading " + pluginName + " into " + appWindow.getCaption());
         appWindow.setContent("loading");
+        appWindow.plugin = pluginName;
 
         if (pluginName.indexOf(":")>0){
             var pluginType = pluginName.split(":")[0];
@@ -41,6 +44,7 @@ var Applications = function(){
                 var plugin = plugins[pluginName];
                 if (plugin){
                     console.log("plugin already loaded");
+                    appWindow.isApplication = true;
                     var config = plugin.config;
                     if (config.width && config.height) appWindow.setSize(config.width,config.height);
                     if (config.index){
@@ -58,6 +62,7 @@ var Applications = function(){
                     var pluginPath = "plugins/" + pluginName + "/";
                     FetchService.json(pluginPath + "config.json",function(config){
                         if (config){
+                            appWindow.isApplication = true;
                             plugin.config=config;
                             if (config.width && config.height) appWindow.setSize(config.width,config.height);
 
@@ -151,6 +156,7 @@ var Applications = function(){
     };
 
     function getPlugin(pluginName){
+        pluginName = pluginName||"";
         if (pluginName.indexOf(":")>0){
             pluginName = pluginName.split(":")[1];
         }
@@ -205,6 +211,22 @@ var Applications = function(){
                     case "setMenu":
                         appWindow.setMenu(message.data);
                         MainMenu.setMenu(message.data,appWindow);
+                        break;
+                    case "getFile":
+                        var data = message.data;
+                        var callbackId = message.callbackId;
+                        FileSystem.getFile(data.path,data.asBinary).then(file => {
+                            console.error(file);
+                            event.source.postMessage({
+                                message: "callback",
+                                data: {
+                                    id: callbackId,
+                                    data: file.buffer,
+                                    filename:  file.name
+                                }
+                            }, event.origin);
+
+                        });
                         break;
                 }
             }

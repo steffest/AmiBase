@@ -1,4 +1,4 @@
-.mediaplayer {
+.mediaplayer.skin_winamp4 {
   position: absolute;
   z-index: 1;
   width: 354px;
@@ -6,13 +6,13 @@
   background-image: url("winamp4.png");
   background-repeat: no-repeat;
 }
-.mediaplayer .button {
+.mediaplayer.skin_winamp4 .button {
   position: absolute;
   z-index: 10;
   background-image: url("winamp4.png");
   background-repeat: no-repeat;
 }
-.mediaplayer canvas.analyser {
+.mediaplayer.skin_winamp4 canvas.analyser {
   position: absolute;
   z-index: 10;
   left: 218px;

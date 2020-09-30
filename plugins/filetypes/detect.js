@@ -24,7 +24,8 @@ var FileType = function(){
 						handler: handler,
 						actions: type.actions,
 						inspect: type.inspect,
-						className: type.className
+						className: type.className,
+						customIcon: type.customIcon
 					}
 				}
 			}
@@ -43,22 +44,26 @@ var FileType = function(){
 		return registeredFileExtentions;
 	};
 
-	me.detect = function(fileData,name){
-		var file = BinaryStream(fileData.buffer,true);
+	me.detect = function(file){
 		var fileFormat;
 
-		for (var i = 0, max = handlers.length;i<max;i++){
-			fileFormat = handlers[i].detect(file);
-			if (fileFormat) break;
+		if (typeof file === "string"){
+			file = {
+				name: file
+			}
+		}
+
+		if (file && file.buffer){
+			for (var i = 0, max = handlers.length;i<max;i++){
+				fileFormat = handlers[i].detect(file);
+				if (fileFormat) break;
+			}
 		}
 
 		if (fileFormat){
-			fileFormat.file = file;
 			if (fileFormat.inspect) fileFormat.info = fileFormat.handler.inspect(file);
-		}
-
-		if (!fileFormat){
-			fileFormat = detectFromFileExtention(name);
+		}else{
+			fileFormat = detectFromFileExtention(file.name);
 		}
 
 		return fileFormat;

@@ -1,0 +1,36 @@
+{
+  "width": 350,
+  "height" : 160,
+  "addClassName" : true,
+  "items" : [
+    { "name" : "close"},
+    { "name" : "play"},
+    { "name" : "pause"},
+    { "name" : "stop"},
+    { "name" : "progressbar"},
+    { "name" : "progress"},
+    { "name" : "progressHighLight","className": "progressactive"},
+    { "name" : "volume"},
+    { "name" : "volumeHighLight"},
+    { "name" : "mute"}
+  ],
+  "analyser": {
+    "width": 346,
+    "height": 50,
+    "left" : 0,
+    "top" : 34,
+    "bar": {
+      "color" : "#AAC4F5",
+      "colorPeak" : "#DFE0E6",
+      "width" : 7,
+      "gap" : 4,
+      "count" : 20,
+      "offsetLeft" : 14
+    },
+    "wave": {
+      "fftSize": 512,
+      "color" : "#AAC4F5C0",
+      "color2" : "rgba(229,245,173,0.2)"
+    }
+  }
+}

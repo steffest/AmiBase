@@ -29,6 +29,17 @@
       background-color: white;
     }
   }
+  
+  .messageContainer{
+    position: absolute;
+    top:0;
+    right: 0;
+    bottom: 0;
+    font-size: 12px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+  }
 
   .menu{
     position: absolute;
@@ -65,6 +76,7 @@
       position: absolute;
       background-color: white;
       border: 1px solid silver;
+      white-space: nowrap;
 
       .menuitem{
         display: block;

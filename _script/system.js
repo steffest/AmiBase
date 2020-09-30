@@ -1,3 +1,6 @@
+/*
+    System: load libraries
+*/
 var System = function(){
     var me = {};
     var libraries = {};
@@ -23,14 +26,12 @@ var System = function(){
                 }else{
                     FetchService.json(pluginPath + "config.json").then(function(config){
                         if (config){
-                            console.error(config);
                             plugin.config=config;
 
                             function loadPluginScripts(){
                                 loadScripts(pluginPath,config.scripts,function(){
                                     // scripts are loaded but not necessarily parsed;
                                     setTimeout(function(){
-                                        console.error("all loaded");
                                         plugin.loaded = true;
                                         libraries[libraryName] = plugin;
                                         next();
@@ -44,7 +45,6 @@ var System = function(){
 
                                 config.dependencies.forEach(function(dependency){
                                     me.loadLibrary(dependency,function(){
-                                        console.error("depency loaded");
                                         dependeciesLoaded++;
                                         if (dependeciesLoaded>=dependeciesTarget){
                                             loadPluginScripts();
@@ -71,7 +71,6 @@ var System = function(){
     };
 
     loadScripts = function(pluginPath,list,next){
-        console.error("load",list);
         if (list && list.length){
             var loadCount = 0;
             var loadTarget = list.length;
@@ -115,19 +114,30 @@ var System = function(){
     };
     me.loadScripts = loadScripts;
 
+    // create a "file" structrure and detects type
+    me.inspectFile = async function(arrayBuffer, name){
+        await me.loadLibrary("filetypes");
+        return new Promise(function(resolve){
+            var file = new BinaryStream(arrayBuffer,true); // set to True if coming from Amiga
+            file.name = name;
+            var filetype = FileType.detect(file);
+            resolve({
+                type: "file",
+                file:file,
+                filetype:filetype
+            });
+        });
+    };
 
     // first try to detect filetype by inspecting content
     // then fallback on extention
-     me.detectFileType = async function(arrayBuffer, name){
+     me.detectFileType = async function(file){
          await me.loadLibrary("filetypes");
          return new Promise(function(resolve){
-             var file = new BinaryStream(arrayBuffer,true); // set to True if coming from Amiga
-             file.name = name;
-             var result = FileType.detect(file,name);
-             resolve(result);
+             resolve(FileType.detect(file));
          });
     };
 
-
     return me;
 }();
+

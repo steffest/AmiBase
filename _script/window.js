@@ -14,6 +14,9 @@ var AmiWindow = function(config){
     var icons = [];
     var menu;
     var selectBox;
+    var borderLess = (typeof config.border === "boolean" && !config.border);
+    var gridWidth= 70;
+    var gridHeight= 70;
 
     var window = $div("window",me.id);
     window.style.zIndex = me.zIndex;
@@ -25,13 +28,17 @@ var AmiWindow = function(config){
     selectBox = $div("selectBox");
 
     windowBar.appendChild(close);
-    window.appendChild(windowBar);
+    if (!borderLess) window.appendChild(windowBar);
     window.appendChild(inner);
-    window.appendChild(sizer);
+    if (!borderLess) window.appendChild(sizer);
     inner.appendChild(selectBox);
 
+    if (borderLess){
+        window.classList.add("borderless");
+    }
+
     close.onclick = function(){
-        Desktop.removeWindow(me);
+        me.close();
     };
 
     me.getInner = function(){
@@ -41,6 +48,10 @@ var AmiWindow = function(config){
     me.clear = function(){
         inner.innerHTML = "";
         icons=[];
+    };
+
+    me.close = function(){
+        Desktop.removeWindow(me);
     };
 
     me.createIcon = function(config){
@@ -63,20 +74,43 @@ var AmiWindow = function(config){
         return icon;
     };
 
+    me.setGridSize = function(w,h){
+        gridWidth=w;
+        gridHeight=h;
+        me.cleanUp();
+    };
+
     me.cleanUp = function(){
         var left= 10 + (config.paddingLeft || 0);
         var top= 20 + (config.paddingTop || 0);
 
-        var h = me.height||300;
+        var h = (me.height||350) - gridHeight;
+        var w = (me.width||inner.offsetWidth||500) - gridWidth;
 
-        icons.forEach(function(icon){
-            icon.setPosition(left,top);
-            top += 70;
-            if (top>h){
-                left+=70;
-                top = 20 + (config.paddingTop || 0);
-            }
-        })
+        var fill = "horizontal";
+        if (me.type === "desktop"){
+            fill = "vertical";
+        }
+
+        if (fill === "horizontal"){
+            icons.forEach(function(icon){
+                icon.setPosition(left,top);
+                left += gridWidth;
+                if (left>w){
+                    top+=gridHeight;
+                    left = 10 + (config.paddingLeft || 0);
+                }
+            })
+        }else{
+            icons.forEach(function(icon){
+                icon.setPosition(left,top);
+                top += gridHeight;
+                if (left>w){
+                    top+=gridHeight;
+                    left = 10 + (config.paddingLeft || 0);
+                }
+            })
+        }
     };
 
     me.getIcons = function(){
@@ -150,7 +184,7 @@ var AmiWindow = function(config){
                 }else{
                     // drop in other window
                     if (me.isApplication){
-                        me.sendMessage("dropfile",item);
+                        Applications.sendMessage(me,"dropfile",item);
                     }else{
                         console.log("moving item to new parent");
                         var oldPos = item.element.getBoundingClientRect();
@@ -193,13 +227,30 @@ var AmiWindow = function(config){
             caption.innerHTML = text;
         };
 
+        me.addClass = function(className){
+            window.classList.add(className);
+        };
+
+        me.removeClass = function(className){
+            window.classList.remove(className);
+        };
+
         me.setPosition = function(left,top,zIndex){
             me.left = left;
             me.top = top;
             window.style.transform = "translate(" + left + "px," + top + "px)";
         };
 
-        me.setSize = function(width,height){
+        me.setSize = function(width,height,fitOnScreen){
+            if (fitOnScreen){
+                var dw = Desktop.width-100;
+                var dh = Desktop.height-100;
+                if ((width>dw) || (height>dh)){
+                    var ratio = Math.min(dw/width,dh/height);
+                    width *= ratio;
+                    height *= ratio;
+                }
+            }
             me.width = width;
             me.height = height;
             window.style.width = width + "px";
@@ -240,7 +291,8 @@ var AmiWindow = function(config){
         };
 
         me.deActivateContent = function(soft){
-            window.classList.add("inactivecontent");
+            // TODO: why was this needed again?
+            //window.classList.add("inactivecontent");
         };
 
         me.setContent = function(content){
@@ -248,8 +300,9 @@ var AmiWindow = function(config){
             me.appendContent(content);
         };
 
-        me.setMenu = function(_menu){
+        me.setMenu = function(_menu,apply){
             menu = _menu
+            if (apply) MainMenu.setMenu(menu);
         };
 
         me.getMenu = function(){
@@ -268,31 +321,57 @@ var AmiWindow = function(config){
         me.sendMessage = function(message,data){
             if (me.messageTarget){
                 var messageData;
-                console.error("messagedata",data);
+                var doSend = true;
+                console.log("messagedata",data);
                 if (data){
-
                     if (data.type === "icon"){
-                        data = data.getConfig();
-                        console.error(data);
+                        doSend=false;
+                        data.getAttachment(function(attachment){
+                            if (attachment){
+                                messageData = {
+                                    filename: attachment.file.name,
+                                    data: attachment.file.buffer
+                                };
+                            }
+                            send();
+                        });
                     }
-
                     if (data.type === "file"){
                         messageData = {
-                            filename: data.fileName,
-                            data: data.data.file.buffer
+                            filename: data.file.name,
+                            data: data.file.buffer
                         };
                     }
+
+                    if (!messageData){
+                        // we can't send functions or circular structures to another frame;
+                        messageData = {};
+                        if (data.path) messageData.path = data.path;
+                        if (data.url) messageData.url = data.url;
+                        if (data.filetype) {
+                            messageData.filetype = {
+                                id: data.filetype.id,
+                                name: data.filetype.name,
+                                hasHandler: !!data.filetype.handler
+                            };
+                        }
+                    }
                 }
-                me.messageTarget.postMessage({
-                    message: message,
-                    data: messageData
-                },me.messageOrigin);
+
+                function send(){
+                    me.messageTarget.postMessage({
+                        message: message,
+                        data: messageData
+                    },me.messageOrigin);
+                }
+
+                if (doSend) send();
             }
         };
 
 
         me.element = window;
-        me.dragHandle = windowBar;
+        me.dragHandle = borderLess ? window : windowBar;
         me.resizeHandle = sizer;
         me.setPosition(200,200);
         config.width = config.width||240;

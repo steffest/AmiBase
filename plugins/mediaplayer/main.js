@@ -10,16 +10,19 @@ var mediaplayer_plugin_init = function(app){
     var audioContext;
     var dataArray;
     var analyser;
+    var analyserMode = "bar";
     var analyserCanvas;
     var analyserPeak = [];
     var analyserConfig;
     var ctx;
     var isPlaying;
+    var visActive;
     var progressDrag, volumeDrag;
     inner.innerHTML = "";
     var mediaplayer = $div("mediaplayer");
     inner.appendChild(mediaplayer);
     var skinLoaded;
+    var currentData;
 
     var buttons={};
     setupAudio();
@@ -35,18 +38,24 @@ var mediaplayer_plugin_init = function(app){
             ]},
         {label: "Skin",items:[
                 {label: "Bassoon",action:function(){loadSkin('Bassoon')}},
-                {label: "Winamp 4",action:function(){loadSkin('winamp4')}}
+                {label: "Winamp 4",action:function(){loadSkin('winamp4')}},
+                {label: "Choice",action:function(){loadSkin('choice')}}
+            ]},
+        {label: "Visulisation",items:[
+                {label: "Show",action:function(){showVis()}},
+                {label: "Hide",action:function(){hideVis()}}
             ]},
     ];
 
     app.setMenu(menu,true);
 
 
-    function handleDropFile(data){
+    function handleDropFile(data,useAttachment){
         console.error(data);
+        currentData = data;
         if (data.type === "icon"){
             var config = data.getConfig();
-            if (config.url){
+            if (config.url && !useAttachment){
                 handleFile(config);
             }else{
                 data.getAttachment(function(fileInfo){
@@ -62,7 +71,7 @@ var mediaplayer_plugin_init = function(app){
     }
 
     function handleFile(attachment){
-        console.error("mediaplayer open file");
+        console.log("mediaplayer open file");
         if (attachment.file){
             Player.playFile(attachment.file);
         }else if(attachment.url){
@@ -83,11 +92,17 @@ var mediaplayer_plugin_init = function(app){
                 buttons[button].remove();
             });
             buttons={};
+            var remove = [];
+            mediaplayer.classList.forEach(function(className){
+               if (className.indexOf("skin_")===0) remove.push(className);
+            });
+            remove.forEach(className => mediaplayer.classList.remove(className));
+            mediaplayer.classList.add("skin_" + name);
 
             app.setSize(config.width,config.height);
             loadCss(path + "skin.css");
             config.items.forEach(function(item){
-                createButton(item)
+                createButton(item,config.addClassName);
             });
 
             analyserConfig = config.analyser;
@@ -97,17 +112,18 @@ var mediaplayer_plugin_init = function(app){
             analyserCanvas.style.top = config.analyser.top + "px";
 
             if (buttons.progress){
-                var min = buttons.progress.config.minLeft;
-                var max = buttons.progress.config.maxLeft;
-                var range = max-min;
                 progressDrag = {
-                    left: 7,
+                    left: 0,
                     top: 0,
                     element: buttons.progress,
                     setPosition: function(a,b){
                         updateProgressBar(a);
                     },
                     onStopDrag : function(){
+                        var min = buttons.progress.config.minLeft || 0;
+                        var max = buttons.progress.config.maxLeft || 100;
+                        var range = max-min;
+
                         buttons.progress.isDragging = false;
                         var pos = (progressDrag.left - min)/range;
                         Player.setPosition(pos);
@@ -116,15 +132,16 @@ var mediaplayer_plugin_init = function(app){
                 UI.enableDrag(progressDrag);
             }
             if (buttons.volume){
-
-                var min = buttons.volume.config.minLeft;
-                var max = buttons.volume.config.maxLeft;
-                var range = max-min;
                 volumeDrag = {
-                    left: min,
+                    left: 0,
                     top: 0,
                     element: buttons.volume,
                     setPosition: function(a,b){
+
+                        var min = buttons.volume.config.minLeft || 0;
+                        var max = buttons.volume.config.maxLeft || 100;
+                        var range = max-min;
+
                         updateVolumeBar(a);
                         var pos = (volumeDrag.left - min)/range;
                         Player.setVolume(pos);
@@ -138,12 +155,32 @@ var mediaplayer_plugin_init = function(app){
         });
     }
 
-    function createButton(item){
+    function showVis(){
+        AmpVisualiser.init();
+        visActive = true;
+    }
+
+    function hideVis(){
+        AmpVisualiser.hide();
+        visActive = false;
+    }
+
+    function updateVis(data,length){
+        if (!visActive) return;
+        AmpVisualiser.update(data,length);
+    }
+
+    function createButton(item,addClassName){
         var button = $div("button");
-        button.style.left = item.left + "px";
-        button.style.top = item.top + "px";
-        button.style.width = item.width + "px";
-        button.style.height = item.height + "px";
+        if (addClassName){
+            button.classList.add(item.name);
+        }
+        if (item.left || item.top || item.width || item.height){
+            button.style.left = item.left + "px";
+            button.style.top = item.top + "px";
+            button.style.width = item.width + "px";
+            button.style.height = item.height + "px";
+        }
         if (item.zIndex) button.style.zIndex = item.zIndex;
         button.config = item;
 
@@ -158,9 +195,11 @@ var mediaplayer_plugin_init = function(app){
             button.onmousedown = function(){
                 handleAction(item.name);
                 setBackground(button,"down");
+                if (addClassName) button.classList.add("down");
             };
             button.onmouseup = function(){
                 setBackground(button,"hover");
+                if (addClassName) button.classList.remove("down");
             };
         }
         buttons[item.name] = button;
@@ -200,12 +239,12 @@ var mediaplayer_plugin_init = function(app){
     }
 
     function setupAudio(){
-        var fftSize = 128;
 
+        window.AudioContext = window.AudioContext||window.webkitAudioContext;
         audioContext = new AudioContext();
         analyser = audioContext.createAnalyser();
         analyser.connect(audioContext.destination);
-        analyser.fftSize = fftSize;
+        analyser.fftSize = 128;
         analyser.smoothingTimeConstant = 0.6;
         analyser.maxDecibels = -10;
         var bufferLength = analyser.frequencyBinCount;
@@ -215,37 +254,96 @@ var mediaplayer_plugin_init = function(app){
         analyserCanvas.className = "analyser";
         analyserCanvas.width = 71;
         analyserCanvas.height = 24;
+        analyserCanvas.onclick = nextAnalyserMode;
         mediaplayer.appendChild(analyserCanvas);
         ctx = analyserCanvas.getContext("2d");
     }
 
+    function nextAnalyserMode(){
+        if (analyserMode === "bar"){
+            analyserMode = "wave";
+        }else{
+            analyserMode = "bar";
+        }
+    }
+
     function updateAnalyser(){
        if (analyserConfig){
-           analyser.getByteFrequencyData(dataArray);
            ctx.clearRect(0,0,analyserCanvas.width,analyserCanvas.height);
+           if (analyserMode === "wave"){
+               analyser.fftSize = analyserConfig.wave.fftSize;
+               var bufferLength = analyser.fftSize;
+               var dataArray = new Uint8Array(bufferLength);
 
-           var barWidth = analyserConfig.bar.width;
-           var barHeight = analyserConfig.height;
-           var barGap = analyserConfig.bar.gap;
-           var offset = 10;
-           var max = analyserConfig.bar.count+offset-1;
 
-           if (isPlaying){
-               for (var i = 0; i<max; i++){
-                   var v = Math.ceil((dataArray[i+offset] / 255) * barHeight);
-                   var top = barHeight-v;
-                   var x = i*(barWidth+barGap);
-                   ctx.fillStyle = analyserConfig.bar.color;
-                   ctx.fillRect(x,top, barWidth, v);
+               function drawWave(color,lineWidth) {
+                   analyser.getByteTimeDomainData(dataArray);
 
-                   if (analyserConfig.bar.colorPeak){
-                       var p = Math.max(analyserPeak[i] || 0,v);
-                       ctx.fillStyle = analyserConfig.bar.colorPeak;
-                       ctx.fillRect(x,barHeight-p, barWidth, 2);
-                       analyserPeak[i] = p-0.2;
+                   ctx.lineWidth = lineWidth;
+                   //ctx.strokeStyle = 'rgba(120, 255, 50, 0.5)';
+                   ctx.strokeStyle = color;
+                   ctx.beginPath();
+                   var sliceWidth = analyserConfig.width * 1.0 / bufferLength;
+                   var wx = 0;
+
+                   for(var i = 0; i < bufferLength; i++) {
+                       var v = dataArray[i] / 128.0;
+                       var wy = v * analyserConfig.height/2;
+
+                       if(i === 0) {
+                           ctx.moveTo(wx, wy);
+                       } else {
+                           ctx.lineTo(wx, wy);
+                       }
+
+                       wx += sliceWidth;
                    }
+
+                   ctx.lineTo(analyserConfig.width, analyserConfig.height/2);
+                   ctx.stroke();
+
+                   updateVis(dataArray,bufferLength);
+
+                   //me.parentCtx.drawImage(me.canvas,me.left, me.top);
                }
+               if (analyserConfig.wave.color2) drawWave(analyserConfig.wave.color2,6);
+               drawWave(analyserConfig.wave.color,2);
                requestAnimationFrame(updateAnalyser);
+
+
+           }
+
+           if (analyserMode === "bar"){
+               analyser.fftSize = analyserConfig.bar.fftSize || 128;
+               var bufferLength = analyser.frequencyBinCount;
+               dataArray = new Uint8Array(bufferLength);
+
+               analyser.getByteFrequencyData(dataArray);
+               var barWidth = analyserConfig.bar.width;
+               var barHeight = analyserConfig.height;
+               var barGap = analyserConfig.bar.gap;
+               var dataOffset = 10;
+               var offsetLeft = analyserConfig.bar.offsetLeft || 0;
+               var max = analyserConfig.bar.count+dataOffset-1;
+
+               if (isPlaying){
+                   for (var i = 0; i<max; i++){
+                       var v = Math.ceil((dataArray[i+dataOffset] / 255) * barHeight);
+                       var top = barHeight-v;
+                       var x = offsetLeft + (i*(barWidth+barGap));
+                       ctx.fillStyle = analyserConfig.bar.color;
+                       ctx.fillRect(x,top, barWidth, v);
+
+                       if (analyserConfig.bar.colorPeak){
+                           var p = Math.max(analyserPeak[i] || 0,v);
+                           ctx.fillStyle = analyserConfig.bar.colorPeak;
+                           ctx.fillRect(x,barHeight-p, barWidth, 2);
+                           analyserPeak[i] = p-0.1;
+                       }
+                   }
+                   updateVis(dataArray,bufferLength);
+                   requestAnimationFrame(updateAnalyser);
+               }
            }
        }else{
            requestAnimationFrame(updateAnalyser);
@@ -253,9 +351,9 @@ var mediaplayer_plugin_init = function(app){
     }
 
     function updateProgressBar(left){
-
-        var min = buttons.progress.config.minLeft;
-        var max = buttons.progress.config.maxLeft;
+        if (!buttons.progress) return;
+        var min = buttons.progress.config.minLeft || 0;
+        var max = buttons.progress.config.maxLeft || 100;
         var range = max-min;
 
 
@@ -273,17 +371,17 @@ var mediaplayer_plugin_init = function(app){
         if (left>max) left=max;
         buttons.progress.style.left = left + "px";
         progressDrag.left = left;
-        buttons.progressHighLight.style.width = (left-3) + "px";
+        buttons.progressHighLight.style.width = (left-min) + "px";
     }
 
     function updateVolumeBar(left){
-        var min = buttons.volume.config.minLeft;
-        var max = buttons.volume.config.maxLeft;
+        var min = buttons.volume.config.minLeft || 0;
+        var max = buttons.volume.config.maxLeft || 100;
         if (left<min) left=min;
         if (left>max) left=max;
         buttons.volume.style.left = left + "px";
         volumeDrag.left = left;
-        buttons.volumeHighLight.style.width = (left-179) + "px";
+        buttons.volumeHighLight.style.width = (left-min) + "px";
     }
 
     function setUIState(state){
@@ -304,13 +402,45 @@ var mediaplayer_plugin_init = function(app){
             if (type && type.name && type.name.indexOf("Music Module")>=0){
                 player = audioModPlayer;
             }
+            if (type && type.name && type.name.indexOf("laylist")>=0){
+                player = undefined;
+                return me.playList(file,type)
+            }
             player.setSrc(file.buffer.slice(0),file.name,function(success){
                 if (success){
                     me.play();
                 }else{
-                    console.error("Can't decode audio data");
+                    console.log("Can't decode audio data, detecting file type");
+                    (async()=>{
+                        type = await System.detectFileType(file);
+                        if (type && type.name && type.name.indexOf("laylist")>=0){
+                            return me.playList(file,type)
+                        }
+                    })();
+
                 }
             });
+
+        };
+
+        me.playList = async function(url,type){
+            if (url && url.buffer){
+                var list = url.toString();
+            }else{
+                list =  await FileSystem.readFile(url);
+            }
+
+            // let's just play the first entry for now
+            // TODO: make proper filetype handler
+            list = list.split('\n');
+            list.forEach(item=>{
+               if (item.indexOf("File1=")===0){
+                   var url = item.split("=")[1].trim();
+                   me.playUrl(url);
+               }
+            });
+
+
 
         };
 
@@ -344,17 +474,20 @@ var mediaplayer_plugin_init = function(app){
         me.play = function(){
             player.play();
             isPlaying = true;
+            mediaplayer.classList.add("playing");
             setUIState("playing");
             updateAnalyser();
         };
         me.pause = function(){
             player.pause();
             isPlaying = false;
+            mediaplayer.classList.remove("playing");
             setUIState("paused");
         };
         me.stop = function(){
             if (player) player.stop();
             isPlaying = false;
+            mediaplayer.classList.remove("playing");
             setUIState("stopped");
         };
         me.toggleMute = function(){
@@ -389,6 +522,28 @@ var mediaplayer_plugin_init = function(app){
                 audio.ontimeupdate = function(){
                     updateProgressBar();
                 };
+                audio.addEventListener('error', function failed(e) {
+                    // audio playback failed - show a message saying why
+                    // to get the source of the audio element use $(this).src
+                    switch (e.target.error.code) {
+                        case e.target.error.MEDIA_ERR_ABORTED:
+
+                            break;
+                        case e.target.error.MEDIA_ERR_NETWORK:
+                            console.error("Network Error");
+                            break;
+                        case e.target.error.MEDIA_ERR_DECODE:
+                            console.error('The audio playback was aborted due to a corruption problem or because the video used features your browser did not support.');
+                            break;
+                        case e.target.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                            console.log('Audio source not supported falling back to file player');
+                            handleDropFile(currentData,true);
+                            break;
+                        default:
+                            console.error('An unknown error occurred.');
+                            break;
+                    }
+                }, true);
             }
             initDone = true;
         };
@@ -415,7 +570,9 @@ var mediaplayer_plugin_init = function(app){
         me.setVolume = function(vol){
             audio.volume = vol;
         };
-        me.setMute = function(muted){};
+        me.setMute = function(muted){
+            audio.muted = muted;
+        };
         me.getCurrentTime = function(){
             return audio.currentTime;
         };
@@ -659,7 +816,7 @@ var mediaplayer_plugin_init = function(app){
         
         me.stop = function(){
             masterVolume.disconnect();
-        }
+        };
         
         return me;
     }();

@@ -1,0 +1,187 @@
+<html>
+<body bgcolor="black">
+<style>
+
+</style>
+<center>
+
+    <canvas width="320" height="240" id="canvas"></canvas>
+    <br>
+    <audio src="../../../content/files/A Pill, A Cracker  A Strawberry.mp3" controls="controls" id="audio"></audio>
+
+
+    <script>
+
+        var audioContext;
+        var analyser;
+        var isPlaying;
+
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+        var w = 320;
+        var h = 240;
+        canvas.style.width = "640px";
+        canvas.style.height = "480px";
+        
+        
+        var count = 0;
+
+
+        var canvas2 = document.createElement("canvas");
+        canvas2.width = w;
+        canvas2.height = h;
+        var ctx2 = canvas2.getContext("2d");
+
+        var w2 = w/2;
+
+        var data2;
+        var dataArray;
+        var bufferLength;
+
+        setupAudio();
+
+
+
+        var img = new Image();
+        img.onload = function(){
+            ctx.drawImage(img,0,0);
+            ctx2.drawImage(img,0,0);
+
+            data2 = ctx2.getImageData(0, 0, w, h);
+
+            render();
+
+        };
+        img.src= "fish/fish.png";
+
+        var c = 0;
+        var d = 10;
+        function render(){
+            c++;
+            d--;
+            if (c>=8000) c=0;
+            if (d<-800) d=10;
+            var data = ctx.getImageData(0, 0, w, h);
+
+            var centerPoint = [w/2,h/2];
+			var x, y, u, v, z, a, r, pi = Math.PI;
+			
+            for (y = 0; y<h; y++){
+                for ( x = 0; x<w; x++){
+
+     
+                    var cx = x-centerPoint[0] + Math.sin(d/40) * 100;
+                    var cy = y-centerPoint[1] + Math.sin(d/50) * 80;
+
+					//r = Math.sqrt( cx * cx + cy * cy );
+
+					//u = r/10000;
+					v = 0.2 * Math.sin(x/100) / pi;
+
+					var x_ = (x - (v*cx)>>0);
+					var y_ = (y - (v*cy)>>0);
+					
+
+                    //if (cy){
+                        //var rico = (cx/cy);
+                        
+                        //if (rico){
+                            
+                        //}
+
+                        var p = ((y*w) + x) * 4;
+                        var p_ = ((y_*w) + x_) * 4;
+
+                        data.data[p] = blend(data.data[p_],data.data[p],0.1);
+                        data.data[p+1] = blend(data.data[p_+1],data.data[p+1],0.1);
+                        data.data[p+2] = blend(data.data[p_+2],data.data[p+2],0.1);
+                   // }
+
+
+
+                }
+            }
+
+            ctx.putImageData(data, 0, 0);
+            //ctx.filter = 'blur(2px)';
+            //ctx.setTransform(1, .2, .8, 1, 0, 0);
+            //ctx.drawImage(canvas2,0,0);
+
+            if (isPlaying){
+                bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+
+                var r = 128 + Math.sin(c/200) * 128;
+                var g = 128 + Math.sin(d/300) * 128;
+                var b = 128 + Math.sin(c/150) * 128;
+                drawWave('rgba('+r/2+','+g/2+','+b/2+',0.5)',4);
+                drawWave('rgb('+r+','+g+','+b+')',2);
+
+            }
+
+
+			count += 0.5;
+            requestAnimationFrame(render);
+        }
+
+        function blend(a,b,amount){
+            return Math.round(a*amount + b*(1-amount));
+        }
+
+        function setupAudio(){
+            var audio = document.getElementById("audio");
+
+            audio.addEventListener("play",function(){
+
+                window.AudioContext = window.AudioContext||window.webkitAudioContext;
+                audioContext = new AudioContext();
+                analyser = audioContext.createAnalyser();
+                analyser.connect(audioContext.destination);
+                analyser.fftSize = 512;
+                analyser.smoothingTimeConstant = 0.8;
+                analyser.maxDecibels = -10;
+
+
+                var source = audioContext.createMediaElementSource(audio);
+                source.connect(analyser);
+
+                isPlaying = true;
+            });
+
+
+        }
+
+        function drawWave(color,lineWidth) {
+            analyser.getByteTimeDomainData(dataArray);
+
+            ctx.lineWidth = lineWidth;
+            //ctx.strokeStyle = 'rgba(120, 255, 50, 0.5)';
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            var sliceWidth = w * 1.0 / bufferLength;
+            var wx = 0;
+
+            for(var i = 0; i < bufferLength; i++) {
+                var v = dataArray[i] / 128.0;
+                var wy = v * h/4 + 120;
+
+                if(i === 0) {
+                    ctx.moveTo(wx, wy);
+                } else {
+                    ctx.lineTo(wx, wy);
+                }
+
+                wx += sliceWidth;
+            }
+
+            ctx.lineTo(w, h/4 + 120);
+            ctx.stroke();
+
+
+        }
+
+    </script>
+</center>
+
+</body>
+</html>

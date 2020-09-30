@@ -17,6 +17,12 @@
         border-radius: 10px;
         display: block;
         margin: auto;
+
+        &.cover{
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center center;
+        }
     }
 
     .label{

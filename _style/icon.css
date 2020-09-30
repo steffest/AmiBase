@@ -17,6 +17,11 @@
   display: block;
   margin: auto;
 }
+.icon .image.cover {
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
 .icon .label {
   font-size: 11px;
   background-color: transparent;

@@ -18,7 +18,7 @@ var Security = function(){
             url = basePath + url;
         }
         console.log("registering url " + url);
-        registeredWindows.push({
+        registeredWindows.unshift({
             id: _window.id,
             url: url,
             window: _window,

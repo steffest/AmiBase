@@ -1,0 +1,6 @@
+{
+  "scripts": ["main.js"],
+  "styles": [],
+  "index": "index.html",
+  "border" : false
+}

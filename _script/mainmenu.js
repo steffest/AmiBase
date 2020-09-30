@@ -5,15 +5,42 @@ var MainMenu = function(){
     var menuActive;
     var activeSubmenu;
     var currentMenuTarget;
+    var messageContainer;
 
     var mainMenu = [
         {
-            label:"test",
-            action: "test",
+            label:"System",
             items:[
                 {
-                    label:"test2",
-                    action: "test2"
+                    label:"Upload File",
+                    action: function(){
+                        Desktop.uploadFile();
+                    }
+                },
+                {
+                    label:"New Drawer",
+                    action: function(){
+                        Desktop.createIcon({label: "My Content", type: "drawer"});
+                        Desktop.cleanUp();
+                    }
+                },
+                {
+                    label:"Import Content",
+                    action: function(){
+                        var w = Desktop.createWindow({label:"Content"});
+                        var items = [
+                            {label: "Youtube", type:"drawer"},
+                            {label: "Vimeo", type:"drawer"},
+                            {label: "Upload File", type:"file", onOpen: function(){
+                                    Desktop.uploadFile();
+                                }},
+                            {label: "Other", type:"drawer"},
+                        ];
+                        items.forEach(item => {
+                            w.createIcon(item);
+                        });
+                        w.cleanUp();
+                    }
                 }
             ]
         },
@@ -35,6 +62,12 @@ var MainMenu = function(){
         {
             label:"Theme",
             items:[
+                {
+                    label:"Choice",
+                    action: function(){
+                        Desktop.loadTheme("choice");
+                    }
+                },
                 {
                     label:"Light",
                     action: function(){
@@ -79,14 +112,56 @@ var MainMenu = function(){
         }
     ];
 
+    var windowMenu = [
+        {
+            label:"window",
+            items:[
+                {
+                    label:"Cleanup",
+                    action: function(){
+                        var w =  Desktop.getFocusElement();
+                        if (w && w.cleanUp) w.cleanUp();
+                    }
+                },
+                {
+                    label:"Rename",
+                    action: function(){
+                        var name =  prompt("Enter the new name:");
+                        if (name){
+                            var w =  Desktop.getFocusElement();
+                            w.setCaption(name);
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            label:"Edit",
+            items:[
+                {
+                    label:"Delete",
+                    action: function(){
+                        console.error("clicked subitem 2");
+                    }
+                },
+                {
+                    label:"Edit",
+                    action: "test2"
+                }
+            ]
+        }
+    ];
+
     me.init = function(){
         var topbar = $div("topbar");
 
-        var homebutton =$div("homebutton","","<div>AmiBase <small>v" + Settings.version + "</small></div>");
-
+        //var homebutton =$div("homebutton","","<div>AmiBase <small>v" + Settings.version + "</small></div>");
+        var homebutton =$div("homebutton","","<div>Amibase <small>v" + Settings.version + "</small></div>");
+        messageContainer = $div("message");
         root=$div("menu");
 
         topbar.appendChild(homebutton);
+        topbar.appendChild(messageContainer);
         topbar.appendChild(root);
         document.body.appendChild(topbar);
 
@@ -105,7 +180,14 @@ var MainMenu = function(){
                     if (focusElement.getMenu()){
                         me.setMenu(focusElement.getMenu(),focusElement);
                     }else{
-                        me.setMenu(mainMenu);
+                        me.setMenu(windowMenu);
+                    }
+                    break;
+                case "drawer":
+                    if (focusElement.getMenu()){
+                        me.setMenu(focusElement.getMenu(),focusElement);
+                    }else{
+                        me.setMenu(windowMenu);
                     }
                     break;
             }
@@ -129,6 +211,10 @@ var MainMenu = function(){
             if (subMenu) subMenu.classList.remove("active");
         }
         menuActive = false;
+    };
+    
+    me.showMessage = function(message){
+        messageContainer.innerHTML = message;
     };
 
     function createMenuItem(struct){
@@ -189,3 +275,4 @@ var MainMenu = function(){
 
     return me;
 }();
+

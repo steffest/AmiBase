@@ -105,7 +105,7 @@
   "analyser": {
     "width":135,
     "height": 68,
-    "left" : 202,
+    "left" : 200,
     "top" : 36,
     "bar": {
       "color" : "#74CB56B0",
@@ -113,6 +113,11 @@
       "width" : 3,
       "gap" : 1,
       "count" : 24
+    },
+    "wave": {
+      "fftSize": 256,
+      "color" : "#74CB56A0",
+      "color2" : "#FF9F1620"
     }
   }
 }

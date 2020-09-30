@@ -1,4 +1,4 @@
-.mediaplayer {
+.mediaplayer.skin_bassoon {
   position: absolute;
   z-index: 1;
   width: 380px;
@@ -6,13 +6,13 @@
   background-image: url("skin.png");
   background-repeat: no-repeat;
 }
-.mediaplayer .button {
+.mediaplayer.skin_bassoon .button {
   position: absolute;
   z-index: 10;
   background-image: url("skin.png");
   background-repeat: no-repeat;
 }
-.mediaplayer canvas.analyser {
+.mediaplayer.skin_bassoon canvas.analyser {
   position: absolute;
   z-index: 10;
   left: 218px;

@@ -1,34 +1,9 @@
 <html>
 <head>
-    <script src="_script/util/dom.js"></script>
-    <script src="_script/util/eventBus.js"></script>
-    <script src="_script/util/fetchService.js"></script>
-
-    <script src="_script/enum.js"></script>
-    <script src="_script/settings.js"></script>
-
-    <script src="_script/system.js"></script>
-    <script src="_script/input.js"></script>
-    <script src="_script/ui.js"></script>
-    <script src="_script/main.js"></script>
-    <script src="_script/window.js"></script>
-    <script src="_script/desktop.js"></script>
-    <script src="_script/icon.js"></script>
-    <script src="_script/mousepointer.js"></script>
-    <script src="_script/mainmenu.js"></script>
-    <script src="_script/security.js"></script>
-
-    <script src="_script/applications.js"></script>
-
-    <link rel="stylesheet" type="text/css" href="_style/main.css">
-    <link rel="stylesheet" type="text/css" href="_style/desktop.css">
-    <link rel="stylesheet" type="text/css" href="_style/window.css">
-    <link rel="stylesheet" type="text/css" href="_style/icon.css">
-    <link rel="stylesheet" type="text/css" href="_style/mainmenu.css">
-
-    <link rel="stylesheet" type="text/css" href="themes/tangerine/theme.css">
+    <script type="module" src="_script/loader/all.js"></script>
+    <link rel="stylesheet" type="text/css" href="_style/default.css">
 </head>
-<body onload="Main.init()" class="theme_tangerine">
-
+<body>
+    <script nomodule src="_script/loader/fallback.js"></script>
 </body>
 </html>

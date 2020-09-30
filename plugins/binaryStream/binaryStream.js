@@ -109,6 +109,10 @@ function BinaryStream(arrayBuffer, bigEndian){
         return text;
     };
 
+    obj.toString = function(){
+        return String.fromCharCode.apply(null, new Uint8Array(arrayBuffer));
+    };
+
     obj.writeString = function(value,position){
         setIndex(position);
         var src = this.dataView;
@@ -234,21 +238,7 @@ function BinaryStream(arrayBuffer, bigEndian){
     }
 }
 
-function loadFile(url,next) {
-    var req = new XMLHttpRequest();
-    req.open("GET", url, true);
-    req.responseType = "arraybuffer";
-    req.onload = function (event) {
-        var arrayBuffer = req.response;
-        if (arrayBuffer) {
-            if (next) next(arrayBuffer);
-        } else {
-            console.error("unable to load", url);
-            if (next) next(false);
-        }
-    };
-    req.send(null);
-}
+
 
 function saveFile(b,filename){
     //NOTE: this doesn't work on all browsers, a more robust way is to use the filesaver.js of Eli Grey

@@ -6,12 +6,16 @@ var FetchService = (function() {
 
 	var defaultAjaxTimeout = 30000;
 
-	me.get = function(url,next){
-		me.ajax({
-			url : url,
-			success: function(data){next(data)},
-			error: function(xhr){next(undefined,xhr)}
+	me.get = function(url,_next){
+		return new Promise((resolve,reject) => {
+			var next = _next || resolve;
+			me.ajax({
+				url : url,
+				success: function(data){next(data)},
+				error: function(xhr){next(undefined,xhr)}
+			});
 		});
+
 	};
 
 	me.post = function(url,data,next){
@@ -70,14 +74,16 @@ var FetchService = (function() {
 		});
 	};
 
-	me.arrayBuffer = function(url,next){
-		if (typeof next == "undefined") next=function(){};
-		me.ajax({
-			url : url,
-			cache: false,
-			datatype: "arrayBuffer",
-			success: function(data){next(data)},
-			error: function(xhr){next(undefined,xhr)}
+	me.arrayBuffer = function(url,callback){
+		return new Promise(function(resolve,reject){
+			var next = callback || resolve;
+			me.ajax({
+				url : url,
+				cache: false,
+				datatype: "arrayBuffer",
+				success: function(data){next(data)},
+				error: function(xhr){next(undefined,xhr)}
+			});
 		});
 	};
 
@@ -115,17 +121,24 @@ var FetchService = (function() {
 				if(xhr.status !== 200 && xhr.status !== 201) {
 					config.error(xhr);
 				}else{
-					if (config.datatype === "json") {
-						var result = xhr.responseText;
-						result = JSON.parse(result);
-					}
+					var result;
+
 					if (config.datatype === "arrayBuffer"){
 						result = xhr.response;
+					}else{
+						result = xhr.responseText;
+
+						if (config.datatype === "json") {
+							result = JSON.parse(result);
+						}
+
+						if (config.datatype === "html"){
+							result = document.createElement("div");
+							result.innerHTML = xhr.responseText;
+						}
+
 					}
-					if (config.datatype === "html"){
-						result = document.createElement("div");
-						result.innerHTML = xhr.responseText;
-					}
+
 					config.success(result);
 				}
 			}
@@ -151,6 +164,7 @@ var FetchService = (function() {
 
 		xhr.send(data);
 	};
+
 
 	return me;
 }());

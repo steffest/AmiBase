@@ -35,6 +35,9 @@ var UI = function(){
             resizeItems.forEach(function(item){
                 item.activate(true);
             });
+            dragItems.forEach(function(item){
+                if (item.onStopDrag) item.onStopDrag();
+            });
 
             if (globalDragItem) me.handleDrop();
             if (selectingComponent) selectingComponent.removeSelectBox();
@@ -109,7 +112,7 @@ var UI = function(){
 
         function startDrag(e) {
             if (component.activate) component.activate(); // bring to front;
-            if (component.deActivateContent) component.deActivateContent(); // but deactivate inner content
+            //if (component.deActivateContent) component.deActivateContent(); // but deactivate inner content
 
 
             if (component.type === "icon"){
@@ -146,6 +149,7 @@ var UI = function(){
 
             e = e || window.event;
             e.preventDefault();
+            e.stopPropagation();
             dragItems.forEach(function(item){
                 item.startLeft = item.left;
                 item.startTop = item.top;

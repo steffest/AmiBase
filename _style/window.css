@@ -10,6 +10,15 @@
   user-select: none;
   will-change: transform;
 }
+#desktop .window.borderless {
+  border: none;
+  box-shadow: none;
+  background: none;
+}
+#desktop .window.borderless .inner {
+  top: 0;
+  overflow: hidden;
+}
 #desktop .window .inner {
   position: absolute;
   left: 0;
@@ -126,7 +135,7 @@ body.defaultpointer #desktop .window .bar .close {
 }
 
 #desktop .window.inactive {
-  opacity: 0.6;
+  /*opacity: 0.6;*/
 }
 #desktop .window.inactive .inner {
   pointer-events: none;

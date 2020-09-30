@@ -27,6 +27,16 @@
 .topbar .homebutton:hover {
   background-color: white;
 }
+.topbar .messageContainer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  font-size: 12px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+}
 .topbar .menu {
   position: absolute;
   top: 0;
@@ -57,6 +67,7 @@
   position: absolute;
   background-color: white;
   border: 1px solid silver;
+  white-space: nowrap;
 }
 .topbar .menuitem .submenu .menuitem {
   display: block;

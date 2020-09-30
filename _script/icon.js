@@ -5,10 +5,72 @@ var AmiIcon = function(config){
         zIndex: 0
     };
 
+    var attachment = config.attachment || undefined;
+
     var icon = $div("icon " + (Settings.useDelayedDrag?"delayed":""));
-    var img = $div("image " + cleanString(config.label) + " " + config.type + " " + (config.className || "unknown"));
+    var img = $div("image " + " " + config.type);
     var label = $div("label","","<span>" + config.label + "</span>");
     me.iconType = config.type;
+
+    if (config.iconClassName){
+        icon.className = "icon delayed " + config.iconClassName;
+    }
+    if (config.image){
+        img.style.backgroundImage = "url('" + config.image + "')";
+        img.classList.add("cover");
+    }else if (config.icon){
+        var canvas = document.createElement("canvas");
+        canvas.width = 96;
+        canvas.height = 48;
+
+        if (config.attachment && config.attachment.filetype && config.attachment.filetype.handler){
+
+            FileSystem.readFile(config.attachment.path,true).then(file => {
+               console.log(file);
+               config.attachment.filetype.handler.parse(file,(icon) => {
+                   var c = config.attachment.filetype.handler.getImage(icon);
+                   var c2 = config.attachment.filetype.handler.getImage(icon,1);
+                   if (c){
+                       canvas.getContext("2d").drawImage(c,0,0);
+                       if (c2) canvas.getContext("2d").drawImage(c2,48,0);
+                       config.icon2 = true;
+                       setCanvas();
+                   }
+               });
+
+            });
+
+        }else{
+            // assume plain http
+
+            var _img = new Image();
+            _img.crossOrigin="anonymous";
+            _img.onload = function(){
+                canvas.getContext("2d").drawImage(_img,0,0);
+                if (config.icon2){
+                    var _img2 = new Image();
+                    _img2.onload = function(){
+                        canvas.getContext("2d").drawImage(_img2,48,0);
+                        setCanvas();
+                    };
+                    _img2.src = config.icon2;
+                }else{
+                    setCanvas();
+                }
+            };
+            _img.src = config.icon;
+        }
+
+
+        function setCanvas(){
+            img.style.backgroundImage = "url('" + canvas.toDataURL() + "')";
+            img.classList.add("canvasicon");
+            if (config.icon2) img.classList.add("dual");
+        }
+    }else{
+        img.classList.add(cleanString(config.label));
+        img.classList.add((config.className || "unknown"));
+    }
 
     icon.appendChild(img);
     icon.appendChild(label);
@@ -70,6 +132,38 @@ var AmiIcon = function(config){
         clone.style.transform = "";
         return clone;
     };
+
+    /**
+     * attachment
+     * @file BinaryStream object
+     * @filetype : detected filetype
+     * @type "file" or "drawer" or ...
+     * @path string - path where the attachment comes from
+     */
+    me.setAttachment = function(data){
+        attachment=data;
+    };
+    me.getAttachment = function(next){
+        // might be delayed if the file content is not readily available
+        if (attachment){
+            next(attachment)
+        }else{
+            if (config.getAttachment){
+                config.getAttachment(next);
+            }else{
+                // load File?
+                if (config.type === "file" && config.url){
+                    Desktop.loadFile(config.url,function(attachment){
+                        next(attachment);
+                    });
+                }else{
+                    next({});
+                }
+                
+            }
+        }
+    };
+
     me.getConfig = function(){
         return config;
     };
@@ -94,26 +188,26 @@ var AmiIcon = function(config){
         if (me.iconType === "url"){
             Desktop.launchUrl(config);
         }
-        if (me.iconType === "file"){
-            if (config.data && config.data.handler){
-                //console.error(config);
-                var action = config.data.handler.handle(config.file);
-                if (!action && config.data.actions) action=config.data.actions[0];
-                if (action){
-                    if (action.plugin){
-                        Desktop.launchProgram({
-                            url: "plugin:" + action.plugin,
-                            onload: function(window){
-                                console.log("app loaded");
-                                Applications.sendMessage(action.plugin,"openfile",config,window);
-                            }
-                        });
-                    }
+        if (me.iconType === "file" || me.iconType === "action"){
+            console.log(config);
+            if (config.onOpen){
+                config.onOpen();
+            }else if(config.handler){
+                if (typeof config.handler === "string"){
+                    Desktop.launchProgram({
+                        url: (config.handler.indexOf(":")<0?"plugin:":"") + config.handler,
+                        onload: function(window){
+                            console.log("app loaded",window);
+                            Applications.sendMessage(window,"openfile",config);
+                        }
+                    });
                 }else{
-                    // fall back to hex editor?
+                    config.handler(me);
                 }
             }else{
-                if (config.onOpen) config.onOpen();
+                me.getAttachment(function(attachment){
+                    Desktop.handleFileOpen(attachment);
+                });
             }
         }
     };

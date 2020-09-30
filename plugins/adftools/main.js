@@ -2,11 +2,9 @@ var adftools_plugin_init = function(window){
     console.error("adftools here");
 
     Applications.registerApplicationActions("adftools",{
-        "openfile":function(config){
+        "openfile":function(attachment){
             console.error("ADF open file");
-            var fileName = config.fileName;
-            var file = config.data;
-            if (file.file) file = file.file;
+            var file = attachment.file;
             console.log(file);
 
             if (file){
@@ -17,7 +15,7 @@ var adftools_plugin_init = function(window){
         }
     });
 
-    if (window.onload) window.onload();
+    if (window.onload) window.onload(window);
 
 };
 
@@ -73,9 +71,16 @@ var ADFTOOLS = function(){
                 onOpen: async function(){
                     console.log("handle ADF file");
                     var file = ADF.readFileAtSector(f.sector,true);
-                    console.error(file);
-                    var fileInfo = await System.detectFileType(file.content.buffer,f.name);
+                    var fileInfo = await System.inspectFile(file.content.buffer,f.name);
+                    fileInfo.path = "ADF";
+                    console.error(fileInfo);
                     Desktop.handleFileOpen(fileInfo);
+                },
+                getAttachment: async function(next){
+                    var file = ADF.readFileAtSector(f.sector,true);
+                    var fileInfo = await System.inspectFile(file.content.buffer,f.name);
+                    fileInfo.path = "ADF";
+                    next(fileInfo);
                 }
             };
             window.createIcon(item);

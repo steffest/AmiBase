@@ -10,6 +10,17 @@
     user-select: none;
     will-change: transform;
 
+    &.borderless{
+        border: none;
+        box-shadow: none;
+        background: none;
+
+        .inner{
+            top: 0;
+            overflow: hidden;
+        }
+    }
+
     .inner{
         position: absolute;
         left: 0;
@@ -141,7 +152,7 @@ body.defaultpointer{
        pointer-events: none;
    }
 
-    opacity: 0.6;
+    /*opacity: 0.6;*/
 
     .bar {
         /*background-color: #b9c3c2;*/

@@ -10,6 +10,9 @@ body.theme_tangerine #desktop {
 body.theme_tangerine #desktop .window {
   background: url("Patterns/bluegray_stripe_light.png");
 }
+body.theme_tangerine #desktop .window.borderless {
+  background: none;
+}
 body.theme_tangerine .topbar {
   background-color: #ECECEC;
   border-bottom: 1px solid #A69E93;
@@ -24,7 +27,6 @@ body.theme_tangerine .topbar .menuitem .submenu {
   margin-top: 0;
   border: 1px solid #b5c6ce;
   box-shadow: 0 0 2px rgba(57, 63, 66, 0.4);
-  white-space: nowrap;
 }
 body.theme_tangerine .icon .image {
   width: 48px;
@@ -71,6 +73,9 @@ body.theme_tangerine .icon .image.googledocs {
 body.theme_tangerine .icon .image.uae {
   background-position: -144px -16px;
 }
+body.theme_tangerine .icon .image.canvasicon {
+  background-position: 0 0;
+}
 body.theme_tangerine .icon .label {
   text-shadow: 0 0 2px black;
   padding: 0;
@@ -114,6 +119,12 @@ body.theme_tangerine .icon.active .image.googledocs {
 }
 body.theme_tangerine .icon.active .image.uae {
   background-position: -208px -16px;
+}
+body.theme_tangerine .icon.active.canvasicon {
+  background-position: 0 0;
+}
+body.theme_tangerine .icon.active.canvasicon.dual {
+  background-position: -48px 0;
 }
 body.theme_tangerine .icon.active .label {
   text-shadow: 0 0 2px yellow;

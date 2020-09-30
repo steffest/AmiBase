@@ -116,6 +116,10 @@
       "width" : 3,
       "gap" : 1,
       "count" : 15
+    },
+    "wave": {
+      "fftSize": 256,
+      "color" : "#AAC4F5C0"
     }
   }
 }

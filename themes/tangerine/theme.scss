@@ -25,6 +25,10 @@ body.theme_tangerine{
 
     .window{
       background: url("Patterns/bluegray_stripe_light.png");
+
+      &.borderless{
+        background: none;
+      }
     }
   }
 
@@ -44,7 +48,6 @@ body.theme_tangerine{
         margin-top: 0;
         border: 1px solid #b5c6ce;
         box-shadow: 0 0 2px rgba(57,63,66,0.4);
-        white-space: nowrap;
       }
     }
 
@@ -83,7 +86,12 @@ body.theme_tangerine{
       &.postmessage{ background-position: -784px -16px;}
       &.googledocs{ background-position: -656px -272px;}
       &.uae{ background-position: -144px -16px;}
+
+      &.canvasicon{
+        background-position: 0 0;
+      }
     }
+
 
     .label{
       text-shadow: 0 0 2px black;
@@ -111,6 +119,15 @@ body.theme_tangerine{
         &.googledocs{ background-position: -720px -272px;}
         &.uae{ background-position: -208px -16px;}
       }
+
+      &.canvasicon{
+        background-position: 0 0;
+
+        &.dual{
+          background-position: -48px 0;
+        }
+      }
+
 
       .label{
         text-shadow: 0 0 2px yellow;

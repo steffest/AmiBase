@@ -49,17 +49,6 @@ function loadScript(src,onload){
     document.body.appendChild(script);
 }
 
-async function loadScriptAndWait(src){
-    return new Promise(function(resolve){
-        var script = document.createElement('script');
-        script.src = src;
-        if (onload) {
-            script.onload = resolve;
-            //script.onreadystatechange = onload;
-        }
-        document.body.appendChild(script);
-    });
-}
 
 function loadCss(src,onload){
     var head  = document.getElementsByTagName('head')[0];

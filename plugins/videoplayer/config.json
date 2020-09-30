@@ -1,0 +1,12 @@
+{
+  "name" : "VideoPlayer",
+  "version" : "0.0.1",
+  "scripts": [
+    [
+      "player/shaka.compiled.js"
+    ],
+    ["player.js"]
+  ],
+  "styles": [],
+  "index": ""
+}
