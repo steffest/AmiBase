@@ -188,6 +188,15 @@ var AmiWindow = function(config){
                     }else{
                         console.log("moving item to new parent");
                         var oldPos = item.element.getBoundingClientRect();
+                        var oldConfig = item.parent.getConfig?item.parent.getConfig():{};
+                        var oldPath = oldConfig.path;
+                        if (!oldPath) oldPath=item.getConfig?item.getConfig().path:"";
+
+                        // propagate action to window handler
+                        if (config.path){
+                            FileSystem.moveFile(item,oldPath,config.path)
+                        }
+
                         item.parent.removeIcon(item);
                         me.addIcon(item);
                         var newPos = item.element.getBoundingClientRect();
@@ -198,8 +207,9 @@ var AmiWindow = function(config){
                         left -= cX;
                         top -= cY;
 
-
                         doMove = true;
+
+
                     }
                 }
 
@@ -301,12 +311,16 @@ var AmiWindow = function(config){
         };
 
         me.setMenu = function(_menu,apply){
-            menu = _menu
+            menu = _menu;
             if (apply) MainMenu.setMenu(menu);
         };
 
         me.getMenu = function(){
             return menu;
+        };
+
+        me.getConfig = function(){
+            return config;
         };
 
         me.appendContent = function(content){

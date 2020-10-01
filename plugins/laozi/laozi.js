@@ -41,6 +41,55 @@ var Laozi = async function() {
         return endPoint + "file/" + path;
     };
 
+    me.createDirectory = function(path,name,_next){
+        return new Promise((resolve,reject) => {
+            var next = _next || resolve;
+            path = getFilePath(path);
+            FetchService.json(endPoint + "file/createdirectory/" + path + "/" + name,function(data){
+                console.log(data);
+                next();
+            });
+        });
+    };
+
+    me.moveFile = function(fromPath,toPath){
+        return new Promise((next) => {
+            fromPath = getFilePath(fromPath);
+            toPath = getFilePath(toPath);
+            FetchService.json(endPoint + "file/move/" + fromPath + "?to=" + toPath,function(data){
+                console.log(data);
+                next();
+            });
+        });
+    };
+
+    me.renameFile = function(path,newName){
+        return new Promise((next) => {
+            path = getFilePath(path);
+            FetchService.json(endPoint + "file/rename/" + path + "?name=" + newName,function(data){
+                console.log(data);
+                next();
+            });
+        });
+    };
+
+    me.uploadFile = function(file,path){
+        return new Promise((next) => {
+            path = getFilePath(path);
+            var data = new FormData();
+            file.getAttachment((attachment) => {
+                var b = new Blob([attachment.file.buffer], {type: "application/octet-stream"});
+                data.append('files[]', b, attachment.file.name);
+                FetchService.sendBinary(endPoint + "file/uploadfile/" + path,data,function(data){
+                    console.log(data);
+                    next();
+                });
+            });
+
+
+        });
+    };
+
     // strip out the mount or protocol part
     function getFilePath(path){
         path = path || "";

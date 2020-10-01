@@ -22,7 +22,8 @@ var FileSystem = function(){
         Desktop.createIcon({
             type: "drive",
             label: name,
-            volume: volume
+            volume: volume,
+            path: volume + ":"
         });
         Desktop.cleanUp();
 
@@ -48,16 +49,32 @@ var FileSystem = function(){
             if  (mount.handler){
                 var data = await mount.handler.getDirectory(path);
                 if (target){
-                    data.directories.forEach(dir => {
-                        target.createIcon({
+                    //data.directories.forEach(dir => {
+                    for (const dir of data.directories) {
+                        var drawerInfo = {
                             type: "drawer",
                             label: dir,
                             path: path + dir + "/"
-                        })
-                    });
+                        };
+
+                        // check if there's an icon
+                        var index = data.files.indexOf(dir + ".info");
+                        if (index >= 0){
+                            var filetype = await System.detectFileType(dir + ".info");
+                            console.error(filetype);
+                            drawerInfo.attachment = {
+                                path: path + dir + ".info",
+                                url: mount.handler.getFileUrl(path + dir + ".info"),
+                                filetype: filetype
+                            };
+                            drawerInfo.icon = path + dir + ".info";
+                            data.files.splice(index,1);
+                        }
+                        target.createIcon(drawerInfo);
+                    }
                     for (const file of data.files) {
                         var filetype = await System.detectFileType(file);
-                        console.error(filetype);
+                        //console.error(filetype);
                         var fileInfo = {
                             type: "file",
                             label: file,
@@ -90,8 +107,13 @@ var FileSystem = function(){
     };
 
 
-    me.createDirectory = function(){
-
+    me.createDirectory = function(path,newName){
+        console.log("createDirectory");
+        var mount = me.getMount(path);
+        if  (mount.handler){
+            console.error(mount.handler);
+            mount.handler.createDirectory(path,newName);
+        }
     };
 
     me.getFile = function(path,asBinaryStream){
@@ -114,11 +136,34 @@ var FileSystem = function(){
 
     };
 
-    me.copyFile = function(){
-
+    me.copyFile = function(file,fromPath,toPath){
+        console.log("Copy File",file,fromPath,toPath);
     };
 
-    me.moveFile = function(){
+    me.moveFile = function(file,fromPath,toPath){
+        return new Promise(async next => {
+            console.log("Move File",file,fromPath,toPath);
+            var mount = me.getMount(fromPath);
+            var targetMount = me.getMount(toPath);
+            if (fromPath === "upload"){
+                var result = await targetMount.handler.uploadFile(file,toPath);
+                next(result);
+            }else if (mount.handler){
+                // TODO: move accross different volumes
+                fromPath = fromPath + '/' + file.name;
+
+                var result = await mount.handler.moveFile(fromPath,toPath);
+                next(result);
+            }else{
+                // can't get file - no handler
+                console.warn("can't move file - no handler");
+            }
+        });
+
+
+
+
+
 
     };
 
@@ -126,8 +171,18 @@ var FileSystem = function(){
 
     };
 
-    me.rename = function(){
-
+    me.rename = function(path,newName){
+        return new Promise(async next => {
+            console.log("Rename",path,newName);
+            var mount = me.getMount(path);
+            if  (mount.handler){
+                var result = await mount.handler.renameFile(path,newName);
+                next(result);
+            }else{
+                // can't get file - no handler
+                console.warn("can't rename file - no handler");
+            }
+        });
     };
 
 

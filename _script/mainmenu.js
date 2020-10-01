@@ -87,11 +87,16 @@ var MainMenu = function(){
     var iconMenu = [
         {
             label:"icon",
-            action: "test",
             items:[
                 {
-                    label:"test2",
-                    action: "test2"
+                    label:"Rename",
+                    action: function(){
+                        var name =  prompt("Enter the new name:");
+                        if (name){
+                            var icon =  Desktop.getFocusElement();
+                            icon.setLabel(name);
+                        }
+                    }
                 }
             ]
         },
@@ -132,7 +137,28 @@ var MainMenu = function(){
                             w.setCaption(name);
                         }
                     }
-                }
+                },
+                {
+                    label:"Upload File",
+                    action: function(){
+                        Desktop.uploadFile(Desktop.getFocusElement());
+                    }
+                },
+                {
+                    label:"New Drawer",
+                    action: function(){
+                        var w =  Desktop.getFocusElement();
+                        if (w){
+                            var newName = "My Content";
+                            var config = w.getConfig();
+                            if (config.path){
+                                FileSystem.createDirectory(config.path,newName);
+                            }
+                            w.createIcon({label: newName, type: "drawer"});
+                            w.cleanUp();
+                        }
+                    }
+                },
             ]
         },
         {
@@ -184,6 +210,13 @@ var MainMenu = function(){
                     }
                     break;
                 case "drawer":
+                    if (focusElement.getMenu()){
+                        me.setMenu(focusElement.getMenu(),focusElement);
+                    }else{
+                        me.setMenu(windowMenu);
+                    }
+                    break;
+                case "drive":
                     if (focusElement.getMenu()){
                         me.setMenu(focusElement.getMenu(),focusElement);
                     }else{

@@ -11,6 +11,8 @@ var AmiIcon = function(config){
     var img = $div("image " + " " + config.type);
     var label = $div("label","","<span>" + config.label + "</span>");
     me.iconType = config.type;
+    me.name = config.label;
+
 
     if (config.iconClassName){
         icon.className = "icon delayed " + config.iconClassName;
@@ -24,7 +26,7 @@ var AmiIcon = function(config){
         canvas.height = 48;
 
         if (config.attachment && config.attachment.filetype && config.attachment.filetype.handler){
-
+            console.error(config);
             FileSystem.readFile(config.attachment.path,true).then(file => {
                console.log(file);
                config.attachment.filetype.handler.parse(file,(icon) => {
@@ -65,6 +67,7 @@ var AmiIcon = function(config){
         function setCanvas(){
             img.style.backgroundImage = "url('" + canvas.toDataURL() + "')";
             img.classList.add("canvasicon");
+            img.classList.remove(config.type);
             if (config.icon2) img.classList.add("dual");
         }
     }else{
@@ -166,6 +169,15 @@ var AmiIcon = function(config){
 
     me.getConfig = function(){
         return config;
+    };
+
+    me.setLabel = function(name){
+        console.error(config);
+        label.innerHTML = "<span>" + name + "</span>";
+        me.name = name;
+        var path = config.path;
+        if (!path && config.attachment && config.attachment.path) path = config.attachment.path;
+        if (path) FileSystem.rename(path,name);
     };
 
 

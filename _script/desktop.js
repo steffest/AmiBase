@@ -144,6 +144,7 @@ var Desktop = function(){
             });
         }
 
+        
         if (focusElement.id !== elm.id){
             if (undoSelection) if (focusElement.deActivate) focusElement.deActivate();
             focusElement = elm;
@@ -159,11 +160,11 @@ var Desktop = function(){
         return focusElement;
     };
     
-    me.uploadFile = function(){
+    me.uploadFile = function(target){
         var input = document.createElement('input');
         input.type = 'file';
         input.onchange = function(e){
-            me.handleUpload(e.target.files);
+            me.handleUpload(e.target.files,target);
         };
         input.click();
     };
@@ -197,6 +198,7 @@ var Desktop = function(){
                 Desktop.createIcon({
                     label: fileInfo.file.name,
                     type:"file",
+                    path: "upload",
                     className: fileInfo.filetype.className,
                     attachment: fileInfo
                 });
