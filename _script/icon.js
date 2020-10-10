@@ -10,7 +10,7 @@ var AmiIcon = function(config){
     var icon = $div("icon " + (Settings.useDelayedDrag?"delayed":""));
     var img = $div("image " + " " + config.type);
     var label = $div("label","","<span>" + config.label + "</span>");
-    me.iconType = config.type;
+    me.iconType = config.type || "file";
     me.name = config.label;
 
 
@@ -21,55 +21,71 @@ var AmiIcon = function(config){
         img.style.backgroundImage = "url('" + config.image + "')";
         img.classList.add("cover");
     }else if (config.icon){
-        var canvas = document.createElement("canvas");
-        canvas.width = 96;
-        canvas.height = 48;
 
-        if (config.attachment && config.attachment.filetype && config.attachment.filetype.handler){
-            console.error(config);
-            FileSystem.readFile(config.attachment.path,true).then(file => {
-               console.log(file);
-               config.attachment.filetype.handler.parse(file,(icon) => {
-                   var c = config.attachment.filetype.handler.getImage(icon);
-                   var c2 = config.attachment.filetype.handler.getImage(icon,1);
-                   if (c){
-                       canvas.getContext("2d").drawImage(c,0,0);
-                       if (c2) canvas.getContext("2d").drawImage(c2,48,0);
-                       config.icon2 = true;
-                       setCanvas();
-                   }
-               });
+        async function getIcon(){
+            var filetype;
+            var iconPath;
+            if (config.attachment && config.attachment.filetype){
+                filetype = config.attachment.filetype;
+                iconPath = config.attachment.path;
+            }else{
+                filetype = await System.detectFileType(config.icon);
+                iconPath = config.icon;
+            }
 
-            });
+            var canvas = document.createElement("canvas");
+            canvas.width = 96;
+            canvas.height = 48;
 
-        }else{
-            // assume plain http
+            function setCanvas(){
+                img.style.backgroundImage = "url('" + canvas.toDataURL() + "')";
+                img.classList.add("canvasicon");
+                img.classList.remove(config.type);
+                if (config.icon2) img.classList.add("dual");
+            }
 
-            var _img = new Image();
-            _img.crossOrigin="anonymous";
-            _img.onload = function(){
-                canvas.getContext("2d").drawImage(_img,0,0);
-                if (config.icon2){
-                    var _img2 = new Image();
-                    _img2.onload = function(){
-                        canvas.getContext("2d").drawImage(_img2,48,0);
+            if (filetype.handler && filetype.handler.parse){
+                // special icon format
+
+                FileSystem.readFile(iconPath,true).then(file => {
+                    filetype.handler.parse(file,(icon) => {
+                        var c = filetype.handler.getImage(icon);
+                        var c2 = filetype.handler.getImage(icon,1);
+                        if (c){
+                            canvas.getContext("2d").drawImage(c,0,0);
+                            if (c2) canvas.getContext("2d").drawImage(c2,48,0);
+                            config.icon2 = true;
+                            setCanvas();
+                        }
+                    });
+                })
+            }else{
+                // assume plain image
+                var _img = new Image();
+                _img.crossOrigin="anonymous";
+                _img.onload = function(){
+                    canvas.getContext("2d").drawImage(_img,0,0);
+                    if (config.icon2){
+                        var _img2 = new Image();
+                        _img2.onload = function(){
+                            canvas.getContext("2d").drawImage(_img2,48,0);
+                            setCanvas();
+                        };
+                        _img2.src = config.icon2;
+                    }else{
                         setCanvas();
-                    };
-                    _img2.src = config.icon2;
-                }else{
-                    setCanvas();
-                }
-            };
-            _img.src = config.icon;
+                    }
+                };
+                _img.src = config.icon;
+            }
+
         }
 
 
-        function setCanvas(){
-            img.style.backgroundImage = "url('" + canvas.toDataURL() + "')";
-            img.classList.add("canvasicon");
-            img.classList.remove(config.type);
-            if (config.icon2) img.classList.add("dual");
-        }
+
+
+        getIcon();
+
     }else{
         img.classList.add(cleanString(config.label));
         img.classList.add((config.className || "unknown"));
@@ -186,6 +202,7 @@ var AmiIcon = function(config){
     //};
 
     icon.ondblclick = function(){
+        console.error(me);
         if (me.iconType === "drive"){
             config.id = config.id||uuid();
             Desktop.openDrive(config);
@@ -222,6 +239,7 @@ var AmiIcon = function(config){
                 });
             }
         }
+        
     };
 
     return me;

@@ -350,7 +350,7 @@ var AmiWindow = function(config){
                             send();
                         });
                     }
-                    if (data.type === "file"){
+                    if (data.type === "file" && data.file){
                         messageData = {
                             filename: data.file.name,
                             data: data.file.buffer
@@ -361,6 +361,7 @@ var AmiWindow = function(config){
                         // we can't send functions or circular structures to another frame;
                         messageData = {};
                         if (data.path) messageData.path = data.path;
+                        if (data.linkedFile) messageData.path = FileSystem.getDownloadUrl(data.linkedFile);
                         if (data.url) messageData.url = data.url;
                         if (data.filetype) {
                             messageData.filetype = {
@@ -387,7 +388,9 @@ var AmiWindow = function(config){
         me.element = window;
         me.dragHandle = borderLess ? window : windowBar;
         me.resizeHandle = sizer;
-        me.setPosition(200,200);
+        config.left = config.left||200;
+        config.top = config.top||200;
+        me.setPosition(config.left,config.top);
         config.width = config.width||240;
         config.height = config.height||200;
         me.setSize(config.width,config.height);

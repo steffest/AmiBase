@@ -6,7 +6,7 @@ var notepad_plugin_init = function(containerWindow){
     container.innerHTML += '<br>Active';
 
     var textarea = document.createElement("textarea");
-    textarea.value = "Edit me";
+    textarea.value = "";
     textarea.style.width = "100%";
     textarea.style.height = "100%";
     container.innerHTML = "";
@@ -19,11 +19,15 @@ var notepad_plugin_init = function(containerWindow){
 
             if (attachment.file){
                 console.log("handle binary data");
+                var content = String.fromCharCode.apply(null, new Uint8Array(attachment.file.buffer));
+                textarea.value = content;
             }else if(attachment.path){
                 textarea.value = await FileSystem.readFile(attachment.path);
             }else if(attachment.url){
                 console.log("load from url" , attachment.url);
-                if (attachment.label) window.setCaption(attachment.label);
+                if (attachment.label) containerWindow.setCaption(attachment.label);
+                var content = await FetchService.get(attachment.url);
+                textarea.value=content;
             }else{
                 console.warn("unknown structure",attachment);
             }

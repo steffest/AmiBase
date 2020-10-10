@@ -1,7 +1,7 @@
 var Laozi = async function() {
     var me = {};
 
-    var endPoint = "http://www.amibase.com/api/";
+    var endPoint = "https://www.amibase.com/api/";
 
     var {default: api} = await import("./api.js");
 
@@ -32,7 +32,6 @@ var Laozi = async function() {
                     next(file);
                 })
             }
-
         });
     };
 

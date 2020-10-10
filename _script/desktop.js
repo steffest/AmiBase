@@ -43,10 +43,8 @@ var Desktop = function(){
 
 
     me.openDrawer = function(config){
-
         var window = windows.find(function(w){return w.id === config.id});
-
-        window = undefined;
+        
         if (window){
             window.activate();
         }else{
@@ -75,12 +73,16 @@ var Desktop = function(){
     };
 
     me.openDrive = async function(config){
-        var w = Desktop.createWindow(config);
         if (config.volume){
+            var w = Desktop.createWindow(config);
             FileSystem.getDirectory(config.volume + ":",w);
         }  else{
             me.openDrawer(config)
         }
+    };
+    
+    me.getWindows = function(){
+      return windows;  
     };
 
     me.launchProgram = function(config,onload){
@@ -91,11 +93,15 @@ var Desktop = function(){
         }
         var window = windows.find(function(w){return w.id === config.id});
         var label = config.label || config.url.split(":")[1];
-        var windowConfig = {caption: label};
-
+        var windowConfig = {
+            caption: label,
+            width: config.width,
+            height: config.height
+        };
+        
         // hmmm...
         if (config.url && config.url.indexOf("mediaplayer")>=0) windowConfig.border =  false;
-
+        
         var w = Desktop.createWindow(windowConfig);
         if (onload && config.onload) {
             console.warn("WARNING: you have 2 onload handlers defined");
@@ -105,10 +111,15 @@ var Desktop = function(){
     };
 
     me.launchUrl = function(config){
-        var label = config.url;
-        var w = Desktop.createWindow(config.label || label);
-        w.setSize(800,600);
-        Applications.loadFrame(config.url,w);
+        if (config.target === "_blank"){
+            window.open(config.url);
+        }else{
+            var label = config.url;
+            var w = Desktop.createWindow(config.label || label);
+            w.setSize(800,600);
+            Applications.loadFrame(config.url,w);
+        }
+
     };
 
     me.removeWindow = function(window){
@@ -241,7 +252,12 @@ var Desktop = function(){
         url = url||"content/default.json";
         FetchService.json(url,function(data){
             data.forEach(function(item){
-                Desktop.createIcon(item);
+                if (item.type === "filesystem"){
+                    FileSystem.mount(item.label,item.volume,item.handler);
+                }else{
+                    Desktop.createIcon(item);
+                }
+
             });
             Desktop.cleanUp();
         });

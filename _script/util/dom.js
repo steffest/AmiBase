@@ -39,13 +39,11 @@ function cleanString(s){
     return s;
 }
 
-function loadScript(src,onload){
+function loadScript(src,onload,onerror){
     var script = document.createElement('script');
     script.src = src;
-    if (onload) {
-        script.onload = onload;
-        //script.onreadystatechange = onload;
-    }
+    if (onload) script.onload = onload;
+    if (onerror) script.onerror = onerror;
     document.body.appendChild(script);
 }
 

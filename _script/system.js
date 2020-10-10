@@ -5,6 +5,29 @@ var System = function(){
     var me = {};
     var libraries = {};
 
+    me.loadEnvironment = function(){
+        return new Promise(function(next){
+            var env = document.location.search;
+            if (env){
+                env = env.substr(1);
+
+                function setEnv(){
+                    console.log("Setting environment to " + env);
+                    if (ENV && ENV.settings){
+                        for (var key in ENV.settings){
+                            Settings[key] = ENV.settings[key];
+                        }
+                    }
+                    next();
+                }
+
+               loadScript("config/" + env + ".js",setEnv, next);
+            }else{
+                next();
+            }
+        });
+    };
+
     me.loadLibrary = function(libraryName,callback){
         return new Promise(function(resolve,reject){
             var next = callback || resolve;

@@ -12,6 +12,23 @@ var MainMenu = function(){
             label:"System",
             items:[
                 {
+                    label:"About",
+                    action: function(){
+                        Desktop.launchProgram({
+                            url: "plugin:notepad",
+                            width: 400,
+                            height: 200,
+                            onload: function(window){
+                                Applications.sendMessage(window,"openfile",{
+                                    type: "file",
+                                    label: "About Amibase",
+                                    url: "content/files/about.txt"
+                                });
+                            }
+                        });
+                    },
+                },
+                {
                     label:"Upload File",
                     action: function(){
                         Desktop.uploadFile();
@@ -43,50 +60,12 @@ var MainMenu = function(){
                     }
                 }
             ]
-        },
-        {
-            label:"item 2",
-            items:[
-                {
-                    label:"subitem 2",
-                    action: function(){
-                        console.error("clicked subitem 2");
-                    }
-                },
-                {
-                    label:"subitem 3",
-                    action: "test2"
-                }
-            ]
-        },
-        {
-            label:"Theme",
-            items:[
-                {
-                    label:"Choice",
-                    action: function(){
-                        Desktop.loadTheme("choice");
-                    }
-                },
-                {
-                    label:"Light",
-                    action: function(){
-                        Desktop.loadTheme("tangerine");
-                    }
-                },
-                {
-                    label:"Dark",
-                    action: function(){
-                        Desktop.loadTheme("dark");
-                    }
-                }
-            ]
         }
     ];
 
     var iconMenu = [
         {
-            label:"icon",
+            label:"Icon",
             items:[
                 {
                     label:"Rename",
@@ -99,27 +78,12 @@ var MainMenu = function(){
                     }
                 }
             ]
-        },
-        {
-            label:"Edit",
-            items:[
-                {
-                    label:"Delete",
-                    action: function(){
-                        console.error("clicked subitem 2");
-                    }
-                },
-                {
-                    label:"Edit",
-                    action: "test2"
-                }
-            ]
         }
     ];
 
     var windowMenu = [
         {
-            label:"window",
+            label:"Window",
             items:[
                 {
                     label:"Cleanup",
@@ -160,21 +124,6 @@ var MainMenu = function(){
                     }
                 },
             ]
-        },
-        {
-            label:"Edit",
-            items:[
-                {
-                    label:"Delete",
-                    action: function(){
-                        console.error("clicked subitem 2");
-                    }
-                },
-                {
-                    label:"Edit",
-                    action: "test2"
-                }
-            ]
         }
     ];
 
@@ -191,6 +140,25 @@ var MainMenu = function(){
         topbar.appendChild(root);
         document.body.appendChild(topbar);
 
+        if (Settings.themes && Settings.themes.length>1){
+            var themes = {
+                label:"Theme",
+                items:[]
+            };
+            Settings.themes.forEach(theme => {
+                themes.items.push({
+                    label: theme.label,
+                    action: function(){
+                        Desktop.loadTheme(theme.name);
+                    }
+                });
+            });
+            mainMenu.push(themes);
+            windowMenu.push(themes);
+            iconMenu.push(themes);
+        }
+
+
         me.setMenu(mainMenu);
 
         EventBus.on(EVENT.ACTIVATE_DESKTOP_ELEMENT,function(){
@@ -200,6 +168,29 @@ var MainMenu = function(){
                     me.setMenu(mainMenu);
                     break;
                 case "icon":
+                    if (focusElement.getConfig().linkedFile){
+                        iconMenu[0].items[1] = {
+                            label:"Download",
+                            action: function(){
+                                var url = FileSystem.getDownloadUrl(focusElement.getConfig().linkedFile);
+                                window.open(url);
+                            }
+                        };
+                        iconMenu[0].items[2] = {
+                            label:"Open In Editor",
+                            action: function(){
+                                Desktop.launchProgram({
+                                    url: "plugin:iconeditor",
+                                    onload: function(window){
+                                        Applications.sendMessage(window,"openfile",focusElement.getConfig());
+                                    }
+                                });
+                            }
+                        }
+                    }else{
+                        iconMenu[0].items[1] = undefined;
+                        iconMenu[0].items[2] = undefined;
+                    }
                     me.setMenu(iconMenu);
                     break;
                 case "window":
@@ -231,7 +222,10 @@ var MainMenu = function(){
     me.setMenu = function(menu,window){
         root.innerHTML = "";
         menu.forEach(function(item){
-            root.appendChild(createMenuItem(item));
+            console.error(item);
+            if (item){
+                root.appendChild(createMenuItem(item));
+            }
         });
         menuActive=false;
         currentMenuTarget = window;
@@ -256,6 +250,9 @@ var MainMenu = function(){
             elm.classList.add("divider");
             return elm;
         }
+        if (struct.disabled){
+            elm.classList.add("disabled");
+        }
 
         elm.innerHTML = "<label>" + struct.label + "</label>";
         elm.onclick = function(){
@@ -265,7 +262,9 @@ var MainMenu = function(){
         if (struct.items){
             var submenu = $div("submenu");
             struct.items.forEach(function(item){
-                submenu.appendChild(createMenuItem(item));
+                if (item){
+                    submenu.appendChild(createMenuItem(item));
+                }
             });
             elm.appendChild(submenu);
             struct.submenu = submenu;

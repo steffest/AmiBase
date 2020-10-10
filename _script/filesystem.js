@@ -35,7 +35,10 @@ var FileSystem = function(){
 
     me.getMount = function(path){
         var volume = me.getVolume(path);
-        return mounts[volume];
+        return mounts[volume] || {
+            name: "http",
+            filesystem: "http"
+        };
     };
 
     me.getVolume = function(path){
@@ -102,8 +105,7 @@ var FileSystem = function(){
                 console.warn("Can't read directory, no handler");
             }
         });
-
-
+        
     };
 
 
@@ -124,7 +126,17 @@ var FileSystem = function(){
                 next(file);
             }else{
                 // can't get file - no handler
-                console.warn("can't get file - no handler");
+                // assume it's http then
+                if (asBinaryStream){
+                    await System.loadLibrary("binaryStream.js");
+                    FetchService.arrayBuffer(path).then(file => {
+                        next(BinaryStream(file,true));
+                    })
+                }else{
+                    FetchService.get(path).then(file => {
+                        next(file);
+                    })
+                }
             }
         });
     };
@@ -134,6 +146,23 @@ var FileSystem = function(){
 
     me.saveFile = function(){
 
+    };
+    
+    me.getDownloadUrl = function(path){
+        var volume = me.getVolume(path);
+        if (volume === "http" || volume === "https"){
+            return path;
+        }
+        if (volume === "amigasys"){
+            // TODO move to amigasys filisystem handler
+            var iconSet = "Dual_png";
+            var theme = User.getTheme();
+            if (theme === "dark_reduced") iconSet = "Color_icon";
+            if (theme === "mui") iconSet = "MUI";
+            var result = path.replace("amigasys:","https://www.stef.be/amiga/ICO/amigasys/icons/48x48/"+iconSet+"/");
+            return result;
+        }
+        return path;
     };
 
     me.copyFile = function(file,fromPath,toPath){
