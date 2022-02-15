@@ -31,17 +31,43 @@ var mediaplayer_plugin_init = function(app){
 
     var menu = [
         {label: "MediaPlayer",items:[{label: "about"}]},
-        {label: "File",items:[{label: "Open"}]},
+        {label: "File",items:[
+                {label: "Open" , action:openFile},
+                {label: "Open Url",action:openUrl}
+            ]},
         {label: "Player",items:[
             {label: "Play",action:function(){Player.play()}},
             {label: "Pause",action:function(){Player.pause()}}
+            ]},
+        {label: "Radio",items:[
+                {label: "Radio XPD",action:function(){
+                    Player.playUrl("http://radio.xpd.co.nz:8000/stream.m3u");
+                    //http://radio.xpd.co.nz:8000/currentsong
+                }},
+                {label: "Modules PL",action:function(){
+                    //Player.playUrl("https://www.amibase.com/stream2");
+                    Player.playUrl("http://radio.modules.pl:8500/;stream/1");
+                    //http://radio.modules.pl:8500/currentsong
+                }},
+                {label: "Ericade",action:function(){
+                    Player.playUrl("https://radio.ericade.net/sc/stream/1/");
+                    //https://radio.ericade.net/lw/leisa-tern/tracks.htm
+                }},
+                {label: "Groove Salad",action:function(){Player.playUrl("https://ice6.somafm.com/groovesalad-128-mp3")}},
+                {label: "Secret Agent",action:function(){Player.playUrl("https://ice4.somafm.com/secretagent-128-mp3")}},
+                {label: "Vuurland",action:function(){Player.playUrl("https://live-radio-cf-vrt.akamaized.net/groupc/live/23384e71-2b6a-43f1-8ad6-02c4ebb8bdf7/live.isml/live-audio=128000.m3u8")}},
+                {label: "Random Chip (Krelez)",action:function(){Player.playUrl("http://79.120.11.40:8000/chiptune.ogg")}},
+                {label: "HyperRadio",action:function(){Player.playUrl("http://hyperadio.ru:8000/live")}},
+                {label: "CVGM.net",action:function(){Player.playUrl("http://69.195.153.34/cvgm192")}},
+                {label: "Nectarine",action:function(){Player.playUrl("https://scenestream.io/necta128.ogg")}},
+                {label: "CGM UKScene",action:function(){Player.playUrl("http://www.lmp.d2g.com:8003/stream")}},
             ]},
         {label: "Skin",items:[
                 {label: "Bassoon",action:function(){loadSkin('Bassoon')}},
                 {label: "Winamp 4",action:function(){loadSkin('winamp4')}},
                 {label: "Choice",action:function(){loadSkin('choice')}}
             ]},
-        {label: "Visulisation",items:[
+        {label: "Visualisation",items:[
                 {label: "Show",action:function(){showVis()}},
                 {label: "Hide",action:function(){hideVis()}}
             ]},
@@ -235,6 +261,17 @@ var mediaplayer_plugin_init = function(app){
             case "close":
                 app.close();
                 break;
+        }
+    }
+
+    function openFile(){
+       System.requestFile();
+    }
+
+    function openUrl(){
+        let url = prompt("Url:","http://radio.xpd.co.nz:8000/stream.m3u");
+        if (url){
+            Player.playUrl(url);
         }
     }
 
@@ -448,6 +485,10 @@ var mediaplayer_plugin_init = function(app){
             me.stop();
             player = htmlAudioPlayer;
             //player = libOpenMPTPlayer;
+            var extention = src.split(".").pop().toLowerCase();
+            if (extention === "m3u8"){
+                player = HlsAudioPlayer;
+            }
             player.setSrc(src);
             me.play();
         };
@@ -754,6 +795,118 @@ var mediaplayer_plugin_init = function(app){
         }
 
         return me;
+    }();
+
+    var HlsAudioPlayer = function(){
+        var me = {};
+
+        var audio; // which is in fact a video element ...
+        var initDone;
+        var source;
+
+        var init = function(next){
+            if (!initDone){
+                loadScript("plugins/mediaplayer/players/hls.js",function(){
+
+                    audio = mediaplayer.querySelector("video");
+                    if (!audio){
+                        audio = document.createElement("video");
+                        mediaplayer.appendChild(audio);
+                    }
+
+                    source = audioContext.createMediaElementSource(audio);
+
+
+                    initDone = true;
+                    if (next) next();
+                });
+            }else{
+                if (next) next();
+            }
+        }
+
+        me.setSrc = function(src){
+            init(function(){
+                if (Hls.isSupported()) {
+                    console.log('HLS is supported');
+                    const hls = new Hls({
+                        autoStartLoad: true,
+                        debug: true,
+                        enableWorker: true,
+                        enableStreaming: true,
+                    });
+
+                    hls.loadSource(src);
+                    hls.attachMedia(audio);
+
+                    hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                        console.log('manifest parsed');
+                        audio.play();
+                        source.connect(analyser);
+                    });
+
+                    hls.on(Hls.Events.ERROR, function (event, data) {
+                        if (data.fatal) {
+                            switch(data.type) {
+                                case Hls.ErrorTypes.NETWORK_ERROR:
+                                    // try to recover network error
+                                    console.log("fatal network error encountered, try to recover");
+                                    hls.startLoad();
+                                    break;
+                                case Hls.ErrorTypes.MEDIA_ERROR:
+                                    console.log("fatal media error encountered, try to recover");
+                                    hls.recoverMediaError();
+                                    break;
+                                default:
+                                    // cannot recover
+                                    // hls.destroy();
+                                    console.error('CAT NOT RECOVER', data.type);
+                                    break;
+                            }
+                        }
+                    });
+
+
+
+                }else{
+                    console.log('HLS not supported');
+                }
+            });
+        }
+
+        me.play = function(){
+            if (audio) audio.play();
+        };
+
+        me.pause = function(){
+            if (audio) audio.pause();
+        };
+
+        me.stop = function(){
+            if (audio) audio.pause();
+            if (source) source.disconnect();
+        };
+
+        me.setPosition = function(pos){
+            if (audio) audio.currentTime = pos*audio.duration;
+        };
+
+        me.setVolume = function(vol){
+            if (audio) audio.volume = vol;
+        };
+        me.setMute = function(muted){
+            if (audio) audio.muted = muted;
+        };
+        me.getCurrentTime = function(){
+            return audio?audio.currentTime:0;
+        };
+        me.getDuration = function(){
+            return audio?audio.duration:0;
+        };
+
+        return me;
+
+
     }();
 
 
