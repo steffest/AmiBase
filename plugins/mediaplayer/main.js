@@ -1,12 +1,10 @@
-var mediaplayer_plugin_init = function(app){
-    console.log("mediaplayer here");
+import {$div, loadCss} from "../../_script/util/dom.js";
+import fetchService from "../../_script/util/fetchService.js";
+import ui from "../../_script/ui/ui.js";
 
-    Applications.registerApplicationActions("mediaplayer",{
-        "openfile": handleFile,
-        "dropfile": handleDropFile
-    });
+let MediaPlayer = function(){
+    let me = {};
 
-    var inner = app.getInner();
     var audioContext;
     var dataArray;
     var analyser;
@@ -18,16 +16,38 @@ var mediaplayer_plugin_init = function(app){
     var isPlaying;
     var visActive;
     var progressDrag, volumeDrag;
-    inner.innerHTML = "";
-    var mediaplayer = $div("mediaplayer");
-    inner.appendChild(mediaplayer);
     var skinLoaded;
     var currentData;
-
     var buttons={};
-    setupAudio();
-    loadSkin();
+    var mediaplayer;
+    let currentApp;
 
+    function setup(){
+        mediaplayer = $div("mediaplayer");
+    }
+
+    me.init = function (app,context) {
+        console.log("mediaplayer here");
+
+        if (context && context.registerApplicationActions) context.registerApplicationActions("mediaplayer",{
+            "openfile": handleFile,
+            "dropfile": handleDropFile
+        });
+
+        var inner = app.getInner();
+        inner.innerHTML = "";
+        currentApp = app;
+
+        if (!mediaplayer){
+            setup();
+        }
+        inner.appendChild(mediaplayer);
+        if (!audioContext) setupAudio();
+        loadSkin();
+
+        app.setMenu(menu,true);
+        if (app.onload) app.onload(app);
+    }
 
     var menu = [
         {label: "MediaPlayer",items:[{label: "about"}]},
@@ -36,31 +56,31 @@ var mediaplayer_plugin_init = function(app){
                 {label: "Open Url",action:openUrl}
             ]},
         {label: "Player",items:[
-            {label: "Play",action:function(){Player.play()}},
-            {label: "Pause",action:function(){Player.pause()}}
+                {label: "Play",action:function(){Player.play()}},
+                {label: "Pause",action:function(){Player.pause()}}
             ]},
         {label: "Radio",items:[
-                {label: "Radio XPD",action:function(){
-                    Player.playUrl("http://radio.xpd.co.nz:8000/stream.m3u");
-                    //http://radio.xpd.co.nz:8000/currentsong
-                }},
+                {label: "Radio XPD",action:function(){Player.playUrl("http://radio.xpd.co.nz:8000/stream.m3u");}},
                 {label: "Modules PL",action:function(){
-                    //Player.playUrl("https://www.amibase.com/stream2");
-                    Player.playUrl("http://radio.modules.pl:8500/;stream/1");
-                    //http://radio.modules.pl:8500/currentsong
-                }},
+                        //Player.playUrl("https://www.amibase.com/stream2");
+                        Player.playUrl("http://radio.modules.pl:8500/;stream/1");
+                        //http://radio.modules.pl:8500/currentsong
+                    }},
                 {label: "Ericade",action:function(){
-                    Player.playUrl("https://radio.ericade.net/sc/stream/1/");
-                    //https://radio.ericade.net/lw/leisa-tern/tracks.htm
-                }},
+                        Player.playUrl("https://radio.ericade.net/sc/stream/1/");
+                        //https://radio.ericade.net/lw/leisa-tern/tracks.htm
+                    }},
                 {label: "Groove Salad",action:function(){Player.playUrl("https://ice6.somafm.com/groovesalad-128-mp3")}},
                 {label: "Secret Agent",action:function(){Player.playUrl("https://ice4.somafm.com/secretagent-128-mp3")}},
                 {label: "Vuurland",action:function(){Player.playUrl("https://live-radio-cf-vrt.akamaized.net/groupc/live/23384e71-2b6a-43f1-8ad6-02c4ebb8bdf7/live.isml/live-audio=128000.m3u8")}},
                 {label: "Random Chip (Krelez)",action:function(){Player.playUrl("http://79.120.11.40:8000/chiptune.ogg")}},
-                {label: "HyperRadio",action:function(){Player.playUrl("http://hyperadio.ru:8000/live")}},
+                //{label: "HyperRadio",action:function(){Player.playUrl("http://hyperadio.ru:8000/live")}},
                 {label: "CVGM.net",action:function(){Player.playUrl("http://69.195.153.34/cvgm192")}},
                 {label: "Nectarine",action:function(){Player.playUrl("https://scenestream.io/necta128.ogg")}},
                 {label: "CGM UKScene",action:function(){Player.playUrl("http://www.lmp.d2g.com:8003/stream")}},
+                {label: "Crooze Chillout",action:function(){Player.playUrl("http://streams.crooze.fm:8006/stream128")}},
+                {label: "FG Chic",action:function(){Player.playUrl("https://stream.rcs.revma.com/cgvrymb6p98uv")}},
+                {label: "FG Zen",action:function(){Player.playUrl("https://stream.rcs.revma.com/ffynknv9n98uv")}},
             ]},
         {label: "Skin",items:[
                 {label: "Bassoon",action:function(){loadSkin('Bassoon')}},
@@ -73,7 +93,7 @@ var mediaplayer_plugin_init = function(app){
             ]},
     ];
 
-    app.setMenu(menu,true);
+
 
 
     function handleDropFile(data,useAttachment){
@@ -83,29 +103,24 @@ var mediaplayer_plugin_init = function(app){
             var config = data.getConfig();
             if (config.url && !useAttachment){
                 handleFile(config);
-            }else{
-                data.getAttachment(function(fileInfo){
-                    console.error(fileInfo);
-                    if (fileInfo.file){
-                        Player.playFile(fileInfo.file,fileInfo.filetype);
-                    }else{
-                        console.warn("Can't play file, no data found");
-                    }
+            }else if (data.attachment){
+                FileSystem.getFile(data.attachment,true).then(file=>{
+                    Player.playFile(file,data.attachment.filetype);
                 })
             }
         }
     }
 
-    function handleFile(attachment){
-        console.log("mediaplayer open file");
-        if (attachment.file){
-            Player.playFile(attachment.file);
-        }else if(attachment.url){
-            Player.playUrl(attachment.url);
+    function handleFile(file){
+        console.log("mediaplayer open file",file);
+        if (file.binary){
+            Player.playFile(file.binary);
+        }else if(file.url){
+            Player.playUrl(file.url);
             //window.setContent(img);
-            if (attachment.label) app.setCaption(attachment.label);
+            if (file.label) app.setCaption(file.label);
         }else{
-            console.warn("unknown structure",attachment);
+            console.warn("unknown structure",file);
         }
     }
 
@@ -113,19 +128,19 @@ var mediaplayer_plugin_init = function(app){
         name=name||"winamp4";
         console.log("loading Mediaplayer skin " + name);
         var path = "plugins/mediaplayer/skins/" + name + "/";
-        FetchService.json(path + "skin.json",function (config) {
+        fetchService.json(path + "skin.json",function (config) {
             Object.keys(buttons).forEach(function(button){
                 buttons[button].remove();
             });
             buttons={};
             var remove = [];
             mediaplayer.classList.forEach(function(className){
-               if (className.indexOf("skin_")===0) remove.push(className);
+                if (className.indexOf("skin_")===0) remove.push(className);
             });
             remove.forEach(className => mediaplayer.classList.remove(className));
             mediaplayer.classList.add("skin_" + name);
 
-            app.setSize(config.width,config.height);
+            currentApp.setSize(config.width,config.height);
             loadCss(path + "skin.css");
             config.items.forEach(function(item){
                 createButton(item,config.addClassName);
@@ -155,7 +170,7 @@ var mediaplayer_plugin_init = function(app){
                         Player.setPosition(pos);
                     }
                 };
-                UI.enableDrag(progressDrag);
+                ui.enableDrag(progressDrag);
             }
             if (buttons.volume){
                 volumeDrag = {
@@ -173,7 +188,7 @@ var mediaplayer_plugin_init = function(app){
                         Player.setVolume(pos);
                     }
                 };
-                UI.enableDrag(volumeDrag);
+                ui.enableDrag(volumeDrag);
             }
             Player.setVolume(0.7,true);
 
@@ -259,13 +274,13 @@ var mediaplayer_plugin_init = function(app){
                 }
                 break;
             case "close":
-                app.close();
+                currentApp.close();
                 break;
         }
     }
 
     function openFile(){
-       System.requestFile();
+        system.requestFile();
     }
 
     function openUrl(){
@@ -305,86 +320,86 @@ var mediaplayer_plugin_init = function(app){
     }
 
     function updateAnalyser(){
-       if (analyserConfig){
-           ctx.clearRect(0,0,analyserCanvas.width,analyserCanvas.height);
-           if (analyserMode === "wave"){
-               analyser.fftSize = analyserConfig.wave.fftSize;
-               var bufferLength = analyser.fftSize;
-               var dataArray = new Uint8Array(bufferLength);
+        if (analyserConfig){
+            ctx.clearRect(0,0,analyserCanvas.width,analyserCanvas.height);
+            if (analyserMode === "wave"){
+                analyser.fftSize = analyserConfig.wave.fftSize;
+                var bufferLength = analyser.fftSize;
+                var dataArray = new Uint8Array(bufferLength);
 
 
-               function drawWave(color,lineWidth) {
-                   analyser.getByteTimeDomainData(dataArray);
+                function drawWave(color,lineWidth) {
+                    analyser.getByteTimeDomainData(dataArray);
 
-                   ctx.lineWidth = lineWidth;
-                   //ctx.strokeStyle = 'rgba(120, 255, 50, 0.5)';
-                   ctx.strokeStyle = color;
-                   ctx.beginPath();
-                   var sliceWidth = analyserConfig.width * 1.0 / bufferLength;
-                   var wx = 0;
+                    ctx.lineWidth = lineWidth;
+                    //ctx.strokeStyle = 'rgba(120, 255, 50, 0.5)';
+                    ctx.strokeStyle = color;
+                    ctx.beginPath();
+                    var sliceWidth = analyserConfig.width * 1.0 / bufferLength;
+                    var wx = 0;
 
-                   for(var i = 0; i < bufferLength; i++) {
-                       var v = dataArray[i] / 128.0;
-                       var wy = v * analyserConfig.height/2;
+                    for(var i = 0; i < bufferLength; i++) {
+                        var v = dataArray[i] / 128.0;
+                        var wy = v * analyserConfig.height/2;
 
-                       if(i === 0) {
-                           ctx.moveTo(wx, wy);
-                       } else {
-                           ctx.lineTo(wx, wy);
-                       }
+                        if(i === 0) {
+                            ctx.moveTo(wx, wy);
+                        } else {
+                            ctx.lineTo(wx, wy);
+                        }
 
-                       wx += sliceWidth;
-                   }
+                        wx += sliceWidth;
+                    }
 
-                   ctx.lineTo(analyserConfig.width, analyserConfig.height/2);
-                   ctx.stroke();
+                    ctx.lineTo(analyserConfig.width, analyserConfig.height/2);
+                    ctx.stroke();
 
-                   updateVis(dataArray,bufferLength);
+                    updateVis(dataArray,bufferLength);
 
-                   //me.parentCtx.drawImage(me.canvas,me.left, me.top);
-               }
-               if (analyserConfig.wave.color2) drawWave(analyserConfig.wave.color2,6);
-               drawWave(analyserConfig.wave.color,2);
-               requestAnimationFrame(updateAnalyser);
+                    //me.parentCtx.drawImage(me.canvas,me.left, me.top);
+                }
+                if (analyserConfig.wave.color2) drawWave(analyserConfig.wave.color2,6);
+                drawWave(analyserConfig.wave.color,2);
+                requestAnimationFrame(updateAnalyser);
 
 
-           }
+            }
 
-           if (analyserMode === "bar"){
-               analyser.fftSize = analyserConfig.bar.fftSize || 128;
-               var bufferLength = analyser.frequencyBinCount;
-               dataArray = new Uint8Array(bufferLength);
+            if (analyserMode === "bar"){
+                analyser.fftSize = analyserConfig.bar.fftSize || 128;
+                var bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
 
-               analyser.getByteFrequencyData(dataArray);
-               var barWidth = analyserConfig.bar.width;
-               var barHeight = analyserConfig.height;
-               var barGap = analyserConfig.bar.gap;
-               var dataOffset = 10;
-               var offsetLeft = analyserConfig.bar.offsetLeft || 0;
-               var max = analyserConfig.bar.count+dataOffset-1;
+                analyser.getByteFrequencyData(dataArray);
+                var barWidth = analyserConfig.bar.width;
+                var barHeight = analyserConfig.height;
+                var barGap = analyserConfig.bar.gap;
+                var dataOffset = 10;
+                var offsetLeft = analyserConfig.bar.offsetLeft || 0;
+                var max = analyserConfig.bar.count+dataOffset-1;
 
-               if (isPlaying){
-                   for (var i = 0; i<max; i++){
-                       var v = Math.ceil((dataArray[i+dataOffset] / 255) * barHeight);
-                       var top = barHeight-v;
-                       var x = offsetLeft + (i*(barWidth+barGap));
-                       ctx.fillStyle = analyserConfig.bar.color;
-                       ctx.fillRect(x,top, barWidth, v);
+                if (isPlaying){
+                    for (var i = 0; i<max; i++){
+                        var v = Math.ceil((dataArray[i+dataOffset] / 255) * barHeight);
+                        var top = barHeight-v;
+                        var x = offsetLeft + (i*(barWidth+barGap));
+                        ctx.fillStyle = analyserConfig.bar.color;
+                        ctx.fillRect(x,top, barWidth, v);
 
-                       if (analyserConfig.bar.colorPeak){
-                           var p = Math.max(analyserPeak[i] || 0,v);
-                           ctx.fillStyle = analyserConfig.bar.colorPeak;
-                           ctx.fillRect(x,barHeight-p, barWidth, 2);
-                           analyserPeak[i] = p-0.1;
-                       }
-                   }
-                   updateVis(dataArray,bufferLength);
-                   requestAnimationFrame(updateAnalyser);
-               }
-           }
-       }else{
-           requestAnimationFrame(updateAnalyser);
-       }
+                        if (analyserConfig.bar.colorPeak){
+                            var p = Math.max(analyserPeak[i] || 0,v);
+                            ctx.fillStyle = analyserConfig.bar.colorPeak;
+                            ctx.fillRect(x,barHeight-p, barWidth, 2);
+                            analyserPeak[i] = p-0.1;
+                        }
+                    }
+                    updateVis(dataArray,bufferLength);
+                    requestAnimationFrame(updateAnalyser);
+                }
+            }
+        }else{
+            requestAnimationFrame(updateAnalyser);
+        }
     }
 
     function updateProgressBar(left){
@@ -471,10 +486,10 @@ var mediaplayer_plugin_init = function(app){
             // TODO: make proper filetype handler
             list = list.split('\n');
             list.forEach(item=>{
-               if (item.indexOf("File1=")===0){
-                   var url = item.split("=")[1].trim();
-                   me.playUrl(url);
-               }
+                if (item.indexOf("File1=")===0){
+                    var url = item.split("=")[1].trim();
+                    me.playUrl(url);
+                }
             });
 
 
@@ -915,13 +930,13 @@ var mediaplayer_plugin_init = function(app){
         var initDone;
         var player;
         var masterVolume;
-        
+
         me.init = function(next){
             if (initDone){
                 next();
             }else{
                 masterVolume = audioContext.createGain();
-                
+
                 System.loadScripts("plugins/mediaplayer/players/openmpt/",["chiptune2.js","libopenmpt.js"],function(){
                     libopenmpt.onRuntimeInitialized = _ =>
                     {
@@ -937,9 +952,9 @@ var mediaplayer_plugin_init = function(app){
                             player.stop();
                             //playPauseButton();
                         }
-                        
-                        
-                        path = "plugins/mediaplayer/players/openmpt/test.mod";
+
+
+                        let path = "plugins/mediaplayer/players/openmpt/test.mod";
                         player.load(path, function(buffer) {
                             console.error(buffer);
                             //document.getElementById('play').innerHTML = "Pause";
@@ -953,27 +968,29 @@ var mediaplayer_plugin_init = function(app){
                 });
             }
         };
-        
+
         me.setSrc=function(){
             me.init();
         };
-        
+
         me.play = function(){
             masterVolume.connect(analyser);
             player.togglePause();
         };
-        
+
         me.pause = function(){
             player.togglePause();
         };
-        
+
         me.stop = function(){
             masterVolume.disconnect();
         };
-        
+
         return me;
     }();
 
-    if (app.onload) app.onload(app);
+    return me;
 
 };
+
+export default MediaPlayer();

@@ -19,4 +19,6 @@ var Input = function(){
     }
 
     return me;
-}();
+};
+
+export default Input();

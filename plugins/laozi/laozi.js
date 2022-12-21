@@ -1,3 +1,7 @@
+import fileSystem from "../../../_script/system/filesystem.js";
+import fetchService from "../../../_script/util/fetchService.js";
+import BinaryStream from "../../binaryStream/binaryStream.js";
+
 var Laozi = async function() {
     var me = {};
 
@@ -6,34 +10,49 @@ var Laozi = async function() {
     var {default: api} = await import("./api.js");
 
 
-    me.getDirectory = async function(path,_next){
+    me.getDirectory = async function(folder,_next){
+        var path = folder.path;
+
         return new Promise((resolve,reject) => {
             var next = _next || resolve;
             path = getFilePath(path);
-            FetchService.json(endPoint + "file/" + path,function(data){
+            fetchService.json(endPoint + "file/" + path,function(data){
+                var directories = [];
+                var files = [];
+                data.result.directories.forEach(dir=>{
+                    directories.push({name:dir})
+                });
+                data.result.files.forEach(file=>{
+                    files.push({name:file})
+                });
+
                 next({
-                    directories: data.result.directories,
-                    files:data.result.files
+                    directories: directories,
+                    files:files
                 });
             });
         });
     };
 
-    me.getFile = function(path,asBinaryStream){
+    me.readFile = function(file,binary){
         return new Promise((next) => {
-            var url = me.getFileUrl(path);
+            var url = me.getFileUrl(file.path);
             console.log("Get File", url);
-            if (asBinaryStream){
-                FetchService.arrayBuffer(url).then(file => {
-                    next(BinaryStream(file,true));
+            if (binary){
+                fetchService.arrayBuffer(url).then(_file => {
+                    next(BinaryStream(_file,true));
                 })
             }else{
-                FetchService.get(url).then(file => {
-                    next(file);
+                fetchService.get(url).then(_file => {
+                    next(_file);
                 })
             }
         });
     };
+
+    me.isReadOnly = (file)=>{
+        return false;
+    }
 
     me.getFileUrl = function(path){
         path = getFilePath(path);
@@ -44,7 +63,7 @@ var Laozi = async function() {
         return new Promise((resolve,reject) => {
             var next = _next || resolve;
             path = getFilePath(path);
-            FetchService.json(endPoint + "file/createdirectory/" + path + "/" + name,function(data){
+            fetchService.json(endPoint + "file/createdirectory/" + path + "/" + name,function(data){
                 console.log(data);
                 next();
             });
@@ -55,7 +74,7 @@ var Laozi = async function() {
         return new Promise((next) => {
             fromPath = getFilePath(fromPath);
             toPath = getFilePath(toPath);
-            FetchService.json(endPoint + "file/move/" + fromPath + "?to=" + toPath,function(data){
+            fetchService.json(endPoint + "file/move/" + fromPath + "?to=" + toPath,function(data){
                 console.log(data);
                 next();
             });
@@ -65,9 +84,20 @@ var Laozi = async function() {
     me.renameFile = function(path,newName){
         return new Promise((next) => {
             path = getFilePath(path);
-            FetchService.json(endPoint + "file/rename/" + path + "?name=" + newName,function(data){
+            fetchService.json(endPoint + "file/rename/" + path + "?name=" + newName,function(data){
                 console.log(data);
                 next();
+            });
+        });
+    };
+
+    me.writeFile = function(path,content){
+        return new Promise((next) => {
+            path = getFilePath(path);
+            let data = {editorcontent:content};
+            console.error(data);
+            fetchService.post(endPoint + "file/update/" + path,data ,function(data){
+                next(data);
             });
         });
     };
@@ -79,13 +109,11 @@ var Laozi = async function() {
             file.getAttachment((attachment) => {
                 var b = new Blob([attachment.file.buffer], {type: "application/octet-stream"});
                 data.append('files[]', b, attachment.file.name);
-                FetchService.sendBinary(endPoint + "file/uploadfile/" + path,data,function(data){
+                fetchService.sendBinary(endPoint + "file/uploadfile/" + path,data,function(data){
                     console.log(data);
                     next();
                 });
             });
-
-
         });
     };
 
@@ -99,8 +127,10 @@ var Laozi = async function() {
         return path;
     }
 
-    FileSystem.register("laozi",me);
+    fileSystem.register("laozi",me);
 
     return me;
 
-}();
+};
+
+export default Laozi();

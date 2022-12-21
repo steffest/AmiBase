@@ -1,4 +1,5 @@
-var User = function(){
+import settings from "./settings.js";
+let User = function(){
     var me = {};
 
     me.storeSetting = function(key,value){
@@ -15,17 +16,19 @@ var User = function(){
     };
 
     me.getTheme = function(){
-        var theme = me.getSetting("theme") || Settings.defaultTheme;
-        if (Settings.themes && Settings.themes.length){
+        var theme = me.getSetting("theme") || settings.defaultTheme;
+        if (settings.themes && settings.themes.length){
             var exists = false;
-            Settings.themes.forEach(function(_theme){
+            settings.themes.forEach(function(_theme){
                 if (_theme.name === theme) exists = true;
             });
-            if (!exists) theme = Settings.defaultTheme || Settings.themes[0];
+            if (!exists) theme = settings.defaultTheme || settings.themes[0];
         }
         return theme;
     };
 
 
     return me;
-}();
+};
+
+export default User();

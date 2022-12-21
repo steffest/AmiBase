@@ -1,4 +1,12 @@
-var AmiWindow = function(config){
+import {uuid, $div} from "../util/dom.js";
+import ui from "./ui.js";
+import amiIcon from "./icon.js";
+import desktop from "./desktop.js";
+import mouse from "./mousepointer.js";
+import mainMenu from "./mainmenu.js";
+import fileSystem from "../system/filesystem.js";
+
+let AmiWindow = function(config){
     if (typeof config === "string") config={
         caption: config
     };
@@ -9,14 +17,15 @@ var AmiWindow = function(config){
         zIndex: 0,
     };
 
-    config.caption = config.caption||config.label;
-
+    config.caption = config.caption||config.label||config.name;
+    
     var icons = [];
     var menu;
     var selectBox;
     var borderLess = (typeof config.border === "boolean" && !config.border);
     var gridWidth= 70;
     var gridHeight= 70;
+    var view = "icon";
 
     var window = $div("window",me.id);
     window.style.zIndex = me.zIndex;
@@ -25,9 +34,16 @@ var AmiWindow = function(config){
     var inner = $div("inner innerwindow");
     var sizer = $div("sizer");
     var close = $div("close");
+    var maximize = $div("button maximize");
+    var viewButton = $div("button view");
+    var menuButton = $div("button menu");
     selectBox = $div("selectBox");
+    var sideBar;
 
     windowBar.appendChild(close);
+    windowBar.appendChild(maximize);
+    //windowBar.appendChild(viewButton);
+    //windowBar.appendChild(menuButton);
     if (!borderLess) window.appendChild(windowBar);
     window.appendChild(inner);
     if (!borderLess) window.appendChild(sizer);
@@ -36,10 +52,22 @@ var AmiWindow = function(config){
     if (borderLess){
         window.classList.add("borderless");
     }
+    if (config.autogrid)  window.classList.add("autogrid");
 
-    close.onclick = function(){
+    ui.onClick(close,function(){
         me.close();
-    };
+    });
+
+    ui.onClick(maximize,function(){
+        me.maximize();
+        me.cleanUp();
+    });
+
+    ui.onClick(menuButton,function(){
+        window.classList.toggle("listview");
+        view = window.classList.contains("listview") ? "list" : "icon";
+        me.refresh();
+    });
 
     me.getInner = function(){
         return inner;
@@ -51,16 +79,33 @@ var AmiWindow = function(config){
     };
 
     me.close = function(){
-        Desktop.removeWindow(me);
+        if (me.onClose) me.onClose();
+        desktop.removeWindow(me);
+    };
+
+    me.maximize = function(){
+        if (me.left === 0 && me.prevDimensions){
+            me.setPosition(me.prevDimensions.left,me.prevDimensions.top);
+            me.setSize(me.prevDimensions.width,me.prevDimensions.height);
+        }else{
+            me.prevDimensions = {
+                left: me.left,
+                top: me.top,
+                width: me.width,
+                height: me.height
+            }
+            me.setPosition(0,22);
+            me.setSize(desktop.width,desktop.height-22);
+        }
     };
 
     me.createIcon = function(config){
-        var icon = AmiIcon(config);
+        var icon = amiIcon(config);
         return me.addIcon(icon);
     };
 
     me.removeIcon = function(icon){
-        var index = icons.findIndex(function(item){return item.id === icon.id});
+        var index = icons.findIndex(function(item){return item?item.id === icon.id:false});
         if (index>=0){
             icons.splice(index,1);
         }
@@ -80,12 +125,55 @@ var AmiWindow = function(config){
         me.cleanUp();
     };
 
+    me.setAutoGrid = function(state){
+        if (state){
+            window.classList.add('autogrid');
+        }else{
+            window.classList.remove('autogrid');
+        }
+    };
+
+    me.reOrderIcon = function(item,x,y){
+        //console.error(item.startLeft + x);
+        var index = icons.findIndex(function(a){
+            return a ? a.id === item.id : false;
+        })
+
+        var left= 10 + (config.paddingLeft || 0);
+        var top= 20 + (config.paddingTop || 0);
+
+        var col = Math.floor((x - me.left)/gridWidth);
+        var row = Math.floor((y - me.top)/gridHeight);
+        var colCount = Math.floor((me.width-left)/gridWidth)
+        var newIndex = row*colCount + col;
+        if (index !== newIndex){
+            array_move(icons,index,newIndex);
+            me.cleanUp();
+        }
+        //console.error(col);
+
+        //console.error(x - me.left);
+
+        function array_move(arr, old_index, new_index) {
+            if (new_index >= arr.length) {
+                var k = new_index - arr.length + 1;
+                while (k--) {
+                    arr.push(undefined);
+                }
+            }
+            arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
+            return arr; // for testing
+        }
+    }
+
     me.cleanUp = function(){
         var left= 10 + (config.paddingLeft || 0);
         var top= 20 + (config.paddingTop || 0);
 
         var h = (me.height||350) - gridHeight;
         var w = (me.width||inner.offsetWidth||500) - gridWidth;
+
+        if (window.classList.contains("sidebar")) w-=200;
 
         var fill = "horizontal";
         if (me.type === "desktop"){
@@ -94,20 +182,24 @@ var AmiWindow = function(config){
 
         if (fill === "horizontal"){
             icons.forEach(function(icon){
-                icon.setPosition(left,top);
-                left += gridWidth;
-                if (left>w){
-                    top+=gridHeight;
-                    left = 10 + (config.paddingLeft || 0);
+                if (icon){
+                    icon.setPosition(left,top);
+                    left += gridWidth;
+                    if (left>w){
+                        top+=gridHeight;
+                        left = 10 + (config.paddingLeft || 0);
+                    }
                 }
             })
         }else{
             icons.forEach(function(icon){
-                icon.setPosition(left,top);
-                top += gridHeight;
-                if (left>w){
-                    top+=gridHeight;
-                    left = 10 + (config.paddingLeft || 0);
+                if (icon){
+                    icon.setPosition(left,top);
+                    top += gridHeight;
+                    if (left>w){
+                        top+=gridHeight;
+                        left = 10 + (config.paddingLeft || 0);
+                    }
                 }
             })
         }
@@ -120,7 +212,7 @@ var AmiWindow = function(config){
     me.getSelectedIcons = function(){
         var result = [];
         icons.forEach(function(icon){
-            if (icon.isActive()) result.push(icon);
+            if (icon && icon.isActive()) result.push(icon);
         });
         return result;
     };
@@ -173,7 +265,7 @@ var AmiWindow = function(config){
     };
 
     me.setDropTarget = function(target){
-        UI.enableDrop(target,function(droppedItems,deltaX,deltaY){
+        ui.enableDrop(target,function(droppedItems,deltaX,deltaY){
             droppedItems.forEach(function(item){
                 var left = item.left + deltaX;
                 var top = item.top + deltaY;
@@ -181,6 +273,7 @@ var AmiWindow = function(config){
                 if (item.parent.id === me.id){
                     // move inside parent
                     doMove = true;
+                    if (window.classList.contains("autogrid")) doMove = false;
                 }else{
                     // drop in other window
                     if (me.isApplication){
@@ -194,7 +287,7 @@ var AmiWindow = function(config){
 
                         // propagate action to window handler
                         if (config.path){
-                            FileSystem.moveFile(item,oldPath,config.path)
+                            fileSystem.moveFile(item,oldPath,config.path)
                         }
 
                         item.parent.removeIcon(item);
@@ -224,6 +317,50 @@ var AmiWindow = function(config){
             //me.activate();
         });
     };
+    
+    me.refresh = function(){
+        //window.classList.
+
+        var top = 0;
+        
+        if (view === "list"){
+            icons.forEach(function(icon){
+                icon.setListPosition(top);
+                top += 20;
+            });
+        }
+
+        if (view === "icon"){
+            icons.forEach(function(icon){
+                icon.setPosition(icon.left,icon.top);
+            });
+        }
+        
+    }
+    
+    me.showSideBar = function(content){
+        if (!sideBar){
+            sideBar = $div("sideBar");
+            window.appendChild(sideBar);
+        }
+
+        sideBar.innerHTML = "";
+        if (content){
+            sideBar.appendChild(content);
+        }
+
+        setTimeout(function(){
+            window.classList.add("sidebar");
+        },10);
+
+
+
+
+    }
+    
+    me.hideSideBar = function(){
+        window.classList.remove("sidebar");
+    }
 
 
 
@@ -253,8 +390,8 @@ var AmiWindow = function(config){
 
         me.setSize = function(width,height,fitOnScreen){
             if (fitOnScreen){
-                var dw = Desktop.width-100;
-                var dh = Desktop.height-100;
+                var dw = desktop.width-100;
+                var dh = desktop.height-100;
                 if ((width>dw) || (height>dh)){
                     var ratio = Math.min(dw/width,dh/height);
                     width *= ratio;
@@ -273,7 +410,7 @@ var AmiWindow = function(config){
         };
 
         me.moveToTop = function(){
-            var zIndex = Desktop.getTopZindex();
+            var zIndex = desktop.getTopZindex();
             if (zIndex>me.zIndex){
                 me.setIndex(zIndex+1);
             }
@@ -284,7 +421,7 @@ var AmiWindow = function(config){
             window.classList.remove("inactivecontent");
             if (!soft){
                 me.moveToTop();
-                Desktop.setFocusElement(me);
+                desktop.setFocusElement(me);
             }
         };
 
@@ -292,7 +429,7 @@ var AmiWindow = function(config){
             window.classList.add("inactive");
 
             icons.forEach(function(icon){
-                icon.deActivate();
+                if (icon) icon.deActivate();
             });
         };
 
@@ -312,11 +449,25 @@ var AmiWindow = function(config){
 
         me.setMenu = function(_menu,apply){
             menu = _menu;
-            if (apply) MainMenu.setMenu(menu);
+            if (apply) mainMenu.setMenu(menu);
         };
 
         me.getMenu = function(){
             return menu;
+        };
+
+        me.setMenuItem = function(id,label,enabled){
+            function scan(tree){
+                tree.forEach(branch=>{
+                    if (branch.id === id){
+                        if (label) branch.label = label;
+                        if (typeof enabled === "boolean") branch.disabled = !enabled;
+                    }
+                    if (branch.items) scan(branch.items);
+                })
+            }
+            scan(menu);
+            mainMenu.setMenuItem(id,label,enabled);
         };
 
         me.getConfig = function(){
@@ -332,36 +483,54 @@ var AmiWindow = function(config){
         };
 
         // send a message to the inner frame of the window
-        me.sendMessage = function(message,data){
+        me.sendMessage = async function(message,data){
             if (me.messageTarget){
                 var messageData;
-                var doSend = true;
                 console.log("messagedata",data);
+                
                 if (data){
                     if (data.type === "icon"){
-                        doSend=false;
-                        data.getAttachment(function(attachment){
-                            if (attachment){
-                                messageData = {
-                                    filename: attachment.file.name,
-                                    data: attachment.file.buffer
-                                };
-                            }
-                            send();
-                        });
+                        // TODO
+                        console.error("Rework!")
                     }
+                    
+                   
+                    if (data.type === "file"){
+                        messageData = {
+                            filename: data.name,
+                            path: data.path,
+                            attachment: data.attachment,
+                            url: data.url
+                        };
+                        
+                        // TODO: only load when no HTTP is available
+                        // and only when data is not loaded yet
+
+                        if (!messageData.url && !data.data){
+                            messageData.data = await fileSystem.getFile(data);
+                            // make sure it's an arraybuffer
+                            if (messageData.data.buffer)  messageData.data = messageData.data.buffer;
+                        }
+                     }
+                        
+                    // TODO: do we still this data file and buffer
+                    /*
                     if (data.type === "file" && data.file){
                         messageData = {
                             filename: data.file.name,
                             data: data.file.buffer
                         };
                     }
+                    */
 
                     if (!messageData){
                         // we can't send functions or circular structures to another frame;
                         messageData = {};
                         if (data.path) messageData.path = data.path;
-                        if (data.linkedFile) messageData.path = FileSystem.getDownloadUrl(data.linkedFile);
+                        
+                        // TODO: deprecated
+                        if (data.linkedFile) messageData.path = fileSystem.getDownloadUrl(data.linkedFile);
+                        
                         if (data.url) messageData.url = data.url;
                         if (data.filetype) {
                             messageData.filetype = {
@@ -373,14 +542,14 @@ var AmiWindow = function(config){
                     }
                 }
 
-                function send(){
-                    me.messageTarget.postMessage({
-                        message: message,
-                        data: messageData
-                    },me.messageOrigin);
-                }
+                me.messageTarget.postMessage({
+                    message: message,
+                    data: messageData
+                },me.messageOrigin);
 
-                if (doSend) send();
+
+            }else{
+                console.error("Can't send message: no target defined");
             }
         };
 
@@ -394,19 +563,19 @@ var AmiWindow = function(config){
         config.width = config.width||240;
         config.height = config.height||200;
         me.setSize(config.width,config.height);
-        UI.enableDrag(me);
-        UI.enableResize(me);
-        UI.enableSelection(me,inner);
+        ui.enableDrag(me);
+        ui.enableResize(me);
+        ui.enableSelection(me,inner);
         me.setDropTarget(window);
 
 
         window.addEventListener("mouseenter",function(){
-            if (!Mouse.isDown){
+            if (!mouse.isDown){
                 me.activateContent(true);
             }
         });
         inner.addEventListener("mousemove",function(){
-            if (!Mouse.isDown){
+            if (!mouse.isDown){
                 me.activateContent(true);
             }
         });
@@ -429,3 +598,5 @@ var AmiWindow = function(config){
 
     return me;
 };
+
+export default AmiWindow;

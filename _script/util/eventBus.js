@@ -1,4 +1,4 @@
-var EventBus = (function() {
+var EventBus = function() {
 
     var allEventHandlers = {};
 
@@ -24,4 +24,6 @@ var EventBus = (function() {
     };
 
     return me;
-}());
+};
+
+export default EventBus();

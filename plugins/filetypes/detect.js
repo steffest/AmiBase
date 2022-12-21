@@ -1,6 +1,14 @@
-var FILETYPE={
+import fileSystem from "../../../_script/system/filesystem.js";
+
+import base from "./filehandlers/base.js";
+import mod from "./filehandlers/mod.js";
+import iff from "./filehandlers/iff.js";
+import icon from "./filehandlers/icon.js";
+
+window.FILETYPE={
 	unknown: {
-		id: 0
+		id: 0,
+		actions: [{label: "hex edit", plugin:"hex"}]
 	}
 };
 
@@ -9,7 +17,7 @@ var FileType = function(){
 
 	var fileTypeCounter = 1;
 	var handlers = [];
-	var registeredFileExtentions={};
+	var registeredFileExtensions={};
 
 	me.register = function(handler){
 		console.log("Registering " + handler.name);
@@ -25,54 +33,92 @@ var FileType = function(){
 						actions: type.actions,
 						inspect: type.inspect,
 						className: type.className,
+						mountFileSystem: type.mountFileSystem,
 						customIcon: type.customIcon
+					}
+
+					if (type.fileExtensions){
+						type.fileExtensions.forEach(ext=>{
+							registeredFileExtensions[ext] = FILETYPE[key];
+						})
 					}
 				}
 			}
 		}
-		if (handler.registeredFileExtentions){
+
+		/*if (handler.registeredFileExtentions){
 			for (var key in handler.registeredFileExtentions){
 				if (handler.registeredFileExtentions.hasOwnProperty(key)){
 					registeredFileExtentions[key] = handler.registeredFileExtentions[key]();
 				}
 			}
-		}
+		}*/
+
 		handlers.push(handler);
 	};
 
-	me.getRegisteredFileExtentions = function(){
-		return registeredFileExtentions;
+	me.getRegisteredFileExtensions = function(){
+		return registeredFileExtensions;
 	};
 
-	me.detect = function(file){
-		var fileFormat;
+	me.detect = async function(file,tryHard,retry){
+
+		console.error("detect filetype",file);
+		var fileType;
 
 		if (typeof file === "string"){
-			file = {
-				name: file
+			file = {name: file}
+		}
+		
+		if (file){
+			if (file.binary){
+				for (var i = 0, max = handlers.length;i<max;i++){
+					fileType = handlers[i].detect(file.binary);
+					if (fileType) break;
+				}
+			}else{
+				if (!file.name){
+					var url = file.url || file.path;
+					if (url) file.name = url.split("/").pop();
+				}
+
+				// it might be expensive fetching the file content
+				// only use when file name is not known
+				if (!file.name){
+					file.binary =  await fileSystem.readFile(file,true);
+					return await me.detect(file,tryHard);
+				}
 			}
+			
 		}
 
-		if (file && file.buffer){
-			for (var i = 0, max = handlers.length;i<max;i++){
-				fileFormat = handlers[i].detect(file);
-				if (fileFormat) break;
-			}
-		}
-
-		if (fileFormat){
-			if (fileFormat.inspect) fileFormat.info = fileFormat.handler.inspect(file);
+		if (fileType){
+			if (fileType.inspect) fileType.info = fileType.handler.inspect(file);
 		}else{
-			fileFormat = detectFromFileExtention(file.name);
+			fileType = detectFromFileExtension(file.name);
+
+			if (fileType.id === FILETYPE.unknown.id && tryHard && !file.binary && !retry){
+				// get file content and try again
+				file.binary = await fileSystem.readFile(file,true);
+				console.error(file.binary);
+				return await me.detect(file,tryHard,true);
+			}
 		}
 
-		return fileFormat;
+		return fileType;
 	};
 
-	function detectFromFileExtention(name){
-		var extention = name.split(".").pop().toLowerCase();
-		return registeredFileExtentions[extention] || FILETYPE.unknown;
+	function detectFromFileExtension(name){
+		let extension = name.split(".").pop().toLowerCase();
+		return registeredFileExtensions[extension] || FILETYPE.unknown;
 	}
 
+	me.register(base);
+	me.register(mod);
+	me.register(icon);
+	me.register(iff);
+
 	return me;
-}();
+};
+
+export default FileType();

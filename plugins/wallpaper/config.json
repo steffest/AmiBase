@@ -1,0 +1,9 @@
+{
+  "module": "main.js",
+  "styles": ["main.css"],
+  "index": "index.html",
+  "width": 860,
+  "height": 530,
+  "left" : 140,
+  "top" : 50
+}

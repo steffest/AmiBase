@@ -36,11 +36,17 @@ var Icon = function(){
 	};
 
 	me.fileTypes={
-		ICON: {name: "Amiga icon file", actions:["show","edit"], inspect: true, customIcon: true}
-	};
-
-	me.registeredFileExtentions = {
-		info: function(){return FILETYPE.ICON}
+		ICON: {
+			name: "Amiga icon file",
+			actions:[
+				{label: "show", plugin:"AdfViewer"},
+				{label: "show2", plugin:"imageViewer"},
+				{label: "edit", plugin:"iconeditor"}
+			],
+			inspect: true,
+			customIcon: true,
+			fileExtensions:["info"]
+		}
 	};
 
 	var WB13Palette = [
@@ -250,7 +256,7 @@ var Icon = function(){
 
 	me.inspect = function(file){
 		var result = "icon";
-		var info = me.parse(file,false);
+		var info = me.parse(file.binary || file,false);
 
 		return result;
 	};
@@ -900,12 +906,13 @@ var Icon = function(){
 
 	me.MUIPalette = MUIPalette;
 
-	if (typeof FileType !== "undefined") FileType.register(me);
 
 	return me;
 	
-}();
+};
 
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined'){
 	module.exports = Icon;
 }
+
+export default Icon();

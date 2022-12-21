@@ -50,4 +50,6 @@ var Security = function(){
     };
 
     return me;
-}();
+};
+
+export default Security();

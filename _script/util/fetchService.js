@@ -1,4 +1,4 @@
-var FetchService = (function() {
+var FetchService = function() {
 
 	// somewhat Jquery syntax compatible for easy portability
 
@@ -167,5 +167,7 @@ var FetchService = (function() {
 
 
 	return me;
-}());
+};
+
+export default FetchService();
 

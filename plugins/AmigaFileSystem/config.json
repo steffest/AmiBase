@@ -1,0 +1,3 @@
+{
+  "scripts": ["amigafs.js","../adftools/adf.js"]
+}

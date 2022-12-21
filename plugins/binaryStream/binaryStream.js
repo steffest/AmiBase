@@ -252,3 +252,5 @@ function saveFile(b,filename){
     window.URL.revokeObjectURL(url);
 }
 
+
+export default BinaryStream;

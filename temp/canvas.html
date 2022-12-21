@@ -1,0 +1,207 @@
+<html>
+<body bgcolor="black">
+<style>
+    #playbutton{
+        background-color: #012B38;
+        border: 2px solid white;
+        color: white;
+        padding: 10px 30px;
+        border-radius: 20px;
+        margin: 200px auto;
+        width: 160px;
+        font-family: sans-serif;
+    }
+
+    #playbutton:hover{
+        background-color: #06ADA5;
+        cursor: pointer;
+    }
+
+    canvas,audio{
+        display: none;
+    }
+</style>
+<center>
+    <div id="playbutton">PLAY</div>
+<canvas width="320" height="240" id="canvas"></canvas>
+<br>
+<audio src="strawberry.mp3" controls="controls" id="audio"></audio>
+
+
+<script>
+
+    var audioContext;
+    var analyser;
+
+    var canvas = document.getElementById("canvas");
+    var ctx = canvas.getContext("2d");
+    var w = 320;
+    var h = 240;
+    canvas.style.width = "640px";
+    canvas.style.height = "480px";
+    
+    
+    var canvas2 = document.createElement("canvas");
+    canvas2.width = w;
+    canvas2.height = h;
+    var ctx2 = canvas2.getContext("2d");
+    
+    var w2 = w/2;
+    
+    var data2;
+    var dataArray;
+    var bufferLength;
+
+    setupAudio();
+
+    var playButton = document.getElementById("playbutton");
+    playButton.onclick = function () {
+        var audio = document.getElementById("audio");
+        audio.play();
+        playButton.style.display = "none";
+        canvas.style.display = "block";
+    };
+
+    var img = new Image();
+    img.onload = function(){
+    	ctx.drawImage(img,0,0);
+    	ctx2.drawImage(img,0,0);
+
+		data2 = ctx2.getImageData(0, 0, w, h);
+
+    };
+    img.src= "fish.png";
+
+    var c = 0;
+    var d = 10;
+    function render(){
+    	c++;
+    	d--;
+    	if (c>=8000) c=0;
+    	if (d<-800) d=10;
+        var data = ctx.getImageData(0, 0, w, h);
+		for (var y = 0; y<h; y++){
+            for (var x = 0; x<w2; x++){
+            	
+            	var wobble1 = Math.sin(c/20)*4;
+            	var wobble2 = Math.sin(d/30)*3;
+				
+            	var x_ = Math.round(x + (x/w2)*wobble1) + 1;
+            	var y_ = Math.round(y + + (y/w2)*wobble2) + 1;
+            	
+            	var x2 = w2+x;
+				var x2_ = Math.round(x2 - (x2/w)*2) - 1;
+				var y2_ = Math.round(y - (y/w2)*2) - 1;
+            	
+                var p = ((y*w) + x) * 4;
+                var p_ = ((y_*w) + x_) * 4;
+				var p2 = ((y*w) + x2) * 4;
+				var p2_ = ((y_*w) + x2_) * 4;
+                
+                data.data[p] = blend(data.data[p_],data.data[p],0.3);
+                data.data[p+1] = blend(data.data[p_+1],data.data[p+1],0.7);
+                data.data[p+2] = blend(data.data[p_+2],data.data[p+2],0.2);
+
+
+				data.data[p2] = blend(data.data[p2_],data.data[p2],0.3);
+				data.data[p2+1] = blend(data.data[p2_+1],data.data[p2+1],0.5);
+				data.data[p2+2] = blend(data.data[p2_+2],data.data[p2+2],0.7);
+
+
+				// blend original image
+				var wobble3 = (Math.sin(c/200) * 0.4) + 1;
+				data.data[p] = blend(data.data[p],data2.data[p],wobble3);
+				data.data[p+1] = blend(data.data[p+1],data2.data[p+1],(Math.sin(c/200) * 0.2) + 1);
+				data.data[p+2] = blend(data.data[p+2],data2.data[p+2],wobble3);
+
+
+				var wobble4 = wobble3*0.9;
+				data.data[p2] = blend(data.data[p2],data2.data[p2],wobble4);
+				data.data[p2+1] = blend(data.data[p2+1],data2.data[p2+1],wobble4);
+				data.data[p2+2] = blend(data.data[p2+2],data2.data[p2+2],wobble4);
+                //data.data[p+3] = 255;
+            }
+        }
+        ctx2.putImageData(data, 0, 0);
+
+
+// add another wobbly thing?
+        for (y = 0; y<h; y++){
+            var x2 = (Math.sin(c/40) * 3);
+            var w_ = w + (Math.sin(c/500) * 4);
+            ctx.drawImage(canvas2,0,y,w,1,x2,y,w_,1);
+        }
+
+
+		// draw audio wave
+
+        bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+        drawWave("#00263180",10);
+        drawWave("#07C1AF80",2);
+
+
+        requestAnimationFrame(render);
+    }
+    
+    function blend(a,b,amount){
+    	return Math.round(a*amount + b*(1-amount));
+    }
+
+    function setupAudio(){
+        var audio = document.getElementById("audio");
+
+        audio.addEventListener("play",function(){
+
+            window.AudioContext = window.AudioContext||window.webkitAudioContext;
+            audioContext = new AudioContext();
+            analyser = audioContext.createAnalyser();
+            analyser.connect(audioContext.destination);
+            analyser.fftSize = 512;
+            analyser.smoothingTimeConstant = 0.8;
+            analyser.maxDecibels = -10;
+
+
+            var source = audioContext.createMediaElementSource(audio);
+            source.connect(analyser);
+
+            render();
+        });
+
+
+    }
+
+    function drawWave(color,lineWidth) {
+        analyser.getByteTimeDomainData(dataArray);
+
+        ctx.lineWidth = lineWidth;
+        //ctx.strokeStyle = 'rgba(120, 255, 50, 0.5)';
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        var sliceWidth = w * 1.0 / bufferLength;
+        var wx = 0;
+
+        for(var i = 0; i < bufferLength; i++) {
+            var v = dataArray[i] / 128.0;
+            var wy = v * h/4 + 120;
+
+            if(i === 0) {
+                ctx.moveTo(wx, wy);
+            } else {
+                ctx.lineTo(wx, wy);
+            }
+
+            wx += sliceWidth;
+        }
+
+        ctx.lineTo(w, h/4 + 120);
+        ctx.stroke();
+
+
+    }
+    
+</script>
+</center>
+
+</body>
+</html>

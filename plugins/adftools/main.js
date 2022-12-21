@@ -71,16 +71,21 @@ var ADFTOOLS = function(){
                 onOpen: async function(){
                     console.log("handle ADF file");
                     var file = ADF.readFileAtSector(f.sector,true);
-                    var fileInfo = await System.inspectFile(file.content.buffer,f.name);
+                    var fileInfo = await System.inspectBinary(file.content.buffer,f.name);
                     fileInfo.path = "ADF";
                     console.error(fileInfo);
-                    Desktop.handleFileOpen(fileInfo);
+                    System.openFile(fileInfo);
                 },
                 getAttachment: async function(next){
                     var file = ADF.readFileAtSector(f.sector,true);
-                    var fileInfo = await System.inspectFile(file.content.buffer,f.name);
+                    var fileInfo = await System.inspectBinary(file.content.buffer,f.name);
                     fileInfo.path = "ADF";
-                    next(fileInfo);
+                    if (next){
+                        next(fileInfo);
+                    }else{
+                        return fileInfo;
+                    }
+                    
                 }
             };
             window.createIcon(item);
@@ -90,5 +95,9 @@ var ADFTOOLS = function(){
         //showInfo(folder);
     };
 
+
+
+
     return me;
 }();
+

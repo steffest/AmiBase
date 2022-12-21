@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spotify Web Playback SDK Quick Start Tutorial</title>
+</head>
+<body onload="getToken()">
+
+<div id="feedback"></div>
+
+<script src="../../../../_script/util/dom.js"></script>
+
+<style>
+    .button{
+        display: inline-block;
+        border: 1px solid silver;
+        padding: 10px 20px;
+        background-color: #f1f1f1;
+    }
+</style>
+
+
+<script>
+    
+    var accessToken;
+    var deviceId;
+
+    function getToken(){
+		var hash = window.location.hash;
+		if (hash && hash.indexOf("access_token=")>=0){
+			// this is a callback from the Spotify auth flow
+			handleUrlToken();
+		}else if (window.location.search && window.location.search.indexOf("error=")>0){
+			handleUrlError();
+        }else{
+
+			var feedback = document.getElementById("feedback");
+			feedback.innerHTML = 'Connecting ...';
+			
+			
+			// get token from local storage
+            accessToken = localStorage.getItem("SpotifyToken");
+			console.error(accessToken);
+            if (accessToken){
+				checkToken().then(valid => {
+					if (valid){
+						console.log("valid token");
+						initPlayer();
+                    }else{
+						console.log(" not valid");
+						localStorage.removeItem("SpotifyToken");
+                    }
+                })
+            }else{
+				var feedback = document.getElementById("feedback");
+				feedback.innerHTML = '<div class="button">Please connect your Spotify account</div>';
+				feedback.onclick = login;
+            }
+        }
+    }
+    
+    
+    function get(endPoint){
+		return new Promise(next => {
+			var url = "https://api.spotify.com/v1/" + endPoint;
+			fetch(url, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${accessToken}`
+				},
+			}).then(response => response.json()).then(result => {
+				next(result);
+			});
+		});
+    	
+    }
+    
+    function checkToken(){
+    	return new Promise(next => {
+            
+			fetch(`https://api.spotify.com/v1/me`, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${accessToken}`
+				},
+			}).then(response => response.json()).then(result => {
+				console.log(result);
+
+				if (result && result.images && result.images.length){
+					localStorage.setItem("SpotifyToken",accessToken);
+					next(true);
+					var img = new Image();
+					img.src = result.images[0].url;
+					document.body.appendChild(img);
+				}else{
+					next(false);
+				}
+				
+				
+			});
+			
+			
+        });
+    }
+    
+    function handleUrlToken(){
+		const queryString = window.location.hash.substr(1);
+		const urlParams = new URLSearchParams(queryString);
+		var code = urlParams.get("access_token");
+		if (code){
+			accessToken = code;
+			checkToken().then(valid => {
+				if (valid){
+					console.log("valid token");
+					localStorage.setItem("ptoken","ok");
+					debugger;
+				}else{
+					console.log(" not valid");
+				}
+			})
+		}
+    }
+
+	function handleUrlError(){
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+		var error = urlParams.get("error");
+		var feedback = document.getElementById("feedback");
+		if (error){
+			if (error === "access denied"){
+				feedback.innerHTML = "Access Denied - Sorry, we can't access your Spotify account"
+            }else{
+				feedback.innerHTML = error;
+            }
+        }
+	}
+    
+    function initPlayer(){
+    	loadScript("https://sdk.scdn.co/spotify-player.js");
+		window.onSpotifyWebPlaybackSDKReady = () => {
+			console.log("player loaded");
+			setupPlayer();
+		}
+    }
+    
+    function setupPlayer(){
+		const player = new Spotify.Player({
+			name: 'AmiBase Player',
+			getOAuthToken: cb => { cb(accessToken); }
+		});
+
+		// Error handling
+		player.addListener('initialization_error', ({ message }) => { console.error(message); });
+		player.addListener('authentication_error', ({ message }) => { console.error(message); });
+		player.addListener('account_error', ({ message }) => { console.error(message); });
+		player.addListener('playback_error', ({ message }) => { console.error(message); });
+
+		// Playback status updates
+		player.addListener('player_state_changed', state => { 
+			console.log(state); 
+			
+			if (state.paused){
+				var feedback = document.getElementById("feedback");
+				feedback.innerHTML = '<div class="button">Play</div>';
+				feedback.onclick = function () {
+					resume();
+				};
+            }else{
+				var feedback = document.getElementById("feedback");
+				feedback.innerHTML = '<div class="button">Pause</div>';
+				feedback.onclick = function () {
+					pause();
+				};
+            }
+		});
+
+		// Ready
+		player.addListener('ready', ({ device_id }) => {
+			console.log('Ready with Device ID', device_id);
+
+
+			var feedback = document.getElementById("feedback");
+			feedback.innerHTML = '<div class="button">Play Song</div>';
+			feedback.onclick = function () {
+				play("spotify:track:48mZ0CGCffjH49h5lAPTIe",device_id);
+			};
+			
+		});
+
+		// Not Ready
+		player.addListener('not_ready', ({ device_id }) => {
+			console.log('Device ID has gone offline', device_id);
+		});
+
+		// Connect to the player!
+		player.connect().then(success => {
+			if (success) {
+				console.log('The Web Playback SDK successfully connected to Spotify!');
+			}
+		});
+    }
+    
+    function play(spotify_uri,id){
+        fetch(`https://api.spotify.com/v1/me/player/play?device_id=${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ uris: [spotify_uri] }),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            },
+        });
+    }
+
+	function pause(){
+		fetch(`https://api.spotify.com/v1/me/player/pause`, {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${accessToken}`
+			},
+		});
+	}
+
+	function resume(){
+		fetch(`https://api.spotify.com/v1/me/player/play`, {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${accessToken}`
+			},
+		});
+	}
+	
+	function getPlayerInfo(){
+		fetch(`https://api.spotify.com/v1/me/player`, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${accessToken}`
+			},
+		}).then(response => response.json()).then(response => {
+			console.log(response);
+        });
+    }
+
+	async function getTrackInfo(id){
+    	id = id || "48mZ0CGCffjH49h5lAPTIe";
+    	var info = await get("tracks/" + id);
+		console.log(info);
+	}
+    
+	function login(){
+		localStorage.removeItem("SpotifyToken");
+		var redirect_uri = "http://localhost:63343/AmiBase/plugins/mediaplayer/players/spotify/test.html";
+		var my_client_id = "faec4adfde7c4886a3c4e2224a2ba276";
+		var scopes = 'user-read-private user-read-email user-modify-playback-state streaming user-read-playback-position user-read-playback-state';
+		var stateCode = new Date().getTime();
+        
+    	var url = 'https://accounts.spotify.com/authorize' +
+			'?response_type=token' +
+			'&client_id=' + my_client_id +
+			'&state=' + stateCode +
+			(scopes ? '&scope=' + encodeURIComponent(scopes) : '') +
+			'&redirect_uri=' + encodeURIComponent(redirect_uri);
+
+		var consentWindow = window.open(url, "", "width=400,height=600,menubar=no");
+
+		var timer = setInterval(() => {
+			var token = localStorage.getItem("SpotifyToken");
+			if (token){
+				var feedback = document.getElementById("feedback");
+				feedback.innerHTML = "";
+				consentWindow.close();
+				accessToken = token;
+				initPlayer();
+            }
+			if(consentWindow && consentWindow.closed) {
+				clearInterval(timer);
+				console.log("closed");
+				getToken();
+			}
+		}, 500);
+    }
+    
+
+</script>
+</body>
+</html>

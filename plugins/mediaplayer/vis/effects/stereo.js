@@ -32,7 +32,6 @@ var stereo = function(){
     };
 
     me.render = function(data){
-        console.error("ok");
         if (!data.pixelsDataTexture) return;
 
         var dst = data.pixelsDataMain;

@@ -1,5 +1,5 @@
 {
-  "scripts": ["vis/main.js","main.js"],
+  "module": "main.js",
   "styles": [],
   "index": "",
   "keepActive" : true

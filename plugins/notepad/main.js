@@ -1,40 +1,71 @@
-var Notepad = 'yep';
 
-var notepad_plugin_init = function(containerWindow){
-    console.error(containerWindow);
-    var container = containerWindow.getInner();
-    container.innerHTML += '<br>Active';
+let Notepad = ()=>{
+    let me = {
+        name:"notepad"
+    };
 
-    var textarea = document.createElement("textarea");
-    textarea.value = "";
-    textarea.style.width = "100%";
-    textarea.style.height = "100%";
-    container.innerHTML = "";
-    container.appendChild(textarea);
+    let textarea;
+    let amiBase = {};
+    var currentFile;
+
+    function setup(){
+        textarea = document.createElement("textarea");
+        textarea.value = "";
+        textarea.style.width = "100%";
+        textarea.style.height = "100%";
+    }
+
+    me.init = function(containerWindow,context){
+        var container = containerWindow.getInner();
+        container.innerHTML += '<br>Active';
+
+        if (!textarea) setup();
+
+        container.innerHTML = "";
+        container.appendChild(textarea);
+
+        var menu = [
+            {label: "Notepad",items:[{label: "About"}]},
+            {label: "File",items:[
+                    {label: "Open",id:"np-open",action:()=>open()},
+                    {label: "Save",id:"np-save",action:()=>save()}
+                ]}
+        ];
+
+        containerWindow.setMenu(menu,true);
 
 
-    Applications.registerApplicationActions("notepad",{
-        "openfile":async function(attachment){
-            console.error("notepad open file");
+        if (context && context.registerApplicationActions){
+            amiBase = context;
+            context.registerApplicationActions("notepad",{
+                "openfile":async function(file){
+                    console.error("notepad open file");
+                    currentFile = file;
+                    let content = await amiBase.fileSystem.readFile(file);
+                    if (typeof content !== "string") content  = String.fromCharCode.apply(null, new Uint8Array(content));
+                    textarea.value = content;
 
-            if (attachment.file){
-                console.log("handle binary data");
-                var content = String.fromCharCode.apply(null, new Uint8Array(attachment.file.buffer));
-                textarea.value = content;
-            }else if(attachment.path){
-                textarea.value = await FileSystem.readFile(attachment.path);
-            }else if(attachment.url){
-                console.log("load from url" , attachment.url);
-                if (attachment.label) containerWindow.setCaption(attachment.label);
-                var content = await FetchService.get(attachment.url);
-                textarea.value=content;
-            }else{
-                console.warn("unknown structure",attachment);
-            }
+                    let readOnly = await amiBase.fileSystem.isReadOnly(file);
+                    containerWindow.setMenuItem("np-save","",!readOnly);
+
+                }
+            });
         }
-    });
 
-    if (containerWindow.onload) containerWindow.onload(containerWindow);
+        if (containerWindow.onload) containerWindow.onload(containerWindow);
 
+    }
 
-};
+    function open(){
+
+    }
+
+    function save(){
+        let content = textarea.value;
+        amiBase.fileSystem.writeFile(currentFile.path,content);
+    }
+
+    return me;
+}
+
+export default Notepad();

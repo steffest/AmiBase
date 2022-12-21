@@ -1,3 +1,3 @@
 {
-  "scripts": ["laozi.js"]
+  "module": "laozi.js"
 }

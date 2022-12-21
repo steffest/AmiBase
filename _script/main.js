@@ -1,20 +1,22 @@
+import system from "./system/system.js";
+import desktop from "./ui/desktop.js";
+import input from "./input.js";
+import ui from "./ui/ui.js";
+import settings from "./settings.js";
+import user from "./user.js";
+
 var Main=function(){
     var me = {};
     var initDone;
 
     me.init = async function(){
-        await System.loadEnvironment();
-        await Desktop.loadTheme(User.getTheme());
-        Input.init();
-        Desktop.init();
-        UI.init();
+        await system.loadEnvironment();
+        await desktop.loadTheme(user.getTheme());
+        input.init();
+        desktop.init();
+        ui.init();
 
-        //var w = Desktop.createWindow("test");
-        //w.createIcon({label: "Bassoon", type:"program",url:'plugin:bassoon'});
-        //w.createIcon({label: "Test"});
-        //w.cleanUp();
-
-        Desktop.loadContent(Settings.initialContent);
+        desktop.loadContent(settings.initialContent);
 
         //var i = Desktop.createIcon({label: "Notepad", type:"program",url:'plugin:notepad'});
         //Desktop.createIcon({label: "Bassoon", type:"program",url:'plugin:bassoon'});
@@ -27,11 +29,13 @@ var Main=function(){
 
         //Desktop.createIcon({label: "Piskel", type:"url",url:'https://www.piskelapp.com/p/agxzfnBpc2tlbC1hcHByEwsSBlBpc2tlbBiAgKDrjfv0CAw/edit'});
         //Desktop.createIcon({label: "Quake", type:"url",url:'http://www.quakejs.com/'});
-        Desktop.cleanUp();
+        desktop.cleanUp();
         initDone = true;
 
         //FileSystem.mount("Home","DH0","laozi");
     };
+
+    window.addEventListener("DOMContentLoaded",me.init);
 
     return me;
 }();

@@ -1,0 +1,89 @@
+<head>
+    <script src="stats.js"></script>
+</head>
+<canvas id="c" width="320" height="240"></canvas>
+
+<script>
+    var dwitter = function(){
+        var me = {};
+
+        var c,S,C,T,R,x;
+        var a,i,r;
+
+        me.init = function(){
+            c = canvas;
+            x=ctx;
+            R=RGBA;
+            C = Math.cos;
+            S = Math.sin;
+            T = Math.tan;
+        };
+
+
+        me.draw = function(t){
+            if (!C) dwitter.init();
+            u(t);
+        };
+
+        function u(t) {
+            var offsetLeft = 100;
+            var offsetTop = 100;
+
+            x.lineWidth=4;
+            x.strokeStyle = 'rgba(120, 255, 50, 0.5)';
+
+            for(c.width|=i=0;i<6.3;i+=.01){
+                r=(.3*S(t+C(t-i)))*(.5*C(S(i*9)))*1000;
+                a=i+S(r/99+t);
+                x.lineTo(offsetLeft+r*C(a),offsetTop+r*S(a))
+            }x.stroke()
+        }
+
+        return me;
+    }();
+
+
+
+
+</script>
+
+
+<script>
+    var canvas = document.querySelector("#c");
+
+    c.width = 320;
+    c.height = 240;
+    var ctx = c.getContext("2d");
+
+
+    function RGBA(r,g,b,a) {
+        a = a === undefined ? 1 : a;
+        return "rgba("+(r|0)+","+(g|0)+","+(b|0)+","+a+")";
+    }
+
+    var FPS = 60;
+    var time = 0;
+    var frame = 0;
+
+
+
+    function loop(frame_time) {
+
+        requestAnimationFrame(loop);
+        //epsilon = 1.5; // Acounts for different timestamp resolution and slight jitter
+        //if (frame_time < nextFrameMs - epsilon) {
+           // return;  // Skip this cycle as we are animating too quickly.
+        //}
+        //nextFrameMs = Math.max(nextFrameMs + 1000 / FPS, frame_time);
+
+        time = frame/FPS;
+        if(time * FPS | 0 == frame - 1){
+            time += 0.000001;
+        }
+        frame++;
+
+        dwitter.draw(time);
+    }
+    loop(0.0);
+
+</script>

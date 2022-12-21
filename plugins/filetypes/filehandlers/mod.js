@@ -4,12 +4,18 @@ var MUSICMOD = function(){
         name: "mod tracker file",
         version: "0.0.1",
         fileTypes:{
-            MOD: {name: "Mod Music Module", actions:[{label: "Play in Tracker","plugin":"bassoon"}], className:"musicmod"},
-            XM: {name: "XM Music Module", actions:["Play in Tracker"], className:"musicmod"},
-        },
-        registeredFileExtentions:{
-            mod: function(){return FILETYPE.MOD},
-            xm: function(){return FILETYPE.XM},
+            MOD: {
+                name: "Mod Music Module",
+                actions:[{label: "Play in Tracker",plugin:"bassoon"}],
+                className:"musicmod",
+                fileExtensions:["mod"]
+            },
+            XM: {
+                name: "XM Music Module",
+                actions:["Play in Tracker"],
+                className:"musicmod",
+                fileExtensions:["xm"]
+            },
         }
     };
 
@@ -51,8 +57,7 @@ var MUSICMOD = function(){
         return {plugin: "bassoon"};
     };
 
-
-    if (FileType) FileType.register(me);
-
     return me;
-}();
+};
+
+export default MUSICMOD();

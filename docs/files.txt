@@ -1,4 +1,4 @@
-a "File" is a structure point to a file and or its content.
+a "File" is a structure point to a file and or it's content.
 
 There can be 4 pointers to where to get the file:
 
@@ -13,4 +13,19 @@ file = {
 An "attachment" to a icon structure is also of this type.
 
 TODO: investigate if urls and paths can be reduced to the same thing. probably not really because files can have both a path and a url
-TODO: investigate wheter text files can be some special form of binary file
+TODO: investigate whether text files can be some special form of binary file
+
+
+
+new structure:
+
+- type: "file"
+- name
+- path - where the file is located in the Amibase filesystem. uploaded files in the browser should be attached to RAM
+- url: only populated for HTTP based filesystem (= when the filesystem has a getFileUrl method)
+- binary: binary content (wrapped BinaryStream Component)
+- body: text content
+- filetype 
+- head: all meta data and info needed to fetch the file (e.g. for ADF this is the sector where the files starts on the disk image)
+- handler
+- filetype: resolved filetype

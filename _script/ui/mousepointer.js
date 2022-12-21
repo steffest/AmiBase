@@ -1,7 +1,8 @@
-var Mouse = function(){
+import settings from "../settings.js";
+let Mouse = function(){
     var me = {};
 
-    var useCustomMousePointer = Settings.useCustomMousePointer;
+    var useCustomMousePointer = settings.useCustomMousePointer;
     var mousePointer;
 
     me.init = function () {
@@ -29,4 +30,6 @@ var Mouse = function(){
     };
 
     return me;
-}();
+};
+
+export default Mouse();

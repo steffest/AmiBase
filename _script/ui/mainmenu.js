@@ -1,4 +1,14 @@
-var MainMenu = function(){
+import {$div} from "../util/dom.js";
+import settings from "../settings.js";
+import desktop from "./desktop.js";
+import ui from "./ui.js";
+import eventBus from "../util/eventBus.js";
+import {EVENT} from "../enum.js";
+import applications from "../applications.js";
+import system from "../system/system.js";
+import fileSystem from "../system/filesystem.js";
+
+let MainMenu = function(){
 
     var me = {};
     var root;
@@ -14,43 +24,47 @@ var MainMenu = function(){
                 {
                     label:"About",
                     action: function(){
-                        Desktop.launchProgram({
+                        desktop.launchProgram({
                             url: "plugin:notepad",
                             width: 400,
                             height: 200,
                             onload: function(window){
-                                Applications.sendMessage(window,"openfile",{
+                                applications.sendMessage(window,"openfile",{
                                     type: "file",
-                                    label: "About Amibase",
-                                    url: "content/files/about.txt"
+                                    label: "About " + settings.name || "Amibase",
+                                    url: settings.aboutUrl || "content/files/about.txt"
                                 });
                             }
                         });
                     },
                 },
                 {
+                    label:"Open File",
+                    action: function(){
+                        system.requestFile();
+                    }
+                },
+                {
                     label:"Upload File",
                     action: function(){
-                        Desktop.uploadFile();
+                        desktop.uploadFile();
                     }
                 },
                 {
                     label:"New Drawer",
                     action: function(){
-                        Desktop.createIcon({label: "My Content", type: "drawer"});
-                        Desktop.cleanUp();
+                        desktop.createIcon({label: "My Content", type: "drawer"});
+                        desktop.cleanUp();
                     }
                 },
                 {
                     label:"Import Content",
                     action: function(){
-                        var w = Desktop.createWindow({label:"Content"});
+                        var w = desktop.createWindow({label:"Content"});
                         var items = [
                             {label: "Youtube", type:"drawer"},
                             {label: "Vimeo", type:"drawer"},
-                            {label: "Upload File", type:"file", onOpen: function(){
-                                    Desktop.uploadFile();
-                                }},
+                            {label: "Upload File", type:"file"},
                             {label: "Other", type:"drawer"},
                         ];
                         items.forEach(item => {
@@ -72,9 +86,17 @@ var MainMenu = function(){
                     action: function(){
                         var name =  prompt("Enter the new name:");
                         if (name){
-                            var icon =  Desktop.getFocusElement();
+                            var icon =  desktop.getFocusElement();
                             icon.setLabel(name);
                         }
+                    }
+                },
+                {
+                    label:"Info",
+                    action: async function(){
+                        var icon =  desktop.getFocusElement();
+                        let inspector = await system.loadLibrary("inspector.js");
+                        inspector.inspect(icon);
                     }
                 }
             ]
@@ -88,7 +110,7 @@ var MainMenu = function(){
                 {
                     label:"Cleanup",
                     action: function(){
-                        var w =  Desktop.getFocusElement();
+                        var w =  desktop.getFocusElement();
                         if (w && w.cleanUp) w.cleanUp();
                     }
                 },
@@ -97,7 +119,7 @@ var MainMenu = function(){
                     action: function(){
                         var name =  prompt("Enter the new name:");
                         if (name){
-                            var w =  Desktop.getFocusElement();
+                            var w =  desktop.getFocusElement();
                             w.setCaption(name);
                         }
                     }
@@ -105,21 +127,37 @@ var MainMenu = function(){
                 {
                     label:"Upload File",
                     action: function(){
-                        Desktop.uploadFile(Desktop.getFocusElement());
+                        desktop.uploadFile(desktop.getFocusElement());
                     }
                 },
                 {
                     label:"New Drawer",
                     action: function(){
-                        var w =  Desktop.getFocusElement();
+                        var w =  desktop.getFocusElement();
                         if (w){
                             var newName = "My Content";
                             var config = w.getConfig();
                             if (config.path){
-                                FileSystem.createDirectory(config.path,newName);
+                                fileSystem.createDirectory(config.path,newName);
                             }
                             w.createIcon({label: newName, type: "drawer"});
                             w.cleanUp();
+                        }
+                    }
+                },
+                {
+                    label:"New File",
+                    action: async function(){
+                        var w =  desktop.getFocusElement();
+                        if (w){
+                            var newName = "new.txt";
+                            var config = w.getConfig();
+                            if (config.path){
+                                let created = await fileSystem.saveFile(config.path + "/" + newName,"");
+                                console.log("created:" + created);
+                                w.createIcon({label: newName, type: "file"});
+                                w.cleanUp();
+                            }
                         }
                     }
                 },
@@ -130,56 +168,58 @@ var MainMenu = function(){
     me.init = function(){
         var topbar = $div("topbar");
 
-        //var homebutton =$div("homebutton","","<div>AmiBase <small>v" + Settings.version + "</small></div>");
-        var homebutton =$div("homebutton","","<div>Amibase <small>v" + Settings.version + "</small></div>");
+        //var homebutton =$div("homebutton","","<div>AmiBase <small>v" + settings.version + "</small></div>");
+        var homebutton =$div("homebutton","","<div>" + (settings.name || "Amibase") + " <small>v" + settings.version + "</small></div>");
         messageContainer = $div("message");
         root=$div("menu");
 
         topbar.appendChild(homebutton);
         topbar.appendChild(messageContainer);
         topbar.appendChild(root);
-        document.body.appendChild(topbar);
+        desktop.getScreen().appendChild(topbar);
 
-        if (Settings.themes && Settings.themes.length>1){
+        if (settings.themes && settings.themes.length>1){
             var themes = {
                 label:"Theme",
                 items:[]
             };
-            Settings.themes.forEach(theme => {
+            settings.themes.forEach(theme => {
                 themes.items.push({
                     label: theme.label,
                     action: function(){
-                        Desktop.loadTheme(theme.name);
+                        desktop.loadTheme(theme.name);
                     }
                 });
             });
             mainMenu.push(themes);
-            windowMenu.push(themes);
-            iconMenu.push(themes);
         }
 
+       if (settings.mainMenu) mainMenu = mainMenu.concat(settings.mainMenu);
 
+        windowMenu = windowMenu.concat(mainMenu);
+        iconMenu = iconMenu.concat(mainMenu);
+        
         me.setMenu(mainMenu);
 
-        EventBus.on(EVENT.ACTIVATE_DESKTOP_ELEMENT,function(){
-            var focusElement = Desktop.getFocusElement() || {};
+        eventBus.on(EVENT.ACTIVATE_DESKTOP_ELEMENT,function(){
+            var focusElement = desktop.getFocusElement() || {};
             switch (focusElement.type) {
                 case "desktop":
                     me.setMenu(mainMenu);
                     break;
                 case "icon":
                     if (focusElement.getConfig().linkedFile){
-                        iconMenu[0].items[1] = {
+                        iconMenu[0].items[2] = {
                             label:"Download",
                             action: function(){
-                                var url = FileSystem.getDownloadUrl(focusElement.getConfig().linkedFile);
+                                var url = fileSystem.getDownloadUrl(focusElement.getConfig().linkedFile);
                                 window.open(url);
                             }
                         };
-                        iconMenu[0].items[2] = {
+                        iconMenu[0].items[3] = {
                             label:"Open In Editor",
                             action: function(){
-                                Desktop.launchProgram({
+                                desktop.launchProgram({
                                     url: "plugin:iconeditor",
                                     onload: function(window){
                                         Applications.sendMessage(window,"openfile",focusElement.getConfig());
@@ -188,8 +228,8 @@ var MainMenu = function(){
                             }
                         }
                     }else{
-                        iconMenu[0].items[1] = undefined;
                         iconMenu[0].items[2] = undefined;
+                        iconMenu[0].items[3] = undefined;
                     }
                     me.setMenu(iconMenu);
                     break;
@@ -222,7 +262,6 @@ var MainMenu = function(){
     me.setMenu = function(menu,window){
         root.innerHTML = "";
         menu.forEach(function(item){
-            console.error(item);
             if (item){
                 root.appendChild(createMenuItem(item));
             }
@@ -239,6 +278,17 @@ var MainMenu = function(){
         }
         menuActive = false;
     };
+
+    me.setMenuItem = (id,label,enabled)=>{
+        let menuItem = root.querySelector("#am_" + id);
+        if (menuItem){
+            if (label){
+                let labelElm = menuItem.querySelector('label');
+                if (labelElm) labelElm.innerHTML = label;
+            }
+            if (typeof enabled === "boolean") menuItem.classList.toggle("disabled",!enabled);
+        }
+    }
     
     me.showMessage = function(message){
         messageContainer.innerHTML = message;
@@ -253,11 +303,15 @@ var MainMenu = function(){
         if (struct.disabled){
             elm.classList.add("disabled");
         }
+        if (struct.id){
+            elm.id="am_" + struct.id;
+        }
 
         elm.innerHTML = "<label>" + struct.label + "</label>";
-        elm.onclick = function(){
+        ui.onClick(elm,function(e){
+            e.stopPropagation();
             handleMenuClick(struct);
-        };
+        });
 
         if (struct.items){
             var submenu = $div("submenu");
@@ -271,7 +325,7 @@ var MainMenu = function(){
             elm.classList.add("hassubmenu");
         }
 
-        elm.onmouseover = function(){
+        elm.onmouseover  = function(){
             if (submenu && menuActive){
                 var items = elm.parentElement.querySelectorAll(".hassubmenu");
                 for (var i = 0, max = items.length; i<max;i++){
@@ -288,23 +342,32 @@ var MainMenu = function(){
 
     function handleMenuClick(item){
         if (item.submenu){
-            item.submenu.classList.toggle("active");
-            menuActive = item.submenu.classList.contains("active");
+            var doShow = !item.submenu.classList.contains("active");
+            me.hideMenu();
+            if (doShow){
+                item.submenu.classList.add("active");
+                menuActive = doShow;
+            }
         }else{
-            if (item.action){
-                if (typeof item.action === "function"){
-                    item.action();
+            me.hideMenu();
+            setTimeout(function(){
+                if (item.action){
+                    if (typeof item.action === "function"){
+                        item.action();
+                    }
+                    if (typeof item.action === "string"){
+                        desktop.launchProgram(item.action);
+                    }
                 }
-            }
-            if (item.message){
-                if (currentMenuTarget) currentMenuTarget.sendMessage(item.message);
-
-
-            }
+                if (item.message){
+                    if (currentMenuTarget) currentMenuTarget.sendMessage(item.message);
+                }
+            },10);
         }
-        //console.error(item);
     }
 
     return me;
-}();
+};
+
+export default MainMenu();
 

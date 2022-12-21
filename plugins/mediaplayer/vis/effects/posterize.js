@@ -24,6 +24,8 @@ var posterize = function(){
 
     me.render = function(data){
         if (!ctxBackground) return;
+        if (!data.pixelsDataTexture) return;
+
         var src = data.pixelsDataMain;
         var dst = ctxBackground.getImageData(0, 0, width, height).data;
         var c = data.counter;

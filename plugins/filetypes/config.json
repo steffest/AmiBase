@@ -1,14 +1,6 @@
 {
   "dependencies": ["binaryStream.js"],
-  "scripts": [
-    ["detect.js"],
-    [
-      "filehandlers/mod.js",
-      "filehandlers/iff.js",
-      "filehandlers/icon.js",
-      "filehandlers/base.js"
-    ]
-  ],
+  "module": "detect.js",
   "styles": [],
   "templates" : []
 }

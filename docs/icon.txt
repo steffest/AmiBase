@@ -1,0 +1,11 @@
+an "icon" structure is a wrapper around a "file" structure or a "folder" structure or a drive structure
+
+could it also be an "action" or "shortcut" type?
+
+properties
+- label
+- top
+- left
+
+- attachment
+    points to a "file" or "folder" document. 

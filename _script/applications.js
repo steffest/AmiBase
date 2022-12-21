@@ -1,4 +1,19 @@
-var Applications = function(){
+import security from "./security.js";
+import fetchService from "./util/fetchService.js";
+import system from "./system/system.js";
+import mainMenu from "./ui/mainmenu.js";
+import fileSystem from "./system/filesystem.js";
+import {loadCss} from "./util/dom.js";
+
+/*
+Provides a bridge for external applications and plugins
+There are 2 types of plugins:
+ - trusted ones that run directly in the same context as AmiBase,
+ they can access all the methods (end DOM) of amiBase
+ - external ones that run in their own iframe and can only communicate with amibase through a messageBus
+ */
+
+let Applications = function(){
     var me = {};
     var plugins={};
     var mainContext = window;
@@ -37,48 +52,73 @@ var Applications = function(){
         }else{
             pluginType = "plugin"
         }
+        let pluginPath = "plugins/" + pluginName + "/";
 
         switch (pluginType) {
             case "plugin":
-                // this is a trusted plugin, we can just load all files in the root space
+                // this is a trusted plugin, we can just load all files
                 var plugin = plugins[pluginName];
+
                 if (plugin){
                     console.log("plugin already loaded");
                     appWindow.isApplication = true;
                     var config = plugin.config;
                     if (config.width && config.height) appWindow.setSize(config.width,config.height);
+                    if (config.left && config.top) appWindow.setPosition(config.left,config.top);
+                    //console.error(config);
+
+                    function initPlugin(){
+                        if (plugin.init){
+                            let f = plugin.init;
+                            if (typeof f === "string") f = mainContext[plugin.init];
+                            f(appWindow);
+                        }
+                    }
+
                     if (config.index){
-                        if (config.index.indexOf("://")){
+                        if (config.index.indexOf("://")>0){
                             loadFrame(config.index,appWindow);
                         }else{
                             appWindow.setContent(plugin.html);
                         }
-                        if (plugin.onInit) mainContext[plugin.onInit](appWindow);
+                        initPlugin();
                     }else{
-                        if (plugin.onInit) mainContext[plugin.onInit](appWindow);
+                        initPlugin();
                     }
                 }else{
                     plugin={};
-                    var pluginPath = "plugins/" + pluginName + "/";
-                    FetchService.json(pluginPath + "config.json",function(config){
+                    fetchService.json(pluginPath + "config.json",function(config){
                         if (config){
                             appWindow.isApplication = true;
                             plugin.config=config;
                             if (config.width && config.height) appWindow.setSize(config.width,config.height);
+                            if (config.left && config.top) appWindow.setPosition(config.left,config.top);
 
                             function initScripts(){
-                                if (config.scripts){
+                                if (config.scripts) {
+                                    console.error("DEPRECATED")
                                     var initDone = false;
-                                    System.loadScripts(pluginPath,config.scripts,function(){
-                                        if (!initDone && mainContext[pluginName + '_plugin_init']){
-                                            plugin.onInit = pluginName + '_plugin_init';
+                                    system.loadScripts(pluginPath, config.scripts, function () {
+                                        if (!initDone && mainContext[pluginName + '_plugin_init']) {
+                                            plugin.init = pluginName + '_plugin_init';
                                             plugins[pluginName] = plugin;
-                                            mainContext[plugin.onInit](appWindow);
-                                            initDone=true;
+                                            mainContext[plugin.init](appWindow);
+                                            initDone = true;
                                         }
+                                    });
+                                }else if (config.module){
+                                    import("../" + pluginPath + config.module).then(p=>{
+                                        plugin.handler = p.default;
+                                        plugins[pluginName] = plugin;
+                                        if (plugin.handler.init){
+                                            plugin.init = plugin.handler.init
+                                            plugin.init(appWindow,me.amiBridge());
+                                        }
+                                        initDone = true;
                                     });
                                 }else{
                                     plugins[pluginName] = plugin;
+                                    initDone = true;
                                 }
                             }
 
@@ -86,7 +126,7 @@ var Applications = function(){
                                 if (config.index.indexOf("://")>0){
                                     loadFrame(config.index,appWindow);
                                 }else{
-                                    FetchService.html(pluginPath + config.index,function(html){
+                                    fetchService.html(pluginPath + config.index,function(html){
                                         plugin.html = html;
                                         appWindow.setContent(html);
                                         initScripts();
@@ -108,8 +148,7 @@ var Applications = function(){
                 }
                 break;
             case "frame":
-                pluginPath = "plugins/" + pluginName + "/";
-                FetchService.json(pluginPath + "config.json",function(config){
+                fetchService.json(pluginPath + "config.json",function(config){
                     if (config){
                         if (config.width && config.height){
                             appWindow.setSize(config.width,config.height);
@@ -137,12 +176,12 @@ var Applications = function(){
         frame.addEventListener("mouseleave",function(){
            window.deActivateContent(true);
         });
-        Security.registerUrl(url,window);
+        security.registerUrl(url,window);
         frame.src = url;
     }
     me.loadFrame = loadFrame;
 
-    me.registerApplicationActions = function(pluginName,actions){
+    function registerApplicationActions(pluginName,actions){
         var plugin = getPlugin(pluginName);
         if (plugin){
             plugin.actions = actions;
@@ -160,11 +199,13 @@ var Applications = function(){
         if (pluginName.indexOf(":")>0){
             pluginName = pluginName.split(":")[1];
         }
-
         return plugins[pluginName];
     }
 
     function handleMessage(message,event){
+        //console.error(message.toString);
+        if (message && message.target && message.target.indexOf("metamask-")===0) return;
+
         console.log("Got Message",message);
         if (typeof message === "string"){
 
@@ -174,7 +215,7 @@ var Applications = function(){
 
 
             if (command !== "register"){
-                var appWindow = Security.getWindow(windowId);
+                var appWindow = security.getWindow(windowId);
                 if (!appWindow){
                     console.error("Application window not found, app is not registered");
                     return;
@@ -184,7 +225,7 @@ var Applications = function(){
             if (command){
                 switch (command) {
                     case "register":
-                       var isRegistered = Security.registerWindow(message.url);
+                       var isRegistered = security.registerWindow(message.url);
                        if (isRegistered){
                            var window = isRegistered.window;
                            window.messageTarget = event.source;
@@ -210,12 +251,12 @@ var Applications = function(){
                         break;
                     case "setMenu":
                         appWindow.setMenu(message.data);
-                        MainMenu.setMenu(message.data,appWindow);
+                        mainMenu.setMenu(message.data,appWindow);
                         break;
                     case "getFile":
                         var data = message.data;
                         var callbackId = message.callbackId;
-                        FileSystem.getFile(data.path,data.asBinary).then(file => {
+                        fileSystem.getFile(data.path,data.asBinary).then(file => {
                             console.error(file);
                             event.source.postMessage({
                                 message: "callback",
@@ -233,5 +274,22 @@ var Applications = function(){
         }
     }
 
+    // main object to pass to trusted plugins and apps
+    me.amiBridge = function(){
+        return{
+            registerApplicationActions: registerApplicationActions,
+            service:{
+                fetch: fetchService
+            },
+            fileSystem: fileSystem
+        }
+    }
+
+    // needed for backwards compatibility: :-/
+    me.registerApplicationActions = registerApplicationActions;
+    window.Applications = me;
+
     return me;
-}();
+};
+
+export default Applications();

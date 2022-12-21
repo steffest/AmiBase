@@ -1,18 +1,40 @@
-var AmiIcon = function(config){
+import {uuid, $div, cleanString} from "../util/dom.js";
+import settings from "../settings.js";
+import amiFile from "../system/file.js";
+import ui from "./ui.js";
+import desktop from "./desktop.js";
+import system from "../system/system.js";
+import input from "../input.js";
+import popupMenu from "./popupMenu.js";
+
+let AmiIcon = function(config){
     var me = {
         type:"icon",
         id: uuid(),
         zIndex: 0
     };
 
-    var attachment = config.attachment || undefined;
-
-    var icon = $div("icon " + (Settings.useDelayedDrag?"delayed":""));
+    var icon = $div("icon " + (settings.useDelayedDrag?"delayed":""));
     var img = $div("image " + " " + config.type);
     var label = $div("label","","<span>" + config.label + "</span>");
-    me.iconType = config.type || "file";
+    me.iconType = config.type || "file"; // TODO difference between iconType and type ?
     me.name = config.label;
 
+    if (config.attachment){
+        me.attachment = config.attachment;
+    }else{
+        if (me.iconType === "file"){
+            me.attachment = new amiFile(config);
+        }
+        if (me.iconType === "drive" || me.iconType === "folder"){
+            if (config.items){
+                me.attachment = {
+                    name: config.label,
+                    items: config.items
+                }
+            }
+        }
+    }
 
     if (config.iconClassName){
         icon.className = "icon delayed " + config.iconClassName;
@@ -22,12 +44,12 @@ var AmiIcon = function(config){
         img.classList.add("cover");
     }else if (config.icon){
 
-        async function getIcon(){
+        /*async function getIcon(){
             var filetype;
             var iconPath;
-            if (config.attachment && config.attachment.filetype){
-                filetype = config.attachment.filetype;
-                iconPath = config.attachment.path;
+            if (config.iconInfo && config.iconInfo.filetype){
+                filetype = config.iconInfo.filetype;
+                iconPath = config.iconInfo.path;
             }else{
                 filetype = await System.detectFileType(config.icon);
                 iconPath = config.icon;
@@ -81,10 +103,9 @@ var AmiIcon = function(config){
 
         }
 
+        getIcon();*/
 
 
-
-        getIcon();
 
     }else{
         img.classList.add(cleanString(config.label));
@@ -100,9 +121,14 @@ var AmiIcon = function(config){
         icon.style.transform = "translate(" + left + "px," + top + "px)";
     };
 
+    me.setListPosition = function(top){
+        me.listTop = top;
+        icon.style.transform = "translate(0px," + top + "px)";
+    };
+
     me.element = icon;
     me.setPosition(50,50);
-    UI.enableDrag(me,true);
+    ui.enableDrag(me,true);
 
     me.setIndex = function(zIndex){
         me.zIndex = zIndex+1;
@@ -110,7 +136,7 @@ var AmiIcon = function(config){
     };
 
     me.moveToTop = function(){
-        var zIndex = Desktop.getTopZindex();
+        var zIndex = desktop.getTopZindex();
         if (zIndex>me.zIndex){
             me.setIndex(zIndex+1);
         }
@@ -119,7 +145,7 @@ var AmiIcon = function(config){
     me.activate = function(soft){
         if (!soft){
             me.moveToTop();
-            Desktop.setFocusElement(me);
+            desktop.setFocusElement(me);
         }
         icon.classList.add("active");
     };
@@ -152,36 +178,6 @@ var AmiIcon = function(config){
         return clone;
     };
 
-    /**
-     * attachment
-     * @file BinaryStream object
-     * @filetype : detected filetype
-     * @type "file" or "drawer" or ...
-     * @path string - path where the attachment comes from
-     */
-    me.setAttachment = function(data){
-        attachment=data;
-    };
-    me.getAttachment = function(next){
-        // might be delayed if the file content is not readily available
-        if (attachment){
-            next(attachment)
-        }else{
-            if (config.getAttachment){
-                config.getAttachment(next);
-            }else{
-                // load File?
-                if (config.type === "file" && config.url){
-                    Desktop.loadFile(config.url,function(attachment){
-                        next(attachment);
-                    });
-                }else{
-                    next({});
-                }
-                
-            }
-        }
-    };
 
     me.getConfig = function(){
         return config;
@@ -196,51 +192,78 @@ var AmiIcon = function(config){
         if (path) FileSystem.rename(path,name);
     };
 
+    icon.addEventListener('contextmenu', function(event){
+        event.stopPropagation();
 
-    //icon.onmousedown = function(){
-    //    me.activate();
-    //};
+        if (input.isCtrlDown) return;
+        event.preventDefault();
 
-    icon.ondblclick = function(){
-        console.error(me);
-        if (me.iconType === "drive"){
-            config.id = config.id||uuid();
-            Desktop.openDrive(config);
-        }
-        if (me.iconType === "drawer"){
-            config.id = config.id||uuid();
-            Desktop.openDrawer(config);
-        }
-        if (me.iconType === "program"){
-            Desktop.launchProgram(config);
-        }
-        if (me.iconType === "url"){
-            Desktop.launchUrl(config);
-        }
-        if (me.iconType === "file" || me.iconType === "action"){
-            console.log(config);
-            if (config.onOpen){
-                config.onOpen();
-            }else if(config.handler){
-                if (typeof config.handler === "string"){
-                    Desktop.launchProgram({
-                        url: (config.handler.indexOf(":")<0?"plugin:":"") + config.handler,
-                        onload: function(window){
-                            console.log("app loaded",window);
-                            Applications.sendMessage(window,"openfile",config);
+        if (config.onContext){
+            config.onContext(event.clientX,event.clientY);
+        }else{
+            var items = [];
+            switch (me.iconType){
+                case "file":
+                    items=[
+                        {
+                            label:"Open",
+                            action: function(){
+                                system.openFile(me.attachment);
+                            }
                         }
-                    });
-                }else{
-                    config.handler(me);
-                }
-            }else{
-                me.getAttachment(function(attachment){
-                    Desktop.handleFileOpen(attachment);
-                });
+                    ]
+                    break;
+                default:
+
+            }
+
+            items.push({
+                label:"Info",
+                action: inspect,
+            });
+
+            if (items.length){
+                popupMenu.show({
+                    items: items,
+                    target: me,
+                    x: event.clientX,
+                    y: event.clientY
+                })
             }
         }
-        
-    };
+    });
+
+    ui.onDoubleClick(icon,function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        let iconType = me.iconType;
+        if (!iconType && icon.attachment) iconType= icon.attachment.type;
+        switch(iconType){
+            case "drive":
+                desktop.openDrive(me.attachment);
+                break;
+            case "folder":
+                desktop.openFolder(me.attachment);
+                break;
+            case "program":
+                desktop.launchProgram(config);
+                break;
+            case "url":
+                desktop.launchUrl(config);
+                break;
+            case "file":
+                system.openFile(me.attachment);
+                break;
+        }
+    });
+    
+
+    async function inspect(){
+        let inspector = await system.loadLibrary("inspector.js");
+        inspector.inspect(me.attachment);
+    }
 
     return me;
 };
+
+export default AmiIcon;

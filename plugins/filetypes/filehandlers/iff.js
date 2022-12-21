@@ -225,7 +225,8 @@ var IFF = function(){
 		return canvas;
 	};
 
-	if (FileType) FileType.register(me);
 
 	return me;
-}();
+};
+
+export default IFF();

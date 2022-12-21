@@ -1,0 +1,31 @@
+To implement a filesystem for Amibase:
+
+a filesystem first has to be "mounted"
+a mount describes the type of file system and holds all information needed to access data on that service.
+
+e.g. when the filesystem is HTTP based, the mount would include things like the access token or credentials, API urls ....
+when a filesystem is file-based, the mount would also include a pointer to the file etc.
+
+a filesystem should implement the following
+
+-  getDirectory
+
+returns an object with properties
+- directories
+    {
+        name:
+        size: (optional)
+        data: object with all needed info to handle this directory, handled internally by the filesystem implementation
+    }
+- files
+    {
+        name:
+        size: (optional)
+        data: object with all needed info to handle this directory, handled internally by the filesystem implementation
+    }
+
+
+
+TODO: a filesystem should indicate whether files/content is available over HTTP or not.
+if HTTP then other apps can easily load files themselves, 
+otherwise the filesystem has to read the file first and then pass it as an arraybuffer

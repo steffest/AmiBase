@@ -55,3 +55,24 @@
 
 
 }
+
+.listview .icon{
+    width: 100%;
+    height: 20px;
+
+    .image{
+        display: none;
+    }
+
+    .label{
+        color: black;
+        text-shadow: none;
+        left: 0;
+        text-align: left;
+        
+        span{
+            left: 0;
+            text-align: left;
+        };
+    }
+}

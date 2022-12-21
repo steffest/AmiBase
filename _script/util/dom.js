@@ -1,4 +1,4 @@
-function $div(className,id,content){
+export function $div(className,id,content){
     var elm = document.createElement("div");
     if (className) elm.className = className;
     if (id) elm.id = id;
@@ -12,14 +12,14 @@ function $div(className,id,content){
     return elm;
 }
 
-function getCursorPosition(elm, event) {
+export function getCursorPosition(elm, event) {
     const rect = elm.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     return{x:x,y:y};
 }
 
-function getElementPosition(el) {
+export function getElementPosition(el) {
     var rect = el.getBoundingClientRect(),
         scrollLeft = window.pageXOffset || document.documentElement.scrollLeft,
         scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -27,19 +27,20 @@ function getElementPosition(el) {
 }
 
 
-function uuid() {
+export function uuid() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
 }
 
-function cleanString(s){
+export function cleanString(s){
     s=s.split(" ").join("").toLowerCase();
     return s;
 }
 
-function loadScript(src,onload,onerror){
+export function loadScript(src,onload,onerror){
+    console.warn("DEPRECATED, use import");
     var script = document.createElement('script');
     script.src = src;
     if (onload) script.onload = onload;
@@ -47,8 +48,16 @@ function loadScript(src,onload,onerror){
     document.body.appendChild(script);
 }
 
+export function loadModule(src,onload,onerror){
+    var script = document.createElement('script');
+    script.type = "module";
+    window.mc = onload
+    script.innerText = "import d from './" + src + "'; window.mc(d);delete window.mc;";
+    document.body.appendChild(script);
+}
 
-function loadCss(src,onload){
+
+export function loadCss(src,onload){
     var head  = document.getElementsByTagName('head')[0];
     var link  = document.createElement('link');
     link.rel  = 'stylesheet';

@@ -1,0 +1,123 @@
+[
+  {
+    "type": "filesystem",
+    "label": "Home",
+    "volume": "DH",
+    "handler":"laozi"
+  },
+  {
+    "type": "file",
+    "label": "TheGrid.mp3",
+    "url": "content/files/TheGrid.mp3",
+    "handler":"mediaplayer"
+  },
+  {
+    "type": "file",
+    "label": "Soma.FM",
+    "url":"https://ice1.somafm.com/secretagent-128-mp3",
+    "handler":"mediaplayer"
+  },
+  {
+    "type": "drive",
+    "label" :  "RAM"
+  },
+  {
+    "type": "file",
+    "label": "dd",
+    "url":"https://ice1.somafm.com/secretagent-128-mp3",
+    "handler":"test"
+  },
+  {
+    "type": "drive",
+    "label" :  "System",
+    "width": 400,
+    "height": 300,
+    "items": [
+      {
+        "type": "folder",
+        "label": "Office",
+        "items" : [
+          {"label": "Google Docs","type":"url","url":"https://docs.google.com/document/d/1F00_QG2_06jTGPv1K67g_1QgiixdfhDyhlQJxVwwrWY/edit"},
+          {"label": "Google SpreadSheet", "type":"url","url":"https://docs.google.com/spreadsheets/d/1JZIeLTLouXFoJ_ZuGywWQHsF0xbPdpBOnaZljzL5SRM/edit"},
+          {"label": "KISS", "type":"url","url":"http://home.stef.be:4303/"},
+          {"label": "µTorrent", "type":"url","url":"http://home.stef.be:4042/gui/"}
+        ]
+      },
+      {
+        "type": "folder",
+        "label": "Graphics",
+        "items" : [
+          {"label": "Piskel","type":"url","url":"https://www.piskelapp.com/p/agxzfnBpc2tlbC1hcHByEwsSBlBpc2tlbBiAgKDrjfv0CAw/edit"},
+          {"label": "Icon Editor","type":"url","url":"https://www.stef.be/amiga/ICO/dithering/Amiga-icon-editor/"}
+        ]
+      },
+      {
+        "type": "folder",
+        "label": "Music",
+        "items" : [
+          {"label": "Bassoon Tracker","type":"program","url":"plugin:bassoon"},
+          {"label": "BPM","type":"url","url":"https://www.stef.be/bassoontracker/tools/bpm"},
+          {"label": "MediaPlayer","type":"program","url":"plugin:mediaplayer"}
+        ]
+      },
+      {
+        "type": "folder",
+        "label": "Prefs"
+      },
+      {
+        "type": "folder",
+        "label": "Documents",
+        "items" : [
+          {
+            "type": "file",
+            "label": "demo.mod",
+            "url": "content/files/dragonsfunk.mod"
+          },
+          {
+            "type": "file",
+            "label": "image.png",
+            "url": "content/files/image.png",
+            "handler" : "plugin:imageviewer"
+          },
+          {
+            "type": "file",
+            "label": "TheGrid.mp3",
+            "url": "content/files/TheGrid.mp3",
+            "handler" : "plugin:mediaplayer"
+          },
+          {
+            "type": "file",
+            "label": "Archer 5x08",
+            "url": "content/files/Archer (2009) - 5x08 - Archer Vice The Rules of Extraction.mp4",
+            "handler" : "plugin:videoplayer"
+          },
+          {
+            "type": "file",
+            "label": "Amiga Icon",
+            "path": "content/files/RamDiskAlt_64c.info",
+            "handler" : "plugin:iconeditor",
+            "icon" : "content/files/RamDiskAlt_64c.info"
+          },
+          {
+            "type": "file",
+            "label": "ADF: Battle Squadron",
+            "path": "content/files/Squadron.adf",
+            "handler" : "plugin:uae"
+          },
+          {
+            "type": "file",
+            "label": "HDF: Minimal",
+            "path": "content/files/amiga.hdf",
+            "handler" : "plugin:uae"
+          },
+          {
+            "type": "file",
+            "label": "Ray Man",
+            "path": "content/files/rayman.zip",
+            "handler" : "plugin:dos"
+          }
+        ]
+      }
+    ]
+  }
+]
