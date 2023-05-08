@@ -9,5 +9,8 @@ Work in progress
 
 ####TODO:  
 Lately some ES6 and ES7 features have sneaked in.  
-So... let's asume this is modern browser only then...  
+So... let's assume this is modern browser only then...  
 Then I might as well go all the way and strip all legacy, no?
+
+- Add "Leave out" principle
+- allow in-system editing of static content structures

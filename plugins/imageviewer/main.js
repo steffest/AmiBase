@@ -2,8 +2,10 @@ let ImageViewer = function(){
     console.error("imageviewer here");
 
     let me = {};
+    let currentWindow;
 
     me.init = (window,context)=>{
+        currentWindow = window;
         if (context && context.registerApplicationActions) context.registerApplicationActions("imageviewer",{
             "openfile":async function(file){
                 console.error("imageviewer open file",file);
@@ -12,17 +14,17 @@ let ImageViewer = function(){
                     console.log("handle binary data");
                     var img;
                     if (file.filetype && file.filetype.handler && file.filetype.handler.parse){
-                        var img = file.filetype.handler.parse(file.binary,true);
+                        img = file.filetype.handler.parse(file.binary,true);
                         if (file.filetype.handler.toCanvas){
                             img = file.filetype.handler.toCanvas(img);
                         }
                     }else{
-                        var img = new Image();
+                        img = new Image();
                         var urlObject = URL.createObjectURL(new Blob([file.binary.buffer]));
                         img.src = urlObject;
                     }
                     img.style.width = "100%";
-                    window.setContent(img);
+                    currentWindow.setContent(img);
                 }else if(file.url){
                     var img = new Image();
                     img.onload = function(){
@@ -31,7 +33,7 @@ let ImageViewer = function(){
                     };
                     img.src = file.url;
 
-                    window.setContent(img);
+                    currentWindow.setContent(img);
                     if (file.label) window.setCaption(file.label);
                 }else if(file.path){
                     console.warn("TODO: get file from path",file);
@@ -41,7 +43,7 @@ let ImageViewer = function(){
             }
         });
 
-        if (window.onload) window.onload(window);
+        if (currentWindow.onload) currentWindow.onload(currentWindow);
     }
 
 

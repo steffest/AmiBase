@@ -238,7 +238,7 @@ let System = function(){
 
     me.requestFile = async function(){
         let fileRequester = await me.loadLibrary("filerequester");
-        fileRequester.open();
+        return fileRequester.open();
     }
 
     return me;

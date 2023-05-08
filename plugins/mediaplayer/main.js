@@ -1,6 +1,7 @@
 import {$div, loadCss} from "../../_script/util/dom.js";
 import fetchService from "../../_script/util/fetchService.js";
 import ui from "../../_script/ui/ui.js";
+//import AmpVisualizer from "./vis/main.js";
 
 let MediaPlayer = function(){
     let me = {};
@@ -21,6 +22,8 @@ let MediaPlayer = function(){
     var buttons={};
     var mediaplayer;
     let currentApp;
+    let amiBase;
+    let AmpVisualiser;
 
     function setup(){
         mediaplayer = $div("mediaplayer");
@@ -29,10 +32,13 @@ let MediaPlayer = function(){
     me.init = function (app,context) {
         console.log("mediaplayer here");
 
-        if (context && context.registerApplicationActions) context.registerApplicationActions("mediaplayer",{
-            "openfile": handleFile,
-            "dropfile": handleDropFile
-        });
+        if (context && context.registerApplicationActions){
+            amiBase = context;
+            context.registerApplicationActions("mediaplayer",{
+                "openfile": handleFile,
+                "dropfile": handleDropFile
+            });
+        }
 
         var inner = app.getInner();
         inner.innerHTML = "";
@@ -104,7 +110,7 @@ let MediaPlayer = function(){
             if (config.url && !useAttachment){
                 handleFile(config);
             }else if (data.attachment){
-                FileSystem.getFile(data.attachment,true).then(file=>{
+                amiBase.fileSystem.getFile(data.attachment,true).then(file=>{
                     Player.playFile(file,data.attachment.filetype);
                 })
             }
@@ -196,19 +202,26 @@ let MediaPlayer = function(){
         });
     }
 
-    function showVis(){
-        AmpVisualiser.init();
+    async function showVis(){
+        let module = await import("./vis/main.js");
+        AmpVisualiser = module.default;
+        console.error(AmpVisualiser);
+        AmpVisualiser.init(amiBase);
         visActive = true;
     }
 
     function hideVis(){
-        AmpVisualiser.hide();
-        visActive = false;
+        if (AmpVisualiser){
+            AmpVisualiser.hide();
+            visActive = false;
+        }
     }
 
     function updateVis(data,length){
         if (!visActive) return;
-        AmpVisualiser.update(data,length);
+        if (AmpVisualiser){
+            AmpVisualiser.update(data,length);
+        }
     }
 
     function createButton(item,addClassName){
@@ -234,11 +247,13 @@ let MediaPlayer = function(){
                 setBackground(button,"texture");
             };
             button.onmousedown = function(){
+                console.log("button.onmousedown",item.name);
                 handleAction(item.name);
                 setBackground(button,"down");
                 if (addClassName) button.classList.add("down");
             };
             button.onmouseup = function(){
+                console.log("button.onmouseup");
                 setBackground(button,"hover");
                 if (addClassName) button.classList.remove("down");
             };
@@ -280,7 +295,7 @@ let MediaPlayer = function(){
     }
 
     function openFile(){
-        system.requestFile();
+        amiBase.system.requestFile();
     }
 
     function openUrl(){
@@ -464,7 +479,7 @@ let MediaPlayer = function(){
                 }else{
                     console.log("Can't decode audio data, detecting file type");
                     (async()=>{
-                        type = await System.detectFileType(file);
+                        type = await amiBase.system.detectFileType(file);
                         if (type && type.name && type.name.indexOf("laylist")>=0){
                             return me.playList(file,type)
                         }
@@ -479,7 +494,7 @@ let MediaPlayer = function(){
             if (url && url.buffer){
                 var list = url.toString();
             }else{
-                list =  await FileSystem.readFile(url);
+                list =  await amiBase.fileSystem.readFile(url);
             }
 
             // let's just play the first entry for now
@@ -566,7 +581,7 @@ let MediaPlayer = function(){
     var htmlAudioPlayer = function(){
         var me = {};
         var initDone;
-        var audio;
+        let audio;
         var source;
 
         me.init = function(){
@@ -611,7 +626,26 @@ let MediaPlayer = function(){
         };
 
         me.play = function(){
-            audio.play();
+           let p = audio.play();
+                if (p !== undefined) {
+                    p.then(_ => {
+                        // Autoplay started!
+                    }).catch(error => {
+                        // Autoplay was prevented.
+                        // Show a "Play" button so that user can start playback.
+                        console.error("Could not play audio");
+                        console.error(error);
+
+                        audio.controls = "controls";
+                        audio.volume = 1;
+                        audio.style.zIndex = 100;
+                        let inner = currentApp.getInner();
+                        //inner.innerHTML="";
+                        console.error(audio.src);
+                        //inner.appendChild(audio);
+
+                    });
+                }
         };
         me.pause = function(){
             audio.pause();
@@ -937,7 +971,7 @@ let MediaPlayer = function(){
             }else{
                 masterVolume = audioContext.createGain();
 
-                System.loadScripts("plugins/mediaplayer/players/openmpt/",["chiptune2.js","libopenmpt.js"],function(){
+                amiBase.system.loadScripts("plugins/mediaplayer/players/openmpt/",["chiptune2.js","libopenmpt.js"],function(){
                     libopenmpt.onRuntimeInitialized = _ =>
                     {
 

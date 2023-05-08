@@ -253,10 +253,24 @@ let Applications = function(){
                         appWindow.setMenu(message.data);
                         mainMenu.setMenu(message.data,appWindow);
                         break;
-                    case "getFile":
+                    case "requestFile":
+                        console.error("requestFile");
+                        system.requestFile().then(file=>{
+                            var callbackId = message.callbackId;
+                            console.error(callbackId);
+                            event.source.postMessage({
+                                message: "callback",
+                                data: {
+                                    id: callbackId,
+                                    data: file.path,
+                                    filename:  file.name
+                                }
+                            }, event.origin);
+                        })
+                    case "readFile":
                         var data = message.data;
                         var callbackId = message.callbackId;
-                        fileSystem.getFile(data.path,data.asBinary).then(file => {
+                        fileSystem.readFile(data.path,data.asBinary).then(file => {
                             console.error(file);
                             event.source.postMessage({
                                 message: "callback",
@@ -281,7 +295,8 @@ let Applications = function(){
             service:{
                 fetch: fetchService
             },
-            fileSystem: fileSystem
+            fileSystem: fileSystem,
+            system: system
         }
     }
 

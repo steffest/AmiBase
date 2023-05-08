@@ -202,9 +202,9 @@ var IFF = function(){
 		}
 		console.log(canvas.width,canvas.height);
 		var ctx = canvas.getContext("2d");
-		for (y=0;y<img.height;y++){
+		for (let y=0;y<img.height;y++){
 			var prevColor = [0,0,0];
-			for (x=0;x<img.width;x++){
+			for (let x=0;x<img.width;x++){
 				var pixel = img.pixels[y][x];
 				var color = img.palette[pixel] || [0,0,0];
 				if(img.ham){

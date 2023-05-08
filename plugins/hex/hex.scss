@@ -1,0 +1,46 @@
+.hexeditor{
+  display: flex;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  .gutter{
+    width: 32px;
+    text-align: right;
+    background-color: #88989e;
+    border-right: 1px solid #25333a;
+    font-size: 13px;
+    padding: 3px;
+    line-height: 16px;
+    font-family: monospace;
+  }
+
+  textarea{
+    display: block;
+    border: none;
+    height: 400px;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 16px;
+    overflow: hidden;
+    text-align: center;
+
+    &.hex{
+      width: 410px;
+      background-color: #d6dbde;
+      border-right: 1px solid #809499;
+    }
+
+    &.ascii{
+      width: 146px;
+      background-color: #B1BDC3;
+    }
+
+    &:focus{
+      outline: none;
+    }
+  }
+}

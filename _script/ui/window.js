@@ -493,35 +493,28 @@ let AmiWindow = function(config){
                         // TODO
                         console.error("Rework!")
                     }
-                    
-                   
+
                     if (data.type === "file"){
                         messageData = {
                             filename: data.name,
                             path: data.path,
-                            attachment: data.attachment,
+                            attachment: data.attachment, // TODO: do we still use attachment?
                             url: data.url
                         };
+                        if (data.binary){
+                            messageData.data = data.binary.buffer;
+                        }
                         
                         // TODO: only load when no HTTP is available
                         // and only when data is not loaded yet
 
                         if (!messageData.url && !data.data){
-                            messageData.data = await fileSystem.getFile(data);
+                            messageData.data = await fileSystem.readFile(data);
                             // make sure it's an arraybuffer
                             if (messageData.data.buffer)  messageData.data = messageData.data.buffer;
                         }
                      }
-                        
-                    // TODO: do we still this data file and buffer
-                    /*
-                    if (data.type === "file" && data.file){
-                        messageData = {
-                            filename: data.file.name,
-                            data: data.file.buffer
-                        };
-                    }
-                    */
+
 
                     if (!messageData){
                         // we can't send functions or circular structures to another frame;

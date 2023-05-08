@@ -12,10 +12,10 @@ var Input = function(){
     };
 
     function setMetaKeys(e){
-        Input.isShiftDown = !! e.shiftKey;
-        Input.isAltDown = !! e.altKey;
-        Input.isCtrlDown = !! e.ctrlKey;
-        Input.isMetaDown = !! e.metaKey;
+        me.isShiftDown = !! e.shiftKey;
+        me.isAltDown = !! e.altKey;
+        me.isCtrlDown = !! e.ctrlKey;
+        me.isMetaDown = !! e.metaKey;
     }
 
     return me;

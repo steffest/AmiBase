@@ -1,3 +1,5 @@
+import desktop from "../../../_script/ui/desktop.js";
+
 var AmpVisualiser = function(){
     var me = {};
 
@@ -49,8 +51,8 @@ var AmpVisualiser = function(){
     ];
     var effectIndex = ((Math.random() * effectNames.length-1) >> 0) + 1;
 
-    me.init = function(){
-        visWindow = Desktop.createWindow({label: "Visualiser"});
+    me.init = function(amiBase){
+        visWindow = desktop.createWindow({label: "Visualiser"});
         visWindow.setSize(640,480);
         canvas = document.createElement("canvas");
         canvas2 = document.createElement("canvas");
@@ -264,3 +266,5 @@ var AmpVisualiser = function(){
 
     return me;
 }();
+
+export default AmpVisualiser;

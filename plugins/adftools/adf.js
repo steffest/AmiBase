@@ -1146,5 +1146,7 @@ var ADF = function(){
     }
 
 	return me;
-}();
+};
+
+export default ADF();
 

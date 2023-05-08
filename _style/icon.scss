@@ -23,6 +23,12 @@
             background-repeat: no-repeat;
             background-position: center center;
         }
+
+        &.contain{
+            background-size:contain;
+            background-repeat: no-repeat;
+            background-position: center center;
+        }
     }
 
     .label{

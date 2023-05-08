@@ -1,7 +1,7 @@
 {
   "name" : "FileRequester",
   "version" : "0.0.1",
-  "modile": "plugin.js",
+  "module": "plugin.js",
   "styles": ["main.css"],
   "index": ""
 }

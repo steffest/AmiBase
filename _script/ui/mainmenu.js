@@ -40,8 +40,11 @@ let MainMenu = function(){
                 },
                 {
                     label:"Open File",
-                    action: function(){
-                        system.requestFile();
+                    action: async ()=>{
+                        let file = await system.requestFile();
+                        if (file){
+                            system.openFile(file)
+                        }
                     }
                 },
                 {

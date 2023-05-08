@@ -40,8 +40,21 @@ let AmiIcon = function(config){
         icon.className = "icon delayed " + config.iconClassName;
     }
     if (config.image){
-        img.style.backgroundImage = "url('" + config.image + "')";
-        img.classList.add("cover");
+        if (typeof config.image === "string"){
+            img.style.backgroundImage = "url('" + config.image + "')";
+            img.style.backgroundPosition = "center center";
+            img.classList.add("cover");
+        }else{
+            let info = config.image[0];
+            img.style.backgroundImage = "url('" + info.url + "')";
+            if (info.width && info.height){
+                img.style.width = info.width + "px";
+                img.style.height = info.height + "px";
+                icon.style.width = info.width + "px";
+                img.classList.add("contain");
+            }
+        }
+
     }else if (config.icon){
 
         /*async function getIcon(){
