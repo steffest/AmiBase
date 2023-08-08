@@ -45,7 +45,8 @@ let FileSystem = function(){
             attachment: amiDrive({
                 name: name,
                 volume: volume,
-                path: volume + ":"
+                path: volume + ":",
+                data: data
             })
         });
         desktop.cleanUp();
@@ -53,6 +54,7 @@ let FileSystem = function(){
         await system.loadLibrary(plugin);
         mounts[volume].mounted = true;
         mounts[volume].handler = fileSystems[plugin];
+        mounts[volume].config = data;
     };
 
     me.isReadOnly = function(file){
@@ -93,31 +95,38 @@ let FileSystem = function(){
 
 
     me.getDirectory = async function(folder, resolveFiles, resolveFiletypes, target){
+        console.log("getDirectory",folder);
         if (typeof folder === "string") folder={path:folder};
+        if (!folder){
+            console.error("Error opening folder: no folder specified");
+            return;
+        }
         var path = folder.path;
         var mount = me.getMount(path);
+
+        console.log("mount",mount);
         
         if  (mount.handler){
-            var data = await mount.handler.getDirectory(folder);
+            var data = await mount.handler.getDirectory(folder,mount.data);
             if (resolveFiles){
                 var result = {
                     directories:[],
                     files:[]
                 }
                 for (const dir of data.directories) {
-                    var folder = amiFolder({
+                    var _folder = amiFolder({
                         name: dir.name,
                         path: path + dir.name + "/",
                         head:dir.head
                     })
                     
-                    result.directories.push(folder);
+                    result.directories.push(_folder);
                     
                     if  (target){
                         var iconConfig = {
                             type: "folder",
                             label: dir.name,
-                            attachment: folder
+                            attachment: _folder
                         };
 
                         
@@ -196,12 +205,14 @@ let FileSystem = function(){
         }
     };
 
-    // returns the content of the file, default as ascii, optionals as binarystream
+    // returns the content of the file, default as ascii, optional as binarystream
     me.readFile = function(file,binary){
+        console.log("readFile",file);
         file = normalize(file);
-        console.error("readFile",file);
+        console.log("readFile",file);
         return new Promise(async next => {
             let mount = me.getMount(file);
+            console.error(mount);
             if  (mount.handler){
                 let result = await mount.handler.readFile(file,binary);
                 next(result);
@@ -257,10 +268,7 @@ let FileSystem = function(){
             console.log("Move File",file,fromPath,toPath);
             var mount = me.getMount(fromPath);
             var targetMount = me.getMount(toPath);
-            if (fromPath === "upload"){
-                var result = await targetMount.handler.uploadFile(file,toPath);
-                next(result);
-            }else if (mount.handler){
+            if (mount.handler){
                 // TODO: move accross different volumes
                 fromPath = fromPath + '/' + file.name;
 

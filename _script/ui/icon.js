@@ -259,7 +259,7 @@ let AmiIcon = function(config){
                 desktop.openFolder(me.attachment);
                 break;
             case "program":
-                desktop.launchProgram(config);
+                system.launchProgram(config);
                 break;
             case "url":
                 desktop.launchUrl(config);

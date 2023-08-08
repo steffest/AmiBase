@@ -19,35 +19,50 @@ let Notepad = ()=>{
     }
 
     me.init = function(containerWindow,context){
-        var container = containerWindow.getInner();
-        container.innerHTML += '<br>Active';
+        return new Promise((next)=>{
+            var container = containerWindow.getInner();
+            container.innerHTML += '<br>Active';
 
-        if (!textarea) setup();
+            if (!textarea) setup();
 
-        container.innerHTML = "";
-        container.appendChild(textarea);
-        currentWindow = containerWindow;
+            container.innerHTML = "";
+            container.appendChild(textarea);
+            currentWindow = containerWindow;
+            textarea.value = "loading ...";
 
-        var menu = [
-            {label: "Notepad",items:[{label: "About"}]},
-            {label: "File",items:[
-                    {label: "Open",id:"np-open",action:()=>open()},
-                    {label: "Save",id:"np-save",action:()=>save()}
-                ]}
-        ];
+            var menu = [
+                {label: "Notepad",items:[{label: "About"}]},
+                {label: "File",items:[
+                        {label: "Open",id:"np-open",action:()=>open()},
+                        {label: "Save",id:"np-save",action:()=>save()}
+                    ]}
+            ];
 
-        containerWindow.setMenu(menu,true);
+            containerWindow.setMenu(menu,true);
 
 
-        if (context && context.registerApplicationActions){
-            amiBase = context;
-            context.registerApplicationActions("notepad",{
-                "openfile":openFile
-            });
+            if (context && context.registerApplicationActions){
+                amiBase = context;
+                context.registerApplicationActions("notepad",{
+                    "openfile":openFile
+                });
+            }
+
+
+            if (containerWindow.onload) {
+                console.error("DEPRECATED: plugin onload");
+                containerWindow.onload(containerWindow);
+            }
+
+            next();
+        });
+    }
+
+    me.onMessage = function(message,data){
+        console.error("notepad onMessage",message,data);
+        if (message === "openfile"){
+            openFile(data);
         }
-
-        if (containerWindow.onload) containerWindow.onload(containerWindow);
-
     }
 
     async function open(){
@@ -63,14 +78,18 @@ let Notepad = ()=>{
     }
 
     async function openFile(file){
-        console.error("notepad open file");
+        console.error("notepad open file",file);
         currentFile = file;
-        let content = await amiBase.fileSystem.readFile(file);
-        if (typeof content !== "string") content  = String.fromCharCode.apply(null, new Uint8Array(content));
-        textarea.value = content;
+        textarea.value = "this is file " + file.name;
+        if (amiBase && amiBase.fileSystem){
+            let content = await amiBase.fileSystem.readFile(file);
+            if (typeof content !== "string") content  = String.fromCharCode.apply(null, new Uint8Array(content));
+            textarea.value = content;
 
-        let readOnly = await amiBase.fileSystem.isReadOnly(file);
-        currentWindow.setMenuItem("np-save","",!readOnly);
+            let readOnly = await amiBase.fileSystem.isReadOnly(file);
+            currentWindow.setMenuItem("np-save","",!readOnly);
+        }
+
     }
 
     return me;

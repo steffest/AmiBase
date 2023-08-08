@@ -1,0 +1,48 @@
+body.theme_colourcandy{
+  $window-border-color:#32353c;
+
+  #desktop{
+    background-color: #283f45;
+    background-image: url("backgrounds/purple.jpg");
+    background-size: 100% 100%;
+
+    .window{
+      background-color: #282a2d;
+      border: 2px solid #36475f;
+      box-shadow: -1px -1px 0 0 rgba(96,107,119,0.8), 1px 1px 0 0 rgba(0,0,0,0.8);
+
+      .bar{
+        background-color: #3e4e65;
+      }
+    }
+  }
+
+  .icon{
+    width: 64px;
+    height: 64px;
+    .image{
+      width: 64px;
+      height: 64px;
+      background-color: transparent;
+      border-radius: 0;
+      background-repeat: no-repeat;
+    }
+
+    .label{
+      text-shadow: 0 0 2px black;
+      padding: 0;
+    }
+
+    &.active{
+
+      .image {
+        box-shadow: none;
+        filter: drop-shadow(0px 0px 6px orange) sepia(0.4) brightness(1.2);
+      }
+
+      .label{
+        text-shadow: 0 0 2px yellow;
+      }
+    }
+  }
+}

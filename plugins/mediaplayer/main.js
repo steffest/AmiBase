@@ -30,29 +30,34 @@ let MediaPlayer = function(){
     }
 
     me.init = function (app,context) {
-        console.log("mediaplayer here");
+        return new Promise((next)=>{
+            console.log("mediaplayer here");
 
-        if (context && context.registerApplicationActions){
-            amiBase = context;
-            context.registerApplicationActions("mediaplayer",{
-                "openfile": handleFile,
-                "dropfile": handleDropFile
-            });
-        }
+            if (context && context.registerApplicationActions){
+                amiBase = context;
+                context.registerApplicationActions("mediaplayer",{
+                    "openfile": handleFile,
+                    "dropfile": handleDropFile
+                });
+            }
 
-        var inner = app.getInner();
-        inner.innerHTML = "";
-        currentApp = app;
+            var inner = app.getInner();
+            inner.innerHTML = "";
+            currentApp = app;
 
-        if (!mediaplayer){
-            setup();
-        }
-        inner.appendChild(mediaplayer);
-        if (!audioContext) setupAudio();
-        loadSkin();
+            if (!mediaplayer){
+                setup();
+            }
+            inner.appendChild(mediaplayer);
+            if (!audioContext) setupAudio();
+            loadSkin();
 
-        app.setMenu(menu,true);
-        if (app.onload) app.onload(app);
+            app.setMenu(menu,true);
+            if (app.onload) app.onload(app);
+            next();
+
+        })
+
     }
 
     var menu = [

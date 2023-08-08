@@ -24,18 +24,18 @@ let MainMenu = function(){
                 {
                     label:"About",
                     action: function(){
-                        desktop.launchProgram({
+                        system.launchProgram({
                             url: "plugin:notepad",
                             width: 400,
-                            height: 200,
-                            onload: function(window){
-                                applications.sendMessage(window,"openfile",{
-                                    type: "file",
-                                    label: "About " + settings.name || "Amibase",
-                                    url: settings.aboutUrl || "content/files/about.txt"
-                                });
-                            }
+                            height: 200
+                        }).then(window=>{
+                            applications.sendMessage(window,"openfile",{
+                                type: "file",
+                                label: "About " + settings.name || "Amibase",
+                                url: settings.aboutUrl || "content/files/about.txt"
+                            });
                         });
+
                     },
                 },
                 {
@@ -61,19 +61,13 @@ let MainMenu = function(){
                     }
                 },
                 {
-                    label:"Import Content",
+                    label:"Settings",
                     action: function(){
-                        var w = desktop.createWindow({label:"Content"});
-                        var items = [
-                            {label: "Youtube", type:"drawer"},
-                            {label: "Vimeo", type:"drawer"},
-                            {label: "Upload File", type:"file"},
-                            {label: "Other", type:"drawer"},
-                        ];
-                        items.forEach(item => {
-                            w.createIcon(item);
+                        system.launchProgram({
+                            url: "plugin:settings",
+                            width: 400,
+                            height: 200
                         });
-                        w.cleanUp();
                     }
                 }
             ]
@@ -173,6 +167,7 @@ let MainMenu = function(){
 
         //var homebutton =$div("homebutton","","<div>AmiBase <small>v" + settings.version + "</small></div>");
         var homebutton =$div("homebutton","","<div>" + (settings.name || "Amibase") + " <small>v" + settings.version + "</small></div>");
+
         messageContainer = $div("message");
         root=$div("menu");
 
@@ -222,12 +217,11 @@ let MainMenu = function(){
                         iconMenu[0].items[3] = {
                             label:"Open In Editor",
                             action: function(){
-                                desktop.launchProgram({
-                                    url: "plugin:iconeditor",
-                                    onload: function(window){
-                                        Applications.sendMessage(window,"openfile",focusElement.getConfig());
-                                    }
-                                });
+                                system.launchProgram({
+                                    url: "plugin:iconeditor"
+                                }).then(window=>{
+                                    Applications.sendMessage(window,"openfile",focusElement.getConfig());
+                                })
                             }
                         }
                     }else{
@@ -359,7 +353,7 @@ let MainMenu = function(){
                         item.action();
                     }
                     if (typeof item.action === "string"){
-                        desktop.launchProgram(item.action);
+                        system.launchProgram(item.action);
                     }
                 }
                 if (item.message){

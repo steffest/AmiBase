@@ -19,14 +19,17 @@ let AmiFile = function(config){
     me.head = config.head;
     me.filetype= config.filetype;
     me.isAmiFile = true;
+
+    if (!me.path) me.path = me.url;
     
-    if (me.url && me.url.indexOf("://")<0){
+    if (me.url && me.url.indexOf(":")<0){
         var link = document.createElement("a");
         link.href = me.url;
         me.url = link.href;
+        // note: this converts the url to lowercase?
     }
 
-    if (!me.path) me.path = me.url;
+
 
     return me;
 }

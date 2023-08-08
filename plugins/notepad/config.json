@@ -1,5 +1,4 @@
 {
-  "_scripts": ["main.js"],
   "styles": ["main.css"],
   "index": "index.html",
   "module": "main.js"

@@ -10,8 +10,12 @@ var Laozi = async function() {
     var {default: api} = await import("./api.js");
 
 
-    me.getDirectory = async function(folder,_next){
+    me.getDirectory = async function(folder,config,_next){
         var path = folder.path;
+        console.error("getDirectory",path,config);
+        if (config && config.url){
+            endPoint = config.url;
+        }
 
         return new Promise((resolve,reject) => {
             var next = _next || resolve;

@@ -1,2 +1,0 @@
-// fallback javascript for browsers that don't support module and async
-document.body.innerHTML = "<center><br><br><h2>Sorry</h2>This application is written for modern browsers. <br><br>Currently there is no version available that works on your browser.</center>";

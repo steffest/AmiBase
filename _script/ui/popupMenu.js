@@ -2,6 +2,7 @@ import eventBus from "../util/eventBus.js";
 import {EVENT} from "../enum.js";
 import desktop from "./desktop.js";
 import {$div} from "../util/dom.js";
+import system from "../system/system.js";
 let PopupMenu = function(){
 
     var me = {};
@@ -91,7 +92,7 @@ let PopupMenu = function(){
                         item.action();
                     }
                     if (typeof item.action === "string"){
-                        Desktop.launchProgram(item.action);
+                        system.launchProgram(item.action);
                     }
                 }
             },0);

@@ -2,6 +2,10 @@ import settings from "./settings.js";
 let User = function(){
     var me = {};
 
+    me.init = function(){
+
+    }
+
     me.storeSetting = function(key,value){
         if (typeof value === "object") value = "json:" + JSON.stringify(value);
         localStorage.setItem(key,value);

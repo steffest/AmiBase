@@ -39,23 +39,6 @@ export function cleanString(s){
     return s;
 }
 
-export function loadScript(src,onload,onerror){
-    console.warn("DEPRECATED, use import");
-    var script = document.createElement('script');
-    script.src = src;
-    if (onload) script.onload = onload;
-    if (onerror) script.onerror = onerror;
-    document.body.appendChild(script);
-}
-
-export function loadModule(src,onload,onerror){
-    var script = document.createElement('script');
-    script.type = "module";
-    window.mc = onload
-    script.innerText = "import d from './" + src + "'; window.mc(d);delete window.mc;";
-    document.body.appendChild(script);
-}
-
 
 export function loadCss(src,onload){
     var head  = document.getElementsByTagName('head')[0];

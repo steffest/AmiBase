@@ -2,3 +2,6 @@ Integrate https://github.com/jberg/butterchurn
 and
 https://github.com/azeem/webvs
 
+
+https://interactjs.io/ seems to have a really performant drag/drop system
+

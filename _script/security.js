@@ -6,7 +6,7 @@ var Security = function(){
     /*
     Whenever we launch a new program in a frame, we record the url
     When a program (running inside a frame) wants to access AmiBase related features,
-    It has to register itself with he exact same url as launched
+    It has to register itself with the exact same url as launched
      */
     var allowedUrls=[];
 

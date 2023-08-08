@@ -43,129 +43,134 @@ let Applications = function(){
     
     me.load = function(pluginName,appWindow){
         console.log("loading " + pluginName + " into " + appWindow.getCaption());
-        appWindow.setContent("loading");
-        appWindow.plugin = pluginName;
+        return new Promise(function(next){
+            appWindow.setContent("loading");
+            appWindow.plugin = pluginName;
 
-        if (pluginName.indexOf(":")>0){
-            var pluginType = pluginName.split(":")[0];
-            pluginName = pluginName.split(":")[1];
-        }else{
-            pluginType = "plugin"
-        }
-        let pluginPath = "plugins/" + pluginName + "/";
+            if (pluginName.indexOf(":")>0){
+                var pluginType = pluginName.split(":")[0];
+                pluginName = pluginName.split(":")[1];
+            }else{
+                pluginType = "plugin"
+            }
+            let pluginPath = "plugins/" + pluginName + "/";
 
-        switch (pluginType) {
-            case "plugin":
-                // this is a trusted plugin, we can just load all files
-                var plugin = plugins[pluginName];
+            switch (pluginType) {
+                case "plugin":
+                    // this is a trusted plugin, we can just load all files
+                    var plugin = plugins[pluginName];
 
-                if (plugin){
-                    console.log("plugin already loaded");
-                    appWindow.isApplication = true;
-                    var config = plugin.config;
-                    if (config.width && config.height) appWindow.setSize(config.width,config.height);
-                    if (config.left && config.top) appWindow.setPosition(config.left,config.top);
-                    //console.error(config);
+                    if (plugin){
+                        console.log("plugin already loaded");
+                        appWindow.isApplication = true;
+                        var config = plugin.config;
+                        if (config.width && config.height) appWindow.setSize(config.width,config.height);
+                        if (config.left && config.top) appWindow.setPosition(config.left,config.top);
+                        //console.error(config);
 
-                    function initPlugin(){
-                        if (plugin.init){
-                            let f = plugin.init;
-                            if (typeof f === "string") f = mainContext[plugin.init];
-                            f(appWindow);
-                        }
-                    }
-
-                    if (config.index){
-                        if (config.index.indexOf("://")>0){
-                            loadFrame(config.index,appWindow);
-                        }else{
-                            appWindow.setContent(plugin.html);
-                        }
-                        initPlugin();
-                    }else{
-                        initPlugin();
-                    }
-                }else{
-                    plugin={};
-                    fetchService.json(pluginPath + "config.json",function(config){
-                        if (config){
-                            appWindow.isApplication = true;
-                            plugin.config=config;
-                            if (config.width && config.height) appWindow.setSize(config.width,config.height);
-                            if (config.left && config.top) appWindow.setPosition(config.left,config.top);
-
-                            function initScripts(){
-                                if (config.scripts) {
-                                    console.error("DEPRECATED")
-                                    var initDone = false;
-                                    system.loadScripts(pluginPath, config.scripts, function () {
-                                        if (!initDone && mainContext[pluginName + '_plugin_init']) {
-                                            plugin.init = pluginName + '_plugin_init';
-                                            plugins[pluginName] = plugin;
-                                            mainContext[plugin.init](appWindow);
-                                            initDone = true;
-                                        }
-                                    });
-                                }else if (config.module){
-                                    import("../" + pluginPath + config.module).then(p=>{
-                                        plugin.handler = p.default;
-                                        plugins[pluginName] = plugin;
-                                        if (plugin.handler.init){
-                                            plugin.init = plugin.handler.init
-                                            plugin.init(appWindow,me.amiBridge());
-                                        }
-                                        initDone = true;
-                                    });
-                                }else{
-                                    plugins[pluginName] = plugin;
-                                    initDone = true;
-                                }
+                        function initPlugin(){
+                            if (plugin.init){
+                                let f = plugin.init;
+                                if (typeof f === "string") f = mainContext[plugin.init];
+                                f(appWindow);
+                                next();
                             }
+                        }
 
-                            if (config.index){
-                                if (config.index.indexOf("://")>0){
-                                    loadFrame(config.index,appWindow);
+                        if (config.index){
+                            if (config.index.indexOf("://")>0){
+                                loadFrame(config.index,appWindow);
+                            }else{
+                                appWindow.setContent(plugin.html);
+                            }
+                            initPlugin();
+                        }else{
+                            initPlugin();
+                        }
+                    }else{
+                        plugin={};
+                        fetchService.json(pluginPath + "config.json",function(config){
+                            if (config){
+                                appWindow.isApplication = true;
+                                plugin.config=config;
+                                if (config.width && config.height) appWindow.setSize(config.width,config.height);
+                                if (config.left && config.top) appWindow.setPosition(config.left,config.top);
+
+                                function initScripts(){
+                                    if (config.scripts) {
+                                        console.error("DEPRECATED !!!!!")
+                                        var initDone = false;
+                                        system.loadScripts(pluginPath, config.scripts, function () {
+                                            if (!initDone && mainContext[pluginName + '_plugin_init']) {
+                                                plugin.init = pluginName + '_plugin_init';
+                                                plugins[pluginName] = plugin;
+                                                mainContext[plugin.init](appWindow);
+                                                initDone = true;
+                                            }
+                                        });
+                                    }else if (config.module){
+                                        import("../" + pluginPath + config.module).then(p=>{
+                                            plugin.handler = p.default;
+                                            plugins[pluginName] = plugin;
+                                            if (plugin.handler.init){
+                                                plugin.init = plugin.handler.init
+                                                plugin.init(appWindow,me.amiBridge());
+                                            }
+                                            initDone = true;
+                                            next();
+                                        });
+                                    }else{
+                                        plugins[pluginName] = plugin;
+                                        initDone = true;
+                                        next();
+                                    }
+                                }
+
+                                if (config.index){
+                                    if (config.index.indexOf("://")>0){
+                                        loadFrame(config.index,appWindow);
+                                    }else{
+                                        fetchService.html(pluginPath + config.index,function(html){
+                                            plugin.html = html;
+                                            appWindow.setContent(html);
+                                            initScripts();
+                                        });
+                                    }
                                 }else{
-                                    fetchService.html(pluginPath + config.index,function(html){
-                                        plugin.html = html;
-                                        appWindow.setContent(html);
-                                        initScripts();
-                                    });
+                                    initScripts();
+                                }
+
+                                if (config.styles){
+                                    config.styles.forEach(function(src){
+                                        loadCss(pluginPath + src);
+                                    })
                                 }
                             }else{
-                                initScripts();
+                                console.error("Error: Plugin " + pluginName + " not found");
                             }
-
-                            if (config.styles){
-                                config.styles.forEach(function(src){
-                                    loadCss(pluginPath + src);
-                                })
+                        });
+                    }
+                    break;
+                case "frame":
+                    fetchService.json(pluginPath + "config.json",function(config){
+                        if (config){
+                            if (config.width && config.height){
+                                appWindow.setSize(config.width,config.height);
+                            }
+                            if (config.index){
+                                var frameUrl = config.index;
+                                if (config.index.indexOf("://")<0) frameUrl = pluginPath + frameUrl;
+                                loadFrame(frameUrl,appWindow);
                             }
                         }else{
                             console.error("Error: Plugin " + pluginName + " not found");
                         }
                     });
-                }
-                break;
-            case "frame":
-                fetchService.json(pluginPath + "config.json",function(config){
-                    if (config){
-                        if (config.width && config.height){
-                            appWindow.setSize(config.width,config.height);
-                        }
-                        if (config.index){
-                            var frameUrl = config.index;
-                            if (config.index.indexOf("://")<0) frameUrl = pluginPath + frameUrl;
-                            loadFrame(frameUrl,appWindow);
-                        }
-                    }else{
-                        console.error("Error: Plugin " + pluginName + " not found");
-                    }
-                });
-                break;
-            default:
-                console.error("Error: Unknown plugin type: " + pluginType);
-        }
+                    break;
+                default:
+                    console.error("Error: Unknown plugin type: " + pluginType);
+            }
+        })
     };
 
     function loadFrame(url,window){

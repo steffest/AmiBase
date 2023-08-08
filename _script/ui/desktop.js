@@ -62,6 +62,7 @@ let Desktop = function(){
 
 
     me.openFolder = function(folder){
+        console.log("open Folder",folder);
         var w = windows.find(function(w){return w ? w.id === folder.id : false});
         
         if (w){
@@ -88,6 +89,7 @@ let Desktop = function(){
     };
 
     me.openDrive = async function(drive){
+        console.log("open Drive",drive);
         if (drive.volume){
             let w = me.createWindow(drive);
             fileSystem.getDirectory(drive.volume + ":",true,true,w);
@@ -100,31 +102,6 @@ let Desktop = function(){
       return windows;  
     };
 
-    me.launchProgram = function(config,onload){
-        if (typeof config === "string"){
-            config = {
-                url: config
-            }
-        }
-        var window = windows.find(function(w){return w.id === config.id});
-        var label = config.label || config.url.split(":")[1];
-        var windowConfig = {
-            caption: label,
-            width: config.width,
-            height: config.height
-        };
-        
-        // hmmm...
-        if (config.url && config.url.indexOf("mediaplayer")>=0) windowConfig.border =  false;
-        
-        let w = me.createWindow(windowConfig);
-        if (onload && config.onload) {
-            console.warn("WARNING: you have 2 onload handlers defined");
-        }
-        w.onload = onload || config.onload;
-        applications.load(config.url,w);
-    };
-
     me.launchUrl = function(config){
         if (config.target === "_blank"){
             window.open(config.url);
@@ -134,7 +111,6 @@ let Desktop = function(){
             w.setSize(800,600);
             applications.loadFrame(config.url,w);
         }
-
     };
 
     me.removeWindow = function(window){
@@ -244,6 +220,8 @@ let Desktop = function(){
 
                 if (file.filetype.mountFileSystem){
                     fileSystem.mount(file.name,file.filetype.mountFileSystem.volume,file.filetype.mountFileSystem.plugin,file)
+                }else{
+                    fileSystem.getMount("ram:").handler.addFile(file);
                 }
             };
             reader.readAsArrayBuffer(uploadfile);
@@ -251,19 +229,26 @@ let Desktop = function(){
     };
 
 
-    me.loadContent = function(url){
-        url = url||"content/default.json";
-        fetchService.json(url,function(data){
-            data.forEach(function(item){
+    me.loadContent = function(data){
+        if (!data || typeof data === "string"){
+            data = data||"content/default.json";
+            fetchService.json(data,function(_data){
+                setContent(_data);
+            });
+        }else{
+            setContent(data);
+        }
+
+        function setContent(content){
+            content.forEach(function(item){
                 if (item.type === "filesystem"){
-                    fileSystem.mount(item.label,item.volume,item.handler);
+                    fileSystem.mount(item.label,item.volume,item.handler,item);
                 }else{
                     me.createIcon(item);
                 }
-
             });
             me.cleanUp();
-        });
+        }
     };
 
     me.loadTheme = function(name){

@@ -3,7 +3,7 @@
 */
 
 import settings from "../settings.js";
-import {loadScript, loadCss} from "../util/dom.js";
+import {loadCss} from "../util/dom.js";
 import fetchService from "../util/fetchService.js";
 import desktop from "../ui/desktop.js";
 import applications from "../applications.js";
@@ -14,26 +14,44 @@ let System = function(){
 
     me.loadEnvironment = function(){
         return new Promise(function(next){
-            var env = document.location.search;
+            let env = document.location.search;
 
-            if (window.location.href.indexOf("choice.be")>0) env=".choice";
+            let localSettings = localStorage.getItem("settings");
+            if (localSettings){
+                try {
+                    localSettings = JSON.parse(localSettings);
+                }catch (e) {
+                    localSettings = {};
+                }
+                console.log("localSettings",localSettings);
+                for (var key in localSettings){
+                    settings[key] = localSettings[key];
+                }
+            }
 
             if (env){
                 env = env.substring(1);
                 if (env.indexOf("=")) env=env.split("=")[0];
                 settings.tenant = env;
 
-                function setEnv(){
+                function setEnv(tenantSettings){
                     console.log("Setting environment to " + env);
-                    if (ENV && ENV.settings){
-                        for (var key in ENV.settings){
-                            settings[key] = ENV.settings[key];
+                    if (tenantSettings){
+                        for (var key in tenantSettings){
+                            settings[key] = tenantSettings[key];
                         }
                     }
                     next();
                 }
 
-               loadScript("config/" + env + ".js",setEnv, next);
+                import("../../config/" + env + ".js").then(module=>{
+                    setEnv(module.default);
+                }).catch(e=>{
+                    console.log("No config file found for " + env);
+                    console.log(e);
+                    next();
+                });
+
             }else{
                 next();
             }
@@ -107,50 +125,6 @@ let System = function(){
         });
     };
 
-    let loadScripts = function(pluginPath,list,next){
-        console.error("DEPRECATED");
-        if (list && list.length){
-            var loadCount = 0;
-            var loadTarget = list.length;
-
-            if (typeof list[0] === "string"){
-                // load all scripts in parallel
-                list.forEach(function(src){
-                    loadScript(pluginPath + src,function(){
-                        loadCount++;
-                        if (loadCount>=loadTarget){
-                            if (next) next();
-                        }
-                    });
-                })
-            }else{
-                // load scripts in sequential groups;
-                function loadNextGroup(){
-                    var group = list.shift();
-                    var loadCount = 0;
-                    var loadTarget = group.length;
-                    group.forEach(function(src){
-                        loadScript(pluginPath + src,function(){
-                            loadCount++;
-                            if (loadCount>=loadTarget){
-                                if (list.length){
-                                    loadNextGroup();
-                                }else{
-                                    if (next) next();
-                                }
-                            }
-                        });
-                    })
-                }
-                loadNextGroup();
-            }
-
-        }else{
-            if (next) next();
-        }
-
-    };
-    me.loadScripts = loadScripts;
 
     // detects type from binary structure
     me.inspectBinary = async function(arrayBuffer, name){
@@ -180,24 +154,23 @@ let System = function(){
          console.error("openFile",file,plugin,action);
 
          if (plugin){
-             desktop.launchProgram({
-                 url: "plugin:" + plugin,
-                 onload: function(window){
-                     applications.sendMessage(window,"openfile",file);
-                 }
-             });
+             me.launchProgram({
+                 url: "plugin:" + plugin
+             }).then(window=>{
+                 console.error("app loaded",window);
+                 applications.sendMessage(window,"openfile",file);
+             })
              return;
          }
 
          // default action
          if(file.handler){
              if (typeof file.handler === "string"){
-                 desktop.launchProgram({
-                     url: (file.handler.indexOf(":")<0?"plugin:":"") + file.handler,
-                     onload: function(window){
-                         console.log("app loaded",window);
-                         applications.sendMessage(window,"openfile",file);
-                     }
+                 me.launchProgram({
+                     url: (file.handler.indexOf(":")<0?"plugin:":"") + file.handler
+                 }).then(window=>{
+                     console.log("app loaded",window);
+                     applications.sendMessage(window,"openfile",file);
                  });
              }else{
                  file.handler(me);
@@ -215,13 +188,12 @@ let System = function(){
                  if (!thisAction && filetype.actions) thisAction=filetype.actions[0];
                  if (thisAction){
                      if (thisAction.plugin){
-                         desktop.launchProgram({
+                         me.launchProgram({
                              url: "plugin:" + thisAction.plugin,
-                             onload: function(window){
-                                 console.log("app loaded");
-                                 console.log(file);
-                                 applications.sendMessage(window,"openfile",file);
-                             }
+                         }).then(window=>{
+                             console.log("app loaded");
+                             console.log(file);
+                             applications.sendMessage(window,"openfile",file);
                          });
                      }
                  }else{
@@ -234,6 +206,33 @@ let System = function(){
              }
          }
      };
+
+    me.launchProgram = function(config){
+        if (typeof config === "string"){
+            config = {
+                url: config
+            }
+        }
+        //var window = windows.find(function(w){return w.id === config.id});
+        var label = config.label || config.url.split(":")[1];
+        var windowConfig = {
+            caption: label,
+            width: config.width,
+            height: config.height
+        };
+
+        // hmmm...
+        if (config.url && config.url.indexOf("mediaplayer")>=0) windowConfig.border =  false;
+
+        return new Promise(function(next){
+            let window = desktop.createWindow(windowConfig);
+            applications.load(config.url,window).then(()=>{
+                console.log("application loaded");
+                next(window);
+            });
+        });
+
+    };
 
 
     me.requestFile = async function(){

@@ -7,6 +7,7 @@ var AmiDrive = function(config){
     me.path = config.path;
     me.volume = config.volume;
     me.head = config.head;
+    me.data = config.data;
 
     return me;
 }
