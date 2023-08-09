@@ -1,13 +1,22 @@
-var AmiDrive = function(config){
+import desktop from "../ui/desktop.js";
+import fileSystem from "./filesystem.js";
+let AmiDrive = function(config){
     var me = {
         type:"drive"
     };
 
-    me.name = config.name;
-    me.path = config.path;
-    me.volume = config.volume;
-    me.head = config.head;
-    me.data = config.data;
+    // pre mount?
+    me.open = async function(){
+        if (!me.mounted) await fileSystem.mount(me);
+        desktop.openDrive(me);
+    }
+
+    me.getContent = function(){
+        return new Promise(next=>{
+            fileSystem.getDirectory(me.volume + ":",true).then(next);
+        });
+
+    }
 
     return me;
 }

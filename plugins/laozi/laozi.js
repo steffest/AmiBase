@@ -10,15 +10,12 @@ var Laozi = async function() {
     var {default: api} = await import("./api.js");
 
 
-    me.getDirectory = async function(folder,config,_next){
+    me.getDirectory = async function(folder,config){
         var path = folder.path;
         console.error("getDirectory",path,config);
-        if (config && config.url){
-            endPoint = config.url;
-        }
+        if (config && config.url) endPoint = config.url;
 
-        return new Promise((resolve,reject) => {
-            var next = _next || resolve;
+        return new Promise((next) => {
             path = getFilePath(path);
             fetchService.json(endPoint + "file/" + path,function(data){
                 var directories = [];

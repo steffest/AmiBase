@@ -1,0 +1,22 @@
+"Content" is defined as a JSON structure that contains the following fields:
+
+- type: [drive,folder,file,link]
+- label: the name of the item
+
+for type drive:
+    - volume: the name of the volume to mount the drive to. a number is appended to the volume name.
+    - handler:  then name of the filesystem handler to use. if omitted then "HTTP" is used.
+    - url: optional. the url endpoint of the filesystem handler.
+
+for type folder:
+    - items: an array of content items
+
+for type file:
+    - url: the url of the file to
+    - handler: the name of the application to open the file with. if omitted then the file is inspected to determine the handler.
+
+
+
+Internally these content items are converted to a amiObject object.
+this object has the following methods:
+    - open: opens the item

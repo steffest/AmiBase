@@ -1,6 +1,6 @@
 var Settings = {
     tenant: "amibase",
-    version: "0.0.2 alpha",
+    version: "0.0.3 alpha",
     useDelayedDrag:true,
     useCustomMousePointer:false,
     dragOnGrid: true,

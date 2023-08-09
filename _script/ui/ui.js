@@ -18,9 +18,6 @@ let UI = function(){
     var currentDropTarget;
     var globalDragItem;
     var globalDropTimer;
-    var currentResizeItem;
-    var layout=[];
-    var lastUpdateCall;
     var UIChanges=[];
     var dragItems=[];
     var resizeItems=[];
@@ -101,7 +98,6 @@ let UI = function(){
         function startDrag(event) {
             if (component.activate) component.activate(); // bring to front;
             //if (component.deActivateContent) component.deActivateContent(); // but deactivate inner content
-
 
             if (component.type === "icon"){
                 dragItems = component.parent.getSelectedIcons();
@@ -293,25 +289,16 @@ let UI = function(){
     };
 
     function handleTouchDown(event){
-        if (event.touches && event.touches.length>0){
-            var touches = event.changedTouches;
-            for (var i=0; i < touches.length; i++) {
-                var touch = touches[i];
-                initTouch(touch.identifier,touch.pageX,touch.pageY);
-            }
-        }else{
-            var touchIndex = getTouchIndex("notouch");
-            if (touchIndex>=0) touchData.touches.splice(touchIndex, 1);
-            initTouch("notouch",event.pageX,event.pageY);
-        }
-
         var inpopup = event.target.closest(".popupmenu");
-        if (!inpopup){
-            popupMenu.hide();
-        }
+        if (!inpopup) popupMenu.hide();
 
         mouse.isDown = true;
         document.body.classList.add("mousedown");
+
+        let clickTarget = event.target.closest(".handle");
+        if (clickTarget && clickTarget.onClick){
+            clickTarget.onClick();
+        }
 
         function initTouch(id,x,y){
 
@@ -366,17 +353,6 @@ let UI = function(){
     }
 
     function handleTouchUp(event){
-        if (event && event.touches){
-            var touches = event.changedTouches;
-
-            for (var i=0; i < touches.length; i++) {
-                var touch = touches[i];
-                endTouch(getTouchIndex(touch.identifier));
-            }
-        }else{
-            endTouch(getTouchIndex("notouch"));
-        }
-
         isDragging = false;
         isResizing = false;
         isSelecting = false;
@@ -397,12 +373,6 @@ let UI = function(){
         document.body.classList.remove("mousedown");
 
         selectingComponent = undefined;
-
-        function endTouch(touchIndex){
-            if (touchIndex>=0){
-
-            }
-        }
     }
 
     function handleDragenter(e) {

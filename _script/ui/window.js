@@ -38,7 +38,6 @@ let AmiWindow = function(config){
     var viewButton = $div("button view");
     var menuButton = $div("button menu");
     selectBox = $div("selectBox");
-    var sideBar;
 
     windowBar.appendChild(close);
     windowBar.appendChild(maximize);
@@ -172,8 +171,6 @@ let AmiWindow = function(config){
 
         var h = (me.height||350) - gridHeight;
         var w = (me.width||inner.offsetWidth||500) - gridWidth;
-
-        if (window.classList.contains("sidebar")) w-=200;
 
         var fill = "horizontal";
         if (me.type === "desktop"){
@@ -337,32 +334,6 @@ let AmiWindow = function(config){
         }
         
     }
-    
-    me.showSideBar = function(content){
-        if (!sideBar){
-            sideBar = $div("sideBar");
-            window.appendChild(sideBar);
-        }
-
-        sideBar.innerHTML = "";
-        if (content){
-            sideBar.appendChild(content);
-        }
-
-        setTimeout(function(){
-            window.classList.add("sidebar");
-        },10);
-
-
-
-
-    }
-    
-    me.hideSideBar = function(){
-        window.classList.remove("sidebar");
-    }
-
-
 
     if (config.type !== "desktop"){
 

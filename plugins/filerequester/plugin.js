@@ -1,6 +1,5 @@
 import desktop from "../../../_script/ui/desktop.js";
 import fileSystem from "../../../_script/system/filesystem.js";
-import system from "../../../_script/system/system.js";
 import {$div} from "../../../_script/util/dom.js";
 
 let FileRequester = function(app){
@@ -52,27 +51,30 @@ let FileRequester = function(app){
         }
         mainpanel.innerHTML = "";
 
-        var list = await fileSystem.getDirectory(folder,true,true);
-        list.directories.forEach(dir=>{
-            var item = $div("listitem dir","",dir.name);
-            item.onclick = function(){
-                listDir(dir);
-            }
-            mainpanel.appendChild(item);
-        })
-
-        list.files.forEach(file => {
-            var item = $div("listitem file","",file.name);
-            item.onclick = function(){
-                if (typeof onSelect === "function"){
-                    parent.close();
-                    onSelect(file);
+        var list = await fileSystem.getDirectory(folder,true);
+        if (list){
+            list.forEach(object => {
+                if (object.type === "folder"){
+                    var btn = $div("listitem dir","",object.name);
+                    btn.onclick = function(){
+                        listDir(object);
+                    }
+                    mainpanel.appendChild(btn);
                 }
-            }
-            mainpanel.appendChild(item);
-        });
-        
-        console.error(list);
+
+                if (object.type === "file"){
+                    var item = $div("listitem file","",object.name);
+                    item.onclick = function(){
+                        if (typeof onSelect === "function"){
+                            parent.close();
+                            onSelect(object);
+                        }
+                    }
+                    mainpanel.appendChild(item);
+                }
+            })
+        }
+
     }
 
     return me;

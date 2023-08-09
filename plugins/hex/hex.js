@@ -87,6 +87,7 @@ let Hex = ()=>{
     }
 
     async function openFile(file){
+        console.log("openFile from HEX",file);
         let content = await amiBase.fileSystem.readFile(file,true);
         renderContent(content);
         let readOnly = await amiBase.fileSystem.isReadOnly(file);

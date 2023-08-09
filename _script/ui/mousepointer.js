@@ -1,4 +1,5 @@
 import settings from "../settings.js";
+import {$div} from "../util/dom.js";
 let Mouse = function(){
     var me = {};
 

@@ -5,7 +5,7 @@ let Http = ()=>{
     let me = {}
 
     me.readFile = async function(file,binary){
-        let path = file.path;
+        let path = file.path || file.url;
         if (binary){
             let BinaryStream = await system.loadLibrary("binaryStream.js");
             let content = await fetchService.arrayBuffer(path);

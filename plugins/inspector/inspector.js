@@ -1,6 +1,6 @@
 import desktop from "../../_script/ui/desktop.js";
 import system from "../../_script/system/system.js";
-import {$div} from "../../_script/util/dom.js";
+import $ from "../../_script/util/dom.js";
 import filesystem from "../../_script/system/filesystem.js";
 let Inspector = function(){
     var me = {};
@@ -9,7 +9,7 @@ let Inspector = function(){
         var w = desktop.createWindow({
             label:"info"
         });
-        w.setSize(500,200);
+        w.setSize(320,300);
         w.setContent(await generateInfo(target));
 
     };
@@ -17,52 +17,61 @@ let Inspector = function(){
     async function generateInfo(target){
         console.error(target);
 
-        var info = ["Type: " + target.type];
-        if (target.icon){
-            info.push("Icon: " + target.icon);
-        }else{
-            info.push("Using default icon");
+        let panel;
+        let element = $(".content",panel = $(".panel.full"));
+
+        function renderProperty(name,value){
+            $(".property.panel.light",{parent:panel},$(".label.cel",name),$(".value.cel.capitalize",value));
         }
+
+        renderProperty("Name",target.name || target.label);
+        renderProperty("Type",target.type);
+        renderProperty("Icon",target.icon || "default");
+
 
         if (target.icon2){
-            info.push("Icon Active: " + target.icon2);
+            renderProperty("Icon Active",target.icon2);
         }
 
-        var filetype;
         var actions;
+
         if (target.type === "file"){
-            info.push("Path: " + target.path);
-            info.push("ReadOnly: " + filesystem.isReadOnly(target));
-            let mount = filesystem.getMount(target);;
-            if (target.mimeType)  info.push("MimeType: " + target.mimeType);
-            info.push("Mount: " + mount.name);
-            info.push("FileSystem: " + mount.filesystem);
-            filetype = target.filetype || await system.detectFileType(target);
-            info.push("Filetype: " + filetype.name);
+            let mount = filesystem.getMount(target);
+            let filetype = target.filetype || await system.detectFileType(target);
+
+            renderProperty("Path",target.path);
+            renderProperty("ReadOnly","" + filesystem.isReadOnly(target));
+            if (target.mimeType) renderProperty("MimeType",target.mimeType);
+            renderProperty("Mount",mount.name);
+            renderProperty("FileSystem",mount.filesystem);
+            renderProperty("Filetype",filetype.name);
+            if (target.binary) renderProperty("Binary",target.binary.length + " bytes");
+
             actions = await getFileActions(filetype);
+
+        }
+
+        if (target.type === "folder"){
+            renderProperty("Path",target.path);
         }
 
         if (target.handler){
-            info.push("Handler: " + target.handler);
+            renderProperty("Handler",target.handler);
         }
-        
-        var panel = $div("infopanel","",info.join("<br>"));
+
 
         if (actions){
-            panel.appendChild($div("","","Actions"));
+            let actionPanel = $(".value.cel");
+            $(".property.panel.light",{parent:panel},$(".label.cel","Actions"),actionPanel);
 
             actions.forEach(action=>{
                 var command = action.label;
                 if (action.plugin) command += " (" + action.plugin + ")";
-                
-                var button = $div("btn","","<u>" + command + "</u>");
-                button.onclick = function(){
-                    system.openFile(target,action.plugin,action.label);
-                }
-                panel.appendChild(button);
+                $(".button",{parent:actionPanel,onClick:()=>system.openFile(target,action.plugin,action.label)},command);
+
             })
         }
-        return panel;
+        return element;
     }
     
     async function getFileActions(info){

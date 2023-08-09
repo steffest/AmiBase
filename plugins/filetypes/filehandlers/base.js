@@ -28,6 +28,12 @@ var BaseFileExtensions = function(){
                 className:"png",
                 fileExtensions:["png"]
             },
+            PDF: {name: "PDF document", actions:[
+                    {label: "view", plugin:"iframe"}
+                ],
+                className:"pdf",
+                fileExtensions:["pdf"]
+            },
             JPG: {name: "JPG image", actions:[
                     {label: "view", plugin:"imageviewer"}
                 ], className:"jpg",

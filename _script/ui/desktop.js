@@ -11,6 +11,7 @@ import mainMenu from "./mainmenu.js";
 import applications from "../applications.js";
 import fileSystem from "../system/filesystem.js";
 import system from "../system/system.js";
+import amiObject from "../system/object.js";
 
 let Desktop = function(){
     let me = amiWindow({
@@ -61,29 +62,21 @@ let Desktop = function(){
     };
 
 
-    me.openFolder = function(folder){
+    me.openFolder = async function(folder){
         console.log("open Folder",folder);
+
+        // TODO: folders don't have IDs anymore ? move to paths?
         var w = windows.find(function(w){return w ? w.id === folder.id : false});
         
         if (w){
             w.activate();
         }else{
             w = me.createWindow(folder);
-            if (folder.items){
-                // static structure
-                folder.items.forEach(function(item){
-                    w.createIcon(item);
-                });
-                w.cleanUp();
-            } else if (folder.handler){
-                if (typeof folder.handler === "string"){
-                    applications.load((folder.handler.indexOf(":")<0?"plugin:":"") + folder.handler,w);
-                }else{
-                    folder.handler(folder);
-                }
-            } else {
-                fileSystem.getDirectory(folder,true,true,w);
-            } 
+            let items = await folder.getContent();
+            items.forEach(item=>{
+                w.createIcon(item);
+            });
+            w.cleanUp();
         }
         return w;
     };
@@ -92,7 +85,11 @@ let Desktop = function(){
         console.log("open Drive",drive);
         if (drive.volume){
             let w = me.createWindow(drive);
-            fileSystem.getDirectory(drive.volume + ":",true,true,w);
+            let items = await drive.getContent();
+            items.forEach(item=>{
+                w.createIcon(item);
+            });
+            w.cleanUp();
         }  else{
             me.openFolder(drive)
         }
@@ -106,10 +103,17 @@ let Desktop = function(){
         if (config.target === "_blank"){
             window.open(config.url);
         }else{
-            var label = config.url;
-            var w = me.createWindow(config.label || label);
+            var w = me.createWindow(config.name || config.label || config.path || config.url);
             w.setSize(800,600);
-            applications.loadFrame(config.url,w);
+            if (config.url){
+                applications.loadFrame(config.url,w);
+            }else{
+                if (config.binary){
+                    var urlObject = URL.createObjectURL(new Blob([config.binary.buffer],{type: config.mimeType}));
+                    applications.loadFrame(urlObject,w,true);
+                }
+            }
+
         }
     };
 
@@ -197,25 +201,24 @@ let Desktop = function(){
 
             var reader = new FileReader();
             reader.onload = async function(){
-                var file = amiFile(uploadfile.name);
+                let fileInfo = {
+                    type: "file",
+                    name: uploadfile.name,
+                    path: "ram:" + uploadfile.name,
+                    mimeType: uploadfile.type
+                }
 
                 let BinaryStream = await system.loadLibrary("binaryStream.js");
-                file.binary = new BinaryStream(reader.result,true);
-                file.path = "ram:" + uploadfile.name;
-                file.mimeType = uploadfile.type;
+                fileInfo.binary = new BinaryStream(reader.result,true);
 
                 // TODO: should I use the mimeType for this?
-                file.filetype = await system.detectFileType(file);
+                fileInfo.filetype = await system.detectFileType(fileInfo);
 
-                console.log("uploaded file is of type " + file.filetype.name);
+                console.log("uploaded file is of type " + fileInfo.filetype.name);
+                fileInfo.className = fileInfo.filetype.className;
 
-                me.createIcon({
-                    label: file.name,
-                    type:"file",
-                    className: file.filetype.className,
-                    attachment: file
-                });
-
+                var file = amiObject(fileInfo);
+                me.createIcon(file);
                 me.cleanUp();
 
                 if (file.filetype.mountFileSystem){
@@ -229,7 +232,7 @@ let Desktop = function(){
     };
 
 
-    me.loadContent = function(data){
+    me.loadContent = function(data,mounts){
         if (!data || typeof data === "string"){
             data = data||"content/default.json";
             fetchService.json(data,function(_data){
@@ -241,13 +244,22 @@ let Desktop = function(){
 
         function setContent(content){
             content.forEach(function(item){
-                if (item.type === "filesystem"){
-                    fileSystem.mount(item.label,item.volume,item.handler,item);
-                }else{
-                    me.createIcon(item);
-                }
-            });
+                addContent(item)
+            })
+            if (mounts && mounts.length){
+                mounts.forEach(function(item){
+                    addContent(item)
+                });
+            }
             me.cleanUp();
+        }
+
+        function addContent(item){
+            let object = amiObject(item);
+            me.createIcon(object);
+            if (object.type === "drive"){
+                fileSystem.mount(object);
+            }
         }
     };
 

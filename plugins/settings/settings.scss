@@ -1,0 +1,33 @@
+.settingseditor{
+  h3{
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    margin: 0;
+    padding: 4px;
+    font-weight: 100;
+    text-transform: capitalize;
+  }
+    .property{
+      display: flex;
+      padding: 2px;
+
+      .label{
+        color: rgba(255, 255, 255, 0.5);
+        padding: 2px 4px;
+        text-align: right;
+        width: 70px;
+        font-size: 12px;
+      }
+
+      input,
+      select{
+        width: 220px;
+      }
+    }
+
+  .divider{
+    height: 8px;
+    background-color: #0000002e;
+    border-bottom: 1px solid #2a2a2a;
+  }
+}

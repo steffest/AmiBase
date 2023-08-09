@@ -21,26 +21,16 @@ let RAM = ()=>{
     }
 
     me.addFile = function(file){
+        console.error("adding file",file.binary);
         items.push(file);
     }
 
-    me.getDirectory = async function(folder,_next){
+    me.getDirectory = async function(folder){
         var path = folder.path;
-
-        return new Promise((resolve,reject) => {
-            var next = _next || resolve;
-            var directories = [];
-            var files = [];
-            //data.result.directories.forEach(dir=>{
-            //    directories.push({name:dir})
-            //});
-            items.forEach(file=>{
-                files.push({name:file.name});
-            });
-
+        return new Promise((next) => {
             next({
-                directories: directories,
-                files:files
+                directories: [],
+                files:items
             });
         });
     };

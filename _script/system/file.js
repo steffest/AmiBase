@@ -1,3 +1,4 @@
+import system from "./system.js";
 let AmiFile = function(config){
     let me = {
         type:"file"
@@ -12,12 +13,6 @@ let AmiFile = function(config){
         };
     }
 
-    me.url = config.url;
-    me.name = config.name;
-    me.path = config.path;
-    me.handler = config.handler;
-    me.head = config.head;
-    me.filetype= config.filetype;
     me.isAmiFile = true;
 
     if (!me.path) me.path = me.url;
@@ -29,7 +24,9 @@ let AmiFile = function(config){
         // note: this converts the url to lowercase?
     }
 
-
+    me.open = function(){
+        system.openFile(me);
+    }
 
     return me;
 }

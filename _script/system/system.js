@@ -7,6 +7,8 @@ import {loadCss} from "../util/dom.js";
 import fetchService from "../util/fetchService.js";
 import desktop from "../ui/desktop.js";
 import applications from "../applications.js";
+import user from "../user.js";
+import filesystem from "./filesystem.js";
 
 let System = function(){
     var me = {};
@@ -16,13 +18,8 @@ let System = function(){
         return new Promise(function(next){
             let env = document.location.search;
 
-            let localSettings = localStorage.getItem("settings");
+            let localSettings = user.getAmiSettings();
             if (localSettings){
-                try {
-                    localSettings = JSON.parse(localSettings);
-                }catch (e) {
-                    localSettings = {};
-                }
                 console.log("localSettings",localSettings);
                 for (var key in localSettings){
                     settings[key] = localSettings[key];
@@ -154,6 +151,10 @@ let System = function(){
          console.error("openFile",file,plugin,action);
 
          if (plugin){
+             if (plugin === "iframe"){
+                 desktop.launchUrl(file);
+                 return;
+             }
              me.launchProgram({
                  url: "plugin:" + plugin
              }).then(window=>{
@@ -177,7 +178,7 @@ let System = function(){
              }
          }else{
              if (!file.filetype || !file.filetype.id) file.filetype = await me.detectFileType(file,true);
-            console.error(file.filetype);
+             console.error(file.filetype);
              var filetype = file.filetype;
              if (filetype && filetype.handler){
                  var thisAction;
@@ -188,13 +189,32 @@ let System = function(){
                  if (!thisAction && filetype.actions) thisAction=filetype.actions[0];
                  if (thisAction){
                      if (thisAction.plugin){
-                         me.launchProgram({
-                             url: "plugin:" + thisAction.plugin,
-                         }).then(window=>{
-                             console.log("app loaded");
-                             console.log(file);
-                             applications.sendMessage(window,"openfile",file);
-                         });
+
+                         let handle = async function(){
+                             if (file.path && file.path.indexOf("ram:")===0){
+                                 if (!file.binary){
+                                     console.log("loading file from ram");
+                                 }
+                             }
+
+                             if (thisAction.plugin === "iframe"){
+                                 desktop.launchUrl(file);
+                                 return;
+                             }
+
+
+                             me.launchProgram({
+                                 url: "plugin:" + thisAction.plugin,
+                             }).then(window=>{
+                                 console.log("app loaded");
+                                 console.log(file);
+                                 applications.sendMessage(window,"openfile",file);
+                             });
+                         }
+
+                         handle();
+
+
                      }
                  }else{
                      console.warn("can't open file , no filetype default action",file);
@@ -238,6 +258,11 @@ let System = function(){
     me.requestFile = async function(){
         let fileRequester = await me.loadLibrary("filerequester");
         return fileRequester.open();
+    }
+
+    me.inspectFile = async function(file){
+        let inspector = await me.loadLibrary("inspector.js");
+        inspector.inspect(file);
     }
 
     return me;

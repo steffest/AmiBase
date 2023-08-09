@@ -17,11 +17,7 @@ var Main=function(){
         ui.init();
 
 
-        if (settings.mount){
-            desktop.loadContent(settings.mount);
-        }else{
-            desktop.loadContent(settings.initialContent);
-        }
+        desktop.loadContent(settings.initialContent,settings.mounts);
 
         desktop.cleanUp();
         initDone = true;

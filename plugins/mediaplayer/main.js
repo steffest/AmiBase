@@ -129,7 +129,7 @@ let MediaPlayer = function(){
         }else if(file.url){
             Player.playUrl(file.url);
             //window.setContent(img);
-            if (file.label) app.setCaption(file.label);
+            if (file.label) currentApp.setCaption(file.label);
         }else{
             console.warn("unknown structure",file);
         }

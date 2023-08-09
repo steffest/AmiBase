@@ -1,60 +1,53 @@
-import desktop from "../ui/desktop.js";
-import amiDrive from "./drive.js";
+
 import system from "./system.js";
-import fetchService from "../util/fetchService.js";
-import amiFile from "./file.js";
-import amiFolder from "./folder.js";
+import amiObject from "./object.js";
 import http from "./filesystems/http.js";
 import ram from "./filesystems/ram.js";
-import AmiFile from "./file.js";
 
 let FileSystem = function(){
    var me = {};
 
     var mounts = {
         ram:{
-            name: "ram",
+            name: "RAM",
             filesystem: "ram",
             readOnly: false,
             handler: ram
         }
     };
-    var fileSystems = {};
+    var fileSystems = {
+        ram: ram
+    };
 
     me.register=function(name,handler){
         console.log("registering filesystem " + name);
         fileSystems[name] = handler;
-        for (var mount in  mounts){
+        for (var mount in mounts){
             if (mounts[mount].filesystem === name){
                 mounts[mount].handler = handler;
             }
         }
     };
 
-    me.mount = async function(name,volume,plugin,data){
-        var c = getVolumeIndex(volume);
-        volume = volume.toUpperCase() + c;
-        mounts[volume] = {
-            name: name,
-            filesystem: plugin,
-            data: data
-        };
-        desktop.createIcon({
-            type: "drive",
-            label: name,
-            attachment: amiDrive({
-                name: name,
-                volume: volume,
-                path: volume + ":",
-                data: data
-            })
-        });
-        desktop.cleanUp();
+    me.mount = function(drive){
+        return new Promise(async function(next){
+            let volume = drive.volume.toLowerCase()
+            if (volume !== "ram"){
+                var c = getVolumeIndex(volume);
+                volume = volume.toLowerCase() + c;
+            }
+            mounts[volume] = drive;
+            drive.volume = volume;
 
-        await system.loadLibrary(plugin);
-        mounts[volume].mounted = true;
-        mounts[volume].handler = fileSystems[plugin];
-        mounts[volume].config = data;
+            if (drive.handler && typeof drive.handler === "string"){
+                if (!fileSystems[drive.handler]) await system.loadLibrary(drive.handler);
+                mounts[volume].mounted = true;
+                mounts[volume].handler = fileSystems[drive.handler];
+                next();
+            }else{
+                next();
+            }
+        });
     };
 
     me.isReadOnly = function(file){
@@ -79,13 +72,14 @@ let FileSystem = function(){
         if (!path) return;
 
         if (typeof path !== "string"){
-            if (path.isAmiFile){
+            if (path.isAmiObject){
                 path=path.path;
             }else{
-                path = amiFile(path).path;
+                path = amiObject(path).path;
             }
         }
-        return path.split(":")[0];
+        if (!path) return;
+        return path.split(":")[0].toLowerCase();
     };
 
 
@@ -94,104 +88,54 @@ let FileSystem = function(){
     };
 
 
-    me.getDirectory = async function(folder, resolveFiles, resolveFiletypes, target){
+    me.getDirectory = async function(folder, resolveFiletypes){
         console.log("getDirectory",folder);
-        if (typeof folder === "string") folder={path:folder};
         if (!folder){
             console.error("Error opening folder: no folder specified");
             return;
         }
-        var path = folder.path;
+        let path = typeof folder === "string" ? folder : folder.path;
         var mount = me.getMount(path);
-
         console.log("mount",mount);
         
-        if  (mount.handler){
-            var data = await mount.handler.getDirectory(folder,mount.data);
-            if (resolveFiles){
-                var result = {
-                    directories:[],
-                    files:[]
-                }
-                for (const dir of data.directories) {
-                    var _folder = amiFolder({
-                        name: dir.name,
-                        path: path + dir.name + "/",
-                        head:dir.head
-                    })
-                    
-                    result.directories.push(_folder);
-                    
-                    if  (target){
-                        var iconConfig = {
-                            type: "folder",
-                            label: dir.name,
-                            attachment: _folder
-                        };
+        if (mount.handler){
+            var data = await mount.handler.getDirectory(folder,mount);
+            var result = [];
 
-                        
-                        // check if there's an icon
-                        // TODO: shouldn't this be part of the implementation?
-                        var index = data.files.indexOf(dir.name + ".info");
-                        if (index >= 0){
-                            var filetype = await system.detectFileType(dir.name + ".info");
-                            iconConfig.iconInfo = {
-                                path: path + dir.name + ".info",
-                                filetype: filetype
-                            };
-                            if (mount.handler.getFileUrl) iconConfig.iconInfo.url = mount.handler.getFileUrl(path + dir.name + ".info");
-                            iconConfig.icon = path + dir.name + ".info";
-                            data.files.splice(index,1);
-                        }
-                        target.createIcon(iconConfig);
-                    }
-                }
-
-                for (const file of data.files) {
-                    var fileConfig = {
-                        name: file.name,
-                        path: path + file.name,
-                        head:file.head
-                    }
-                    if (resolveFiletypes) fileConfig.filetype = await system.detectFileType(file);
-                    if (mount.handler.getFileUrl) fileConfig.url = mount.handler.getFileUrl(path + file.name);
-                   
-                    var aFile = amiFile(fileConfig);
-                    
-                    result.files.push(aFile);
-
-                    if (target){
-                        var iconConfig = {
-                            type: "file",
-                            label: file.name,
-                            attachment: aFile
-                        };
-                        if (fileConfig.filetype){
-                            if (fileConfig.filetype.className){
-                                iconConfig.iconClassName = fileConfig.filetype.className;
-                            }
-                            if (fileConfig.filetype.customIcon){
-                                iconConfig.iconClassName = "";
-                                iconConfig.image = "";
-                                iconConfig.icon = path + file.name;
-                            }
-                        }
-                        
-                        target.createIcon(iconConfig);
-                    }
-                }
-                
-                if (target){
-                    target.cleanUp();
-                }else{
-                    return result;
-                }
-            }else{
-                return data;
+            for (const dir of data.directories) {
+                result.push(amiObject({
+                    type: "folder",
+                    name: dir.name,
+                    path: path + dir.name + "/",
+                    head:dir.head
+                }));
             }
+
+            for (const file of data.files) {
+                if (file.isAmiObject){
+                    result.push(file);
+                    continue;
+                }
+
+                var fileConfig = {
+                    type: "file",
+                    name: file.name,
+                    path: path + file.name,
+                    head:file.head
+                }
+                if (resolveFiletypes) fileConfig.filetype = await system.detectFileType(file);
+
+                // TODO: where is this used?
+                if (mount.handler.getFileUrl) fileConfig.url = mount.handler.getFileUrl(path + file.name);
+
+                result.push(amiObject(fileConfig));
+
+            }
+
+            return result;
         }else{
             console.warn("Can't read directory, no handler");
-            return {};
+            return [];
         }
     };
 
@@ -209,7 +153,6 @@ let FileSystem = function(){
     me.readFile = function(file,binary){
         console.log("readFile",file);
         file = normalize(file);
-        console.log("readFile",file);
         return new Promise(async next => {
             let mount = me.getMount(file);
             console.error(mount);
@@ -301,6 +244,10 @@ let FileSystem = function(){
         });
     };
 
+    me.wrap = function(list){
+        return list.map(item=>amiObject(item));
+    }
+
     function getVolumeIndex(volume){
         var result = 0;
         Object.keys(mounts).forEach(key=>{
@@ -311,8 +258,8 @@ let FileSystem = function(){
     };
 
     function normalize(file){
-        if (typeof file === "string" || !file.isAmiFile){
-            file=amiFile(file);
+        if (typeof file === "string" || !file.isAmiObject){
+            file=amiObject(file);
         }
         return file;
     }

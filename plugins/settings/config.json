@@ -1,3 +1,4 @@
 {
+  "styles": ["settings.css"],
   "module": "settings.js"
 }

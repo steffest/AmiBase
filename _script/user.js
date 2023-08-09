@@ -19,6 +19,14 @@ let User = function(){
         return value;
     };
 
+    me.getAmiSettings = function(){
+        return me.getSetting("settings") || {};
+    }
+
+    me.setAmiSettings = function(settings){
+        me.storeSetting("settings",settings);
+    }
+
     me.getTheme = function(){
         var theme = me.getSetting("theme") || settings.defaultTheme;
         if (settings.themes && settings.themes.length){

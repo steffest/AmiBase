@@ -3,6 +3,7 @@ import fetchService from "./util/fetchService.js";
 import system from "./system/system.js";
 import mainMenu from "./ui/mainmenu.js";
 import fileSystem from "./system/filesystem.js";
+import user from "./user.js";
 import {loadCss} from "./util/dom.js";
 
 /*
@@ -173,7 +174,7 @@ let Applications = function(){
         })
     };
 
-    function loadFrame(url,window){
+    function loadFrame(url,window,skipSecurity){
         var frame = document.createElement("iframe");
         window.setContent(frame);
         window.isApplication = true;
@@ -181,7 +182,7 @@ let Applications = function(){
         frame.addEventListener("mouseleave",function(){
            window.deActivateContent(true);
         });
-        security.registerUrl(url,window);
+        if (!skipSecurity) security.registerUrl(url,window);
         frame.src = url;
     }
     me.loadFrame = loadFrame;
@@ -301,7 +302,8 @@ let Applications = function(){
                 fetch: fetchService
             },
             fileSystem: fileSystem,
-            system: system
+            system: system,
+            user: user
         }
     }
 

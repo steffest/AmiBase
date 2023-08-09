@@ -7,6 +7,7 @@ import {EVENT} from "../enum.js";
 import applications from "../applications.js";
 import system from "../system/system.js";
 import fileSystem from "../system/filesystem.js";
+import amiObject from "../system/object.js";
 
 let MainMenu = function(){
 
@@ -29,11 +30,11 @@ let MainMenu = function(){
                             width: 400,
                             height: 200
                         }).then(window=>{
-                            applications.sendMessage(window,"openfile",{
+                            applications.sendMessage(window,"openfile",amiObject({
                                 type: "file",
                                 label: "About " + settings.name || "Amibase",
                                 url: settings.aboutUrl || "content/files/about.txt"
-                            });
+                            }));
                         });
 
                     },
@@ -56,7 +57,7 @@ let MainMenu = function(){
                 {
                     label:"New Drawer",
                     action: function(){
-                        desktop.createIcon({label: "My Content", type: "drawer"});
+                        desktop.createIcon(amiObject({label: "My Content", type: "folder", items: []}));
                         desktop.cleanUp();
                     }
                 },
@@ -206,28 +207,8 @@ let MainMenu = function(){
                     me.setMenu(mainMenu);
                     break;
                 case "icon":
-                    if (focusElement.getConfig().linkedFile){
-                        iconMenu[0].items[2] = {
-                            label:"Download",
-                            action: function(){
-                                var url = fileSystem.getDownloadUrl(focusElement.getConfig().linkedFile);
-                                window.open(url);
-                            }
-                        };
-                        iconMenu[0].items[3] = {
-                            label:"Open In Editor",
-                            action: function(){
-                                system.launchProgram({
-                                    url: "plugin:iconeditor"
-                                }).then(window=>{
-                                    Applications.sendMessage(window,"openfile",focusElement.getConfig());
-                                })
-                            }
-                        }
-                    }else{
-                        iconMenu[0].items[2] = undefined;
-                        iconMenu[0].items[3] = undefined;
-                    }
+                    iconMenu[0].items[2] = undefined;
+                    iconMenu[0].items[3] = undefined;
                     me.setMenu(iconMenu);
                     break;
                 case "window":
