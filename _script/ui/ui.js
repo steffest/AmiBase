@@ -7,13 +7,12 @@ import settings from "../settings.js";
 import desktop from "./desktop.js";
 
 let UI = function(){
-
     var me = {};
-
     var touchData = {};
     touchData.touches = [];
     touchData.mouseWheels = [];
-    var UIData = {};
+    var UIData = {}; // what's the difference with touchData?
+    var currentClickTarget;
     var currentDragItem;
     var currentDropTarget;
     var globalDragItem;
@@ -30,13 +29,10 @@ let UI = function(){
         mouse.init();
         mainMenu.init();
 
-        document.body.addEventListener("mousedown",handleTouchDown);
-        document.body.addEventListener("mouseup",handleTouchUp);
-        document.body.addEventListener("mousemove",handleTouchMove,true);
-
-        document.body.addEventListener("touchstart", handleTouchDown,false);
-        document.body.addEventListener("touchmove", handleTouchMove,false);
-        document.body.addEventListener("touchend", handleTouchUp,false);
+        document.body.style.touchAction = "none";
+        document.body.addEventListener("pointerdown",handleTouchDown);
+        document.body.addEventListener("pointerup",handleTouchUp);
+        document.body.addEventListener("pointermove",handleTouchMove);
 
         document.body.addEventListener("dragenter", handleDragenter, false);
         document.body.addEventListener("dragover", handleDragover, false);
@@ -46,16 +42,10 @@ let UI = function(){
             if (input.isCtrlDown) return;
             event.preventDefault();
 
-            if (settings.mainMenu && settings.mainMenu.length){
-                popupMenu.show({
-                    x: event.clientX,
-                    y: event.clientY,
-                    items: settings.mainMenu[0].items
-                });
-            }else{
-                popupMenu.hide();
+            let target = event.target.closest(".context");
+            if (target && target.onContext){
+                target.onContext(event);
             }
-            
         });
 
         render();
@@ -64,6 +54,7 @@ let UI = function(){
     };
 
     me.onClick = function(component,handler){
+        console.error("DEPRECATED: onClick");
         component.onclick = function(event){
             event.preventDefault();
             handler(event);
@@ -74,26 +65,13 @@ let UI = function(){
         });
     }
 
-    me.onDoubleClick = function(component,handler){
-        component.ondblclick = handler;
-        component.addEventListener("touchstart",function(event){
-            var now = new Date().getTime();
-            var lastClick = component.lastClickTime || 0;
-            var elapsed = now-lastClick;
-            component.lastClickTime = now;
-            if (elapsed<400){
-                handler(event);
-            }
-        });
-    }
-
     me.enableDrag = function(component,copy){
+        console.error("DEPRECATED: enableDrag");
         var handle =  component.dragHandle || component.element;
         if (handle){
             handle.addEventListener("mousedown",startDrag);
             handle.addEventListener("touchstart",startDrag);
         }
-
 
         function startDrag(event) {
             if (component.activate) component.activate(); // bring to front;
@@ -105,50 +83,10 @@ let UI = function(){
                 dragItems.push(component);
             }
 
-            isDragging = true;
+            initDrag(event,copy);
 
-            var touch = getTouch(event);
-
-            if (copy){
-
-                clearTimeout(globalDropTimer);
-                globalDragItem = document.getElementById("globalDragItem");
-                if (globalDragItem) globalDragItem.remove();
-                globalDragItem = $div("","globalDragItem");
-
-
-                dragItems.forEach(function(item){
-                    globalDragItem.appendChild(item.clone());
-                    if (!settings.useDelayedDrag){
-                        item.ghost();
-                        globalDragItem.classList.add("visible");
-                    }
-                });
-
-                globalDragItem.startX = 0;
-                globalDragItem.startY = 0;
-                globalDragItem.style.transform = "translate(0px,0px)";
-
-
-                document.body.appendChild(globalDragItem);
-                currentDragItem = globalDragItem;
-            }
-
-            event.preventDefault();
-            event.stopPropagation();
-            dragItems.forEach(function(item){
-                item.startLeft = item.left;
-                item.startTop = item.top;
-            });
-            UIData.startDragX = touch.clientX;
-            UIData.startDragY = touch.clientY;
         }
 
-    };
-
-    me.enableDrop = function(element,onDrop){
-        element.classList.add("droptarget");
-        element.onDrop = onDrop;
     };
 
     me.handleGlobalDrag = function(x,y,target){
@@ -168,27 +106,37 @@ let UI = function(){
         globalDragItem.deltaY = deltaY;
 
         if (settings.useDelayedDrag){
-            if ((Math.abs(deltaX)>5 || Math.abs(deltaY)>5) && !globalDragItem.classList.contains("visible")){
+            if (!touchData.isGlobalDragging && (Math.abs(deltaX)>5 || Math.abs(deltaY)>5)){
                 globalDragItem.classList.add("visible");
+                touchData.isGlobalDragging = true;
                 dragItems.forEach(function(item){
-                    item.ghost();
+                    if (item.ghost) item.ghost();
                 });
             }
         }
     };
 
-    me.handleDrop = function(){
-        if (currentDropTarget){
-            currentDropTarget.classList.remove("droptargetactive");
+    me.handleGlobalDrop = function(){
+        console.error("handleGlobalDrop")
+        if (touchData.isGlobalDragging){
+            if (currentDropTarget){
+                currentDropTarget.classList.remove("droptargetactive");
 
-            if (currentDropTarget.onDrop){
-                currentDropTarget.onDrop(dragItems,globalDragItem.deltaX,globalDragItem.deltaY);
+                if (currentDropTarget.onDrop){
+                    currentDropTarget.onDrop(dragItems,globalDragItem.deltaX,globalDragItem.deltaY);
+                }
+            }
+
+            dragItems.forEach(function(item){
+                if (item.show) item.show();
+            });
+        }else{
+            // we didn't drag => click
+            if (touchData.clickTarget && touchData.clickTarget.onClick){
+                touchData.clickTarget.onClick();
             }
         }
 
-        dragItems.forEach(function(item){
-            item.show();
-        });
 
         if (settings.useDelayedDrag){
             globalDragItem.classList.remove("visible");
@@ -203,6 +151,7 @@ let UI = function(){
             globalDragItem = undefined;
         }
 
+        touchData.isGlobalDragging = false;
         currentDropTarget = undefined;
 
 
@@ -234,42 +183,6 @@ let UI = function(){
 
     };
 
-    me.enableSelection = function(component,element){
-        if (element) {
-            element.addEventListener("mousedown",startSelection);
-            element.addEventListener("mousemove",updateSelection);
-            element.addEventListener("touchstart",startSelection);
-            element.addEventListener("touchmove",updateSelection);
-        }
-
-        function startSelection(event){
-           if (event.target === element){
-
-               var touch = getTouch(event);
-
-               isSelecting = true;
-               selectingComponent = component;
-               component.startSelectX = touch.clientX;
-               component.startSelectY = touch.clientY;
-           }
-        }
-
-        function updateSelection(event){
-            if (isSelecting){
-
-                var touch = getTouch(event);
-
-                selectingComponent.selectX = touch.clientX;
-                selectingComponent.selectY = touch.clientY;
-                var w = selectingComponent.selectX-selectingComponent.startSelectX;
-                var h = selectingComponent.selectY-selectingComponent.startSelectY;
-
-                selectingComponent.setSelectBox(selectingComponent.startSelectX,selectingComponent.startSelectY,w,h);
-            }
-
-        }
-    };
-
     function getTouch(event){
         var touch = event;
         if (event.touches && event.touches.length>0){
@@ -294,24 +207,58 @@ let UI = function(){
 
         mouse.isDown = true;
         document.body.classList.add("mousedown");
+        touchData.startX = event.clientX;
+        touchData.startY = event.clientY;
 
         let clickTarget = event.target.closest(".handle");
-        if (clickTarget && clickTarget.onClick){
-            clickTarget.onClick();
+        let dragTarget = event.target.closest(".draggable");
+        let handled = false;
+
+        if (clickTarget && clickTarget.onDoubleClick && !event.button>0){
+            event.stopPropagation();
+            event.preventDefault();
+            var now = new Date().getTime();
+            var lastClick = clickTarget.lastClickTime || 0;
+            var elapsed = now-lastClick;
+            clickTarget.lastClickTime = now;
+            if (elapsed<400){
+                clickTarget.onDoubleClick();
+                handled = true;
+            }
+        }
+        if (clickTarget && clickTarget.classList.contains("preventdefaultdrag")){
+            dragTarget=undefined;
         }
 
-        function initTouch(id,x,y){
+        if (!handled && dragTarget){
+            dragItems=[dragTarget];
 
+            if (dragTarget.onDragStart){
+                dragItems = dragTarget.onDragStart();
+            }
+            initDrag(event,dragTarget.classList.contains("global"));
+
+            // delay click in case we start dragging;
+            if (dragTarget.classList.contains("handle")){
+                touchData.clickTarget = clickTarget;
+                handled = true;
+            }
         }
+
+        if (!handled && clickTarget && clickTarget.onClick) clickTarget.onClick();
+        if (clickTarget && clickTarget.onDown) clickTarget.onDown(touchData);
+        currentClickTarget = clickTarget;
+
     }
 
     function handleTouchMove(event){
-        var touch = getTouch(event);
 
+        //event.preventDefault();
+        //event.stopPropagation();
+        var touch = getTouch(event);
         mouse.update(touch);
 
         if (isDragging){
-            event.preventDefault();
 
             if (globalDragItem){
                 var x = touch.clientX - UIData.startDragX;
@@ -350,6 +297,17 @@ let UI = function(){
                 });
             });
         }
+
+        if (currentClickTarget && currentClickTarget.onDrag){
+            touchData.currentX = touch.clientX;
+            touchData.currentY = touch.clientY;
+            touchData.deltaX = touch.clientX - touchData.startX;
+            touchData.deltaY = touch.clientY - touchData.startY;
+            currentClickTarget.onDrag(touchData);
+        }
+
+
+
     }
 
     function handleTouchUp(event){
@@ -364,14 +322,15 @@ let UI = function(){
             if (item.onStopDrag) item.onStopDrag();
         });
 
-        if (globalDragItem) me.handleDrop();
+        if (globalDragItem) me.handleGlobalDrop();
         if (selectingComponent) selectingComponent.removeSelectBox();
+        if (currentClickTarget && currentClickTarget.onUp) currentClickTarget.onUp();
 
         dragItems=[];
         resizeItems=[];
         mouse.isDown = false;
         document.body.classList.remove("mousedown");
-
+        currentClickTarget = undefined;
         selectingComponent = undefined;
     }
 
@@ -393,6 +352,48 @@ let UI = function(){
         var files = dt.files;
 
         desktop.handleUpload(files);
+    }
+
+    function initDrag(event,global){
+        isDragging = true;
+        let touch = getTouch(event);
+
+        if (global){
+            clearTimeout(globalDropTimer);
+            globalDragItem = document.getElementById("globalDragItem");
+            if (globalDragItem) globalDragItem.remove();
+            globalDragItem = $div("","globalDragItem");
+
+
+            dragItems.forEach(function(item){
+                let clone = item.clone? item.clone() : item;
+                globalDragItem.appendChild(clone);
+                if (!settings.useDelayedDrag){
+                    if (item.ghost) item.ghost();
+                    touchData.isGlobalDragging = true;
+                    globalDragItem.classList.add("visible");
+                }
+            });
+
+            globalDragItem.startX = 0;
+            globalDragItem.startY = 0;
+            globalDragItem.style.transform = "translate(0px,0px)";
+
+
+            document.body.appendChild(globalDragItem);
+            currentDragItem = globalDragItem;
+        }
+
+
+        event.preventDefault();
+        event.stopPropagation();
+        dragItems.forEach(function(item){
+            item.startLeft = item.left;
+            item.startTop = item.top;
+        });
+        UIData.startDragX = touch.clientX;
+        UIData.startDragY = touch.clientY;
+
     }
 
 

@@ -28,132 +28,37 @@ let Applications = function(){
     }
 
     me.sendMessage = function(window,message,data){
-        // first check if application has registered the message directly
-        var plugin = getPlugin(window.plugin);
-        var action;
-        if (plugin && plugin.actions && plugin.actions[message]){
-            action = plugin.actions[message] || plugin.actions["sendMessage"];
-            // Do we need to send the icon or the data?
-            if (action) action(data);
-        }else{
-            // sending message to window
-           if(window) window.sendMessage(message,data);
-        }
+        console.error("DEPRECATED !!!!!, this has moved to a direct method on the window object");
+        window.sendMessage(message,data);
     };
 
     
-    me.load = function(pluginName,appWindow){
-        console.log("loading " + pluginName + " into " + appWindow.getCaption());
-        return new Promise(function(next){
-            appWindow.setContent("loading");
-            appWindow.plugin = pluginName;
+    me.load = function(url,appWindow){
+        // load an external plugin into a window
+        console.log("loading " + url + " into window" + appWindow.getCaption());
 
-            if (pluginName.indexOf(":")>0){
-                var pluginType = pluginName.split(":")[0];
-                pluginName = pluginName.split(":")[1];
+        return new Promise(async function(next){
+            appWindow.setContent("loading");
+
+            if (url.indexOf(":")>0){
+                var pluginType = url.split(":")[0];
+                url = url.split(":")[1];
             }else{
                 pluginType = "plugin"
             }
-            let pluginPath = "plugins/" + pluginName + "/";
+            let pluginPath = "plugins/" + url + "/";
 
             switch (pluginType) {
                 case "plugin":
-                    // this is a trusted plugin, we can just load all files
-                    var plugin = plugins[pluginName];
-
+                    let plugin = await system.loadPlugin(url);
                     if (plugin){
-                        console.log("plugin already loaded");
-                        appWindow.isApplication = true;
-                        var config = plugin.config;
-                        if (config.width && config.height) appWindow.setSize(config.width,config.height);
-                        if (config.left && config.top) appWindow.setPosition(config.left,config.top);
-                        //console.error(config);
-
-                        function initPlugin(){
-                            if (plugin.init){
-                                let f = plugin.init;
-                                if (typeof f === "string") f = mainContext[plugin.init];
-                                f(appWindow);
-                                next();
-                            }
-                        }
-
-                        if (config.index){
-                            if (config.index.indexOf("://")>0){
-                                loadFrame(config.index,appWindow);
-                            }else{
-                                appWindow.setContent(plugin.html);
-                            }
-                            initPlugin();
-                        }else{
-                            initPlugin();
-                        }
-                    }else{
-                        plugin={};
-                        fetchService.json(pluginPath + "config.json",function(config){
-                            if (config){
-                                appWindow.isApplication = true;
-                                plugin.config=config;
-                                if (config.width && config.height) appWindow.setSize(config.width,config.height);
-                                if (config.left && config.top) appWindow.setPosition(config.left,config.top);
-
-                                function initScripts(){
-                                    if (config.scripts) {
-                                        console.error("DEPRECATED !!!!!")
-                                        var initDone = false;
-                                        system.loadScripts(pluginPath, config.scripts, function () {
-                                            if (!initDone && mainContext[pluginName + '_plugin_init']) {
-                                                plugin.init = pluginName + '_plugin_init';
-                                                plugins[pluginName] = plugin;
-                                                mainContext[plugin.init](appWindow);
-                                                initDone = true;
-                                            }
-                                        });
-                                    }else if (config.module){
-                                        import("../" + pluginPath + config.module).then(p=>{
-                                            plugin.handler = p.default;
-                                            plugins[pluginName] = plugin;
-                                            if (plugin.handler.init){
-                                                plugin.init = plugin.handler.init
-                                                plugin.init(appWindow,me.amiBridge());
-                                            }
-                                            initDone = true;
-                                            next();
-                                        });
-                                    }else{
-                                        plugins[pluginName] = plugin;
-                                        initDone = true;
-                                        next();
-                                    }
-                                }
-
-                                if (config.index){
-                                    if (config.index.indexOf("://")>0){
-                                        loadFrame(config.index,appWindow);
-                                    }else{
-                                        fetchService.html(pluginPath + config.index,function(html){
-                                            plugin.html = html;
-                                            appWindow.setContent(html);
-                                            initScripts();
-                                        });
-                                    }
-                                }else{
-                                    initScripts();
-                                }
-
-                                if (config.styles){
-                                    config.styles.forEach(function(src){
-                                        loadCss(pluginPath + src);
-                                    })
-                                }
-                            }else{
-                                console.error("Error: Plugin " + pluginName + " not found");
-                            }
-                        });
+                        createPluginInstance(plugin,appWindow);
+                        next();
                     }
                     break;
                 case "frame":
                     fetchService.json(pluginPath + "config.json",function(config){
+                        appWindow.application = config;
                         if (config){
                             if (config.width && config.height){
                                 appWindow.setSize(config.width,config.height);
@@ -164,7 +69,7 @@ let Applications = function(){
                                 loadFrame(frameUrl,appWindow);
                             }
                         }else{
-                            console.error("Error: Plugin " + pluginName + " not found");
+                            console.error("Error: Plugin " + url + " not found");
                         }
                     });
                     break;
@@ -175,9 +80,11 @@ let Applications = function(){
     };
 
     function loadFrame(url,window,skipSecurity){
+        console.log("loadFrame",url,window);
         var frame = document.createElement("iframe");
         window.setContent(frame);
-        window.isApplication = true;
+        window.application = window.application || true;
+        window.isLoading = true;
 
         frame.addEventListener("mouseleave",function(){
            window.deActivateContent(true);
@@ -188,28 +95,47 @@ let Applications = function(){
     me.loadFrame = loadFrame;
 
     function registerApplicationActions(pluginName,actions){
-        var plugin = getPlugin(pluginName);
-        if (plugin){
-            plugin.actions = actions;
-        }else{
-            console.warn("plugin " + pluginName + " not found");
-        }
+        console.error("DEPRECATED !!!!!, use exported methods")
     };
 
     me.getPlugins = function(){
         return plugins;
     };
 
-    function getPlugin(pluginName){
-        pluginName = pluginName||"";
-        if (pluginName.indexOf(":")>0){
-            pluginName = pluginName.split(":")[1];
+
+    function createPluginInstance(plugin,window){
+        console.log(" createPluginInstance",plugin);
+
+        let config = plugin.config;
+        if (config.width && config.height) window.setSize(config.width,config.height);
+        if (config.left && config.top) window.setPosition(config.left,config.top);
+
+        if (config.index && config.index.indexOf("://")>0){
+            console.log("loading external plugin",config.index);
+            loadFrame(config.index,window);
+            return;
         }
-        return plugins[pluginName];
+
+        if (plugin.html){
+            window.setContent(plugin.html);
+        }
+
+        let instance = plugin.handler;
+        if (typeof instance === "function"){
+            plugin.instances = plugin.instances||[];
+            instance = instance();
+            plugin.instances.push(instance);
+        }
+        if (instance){
+            window.application = instance;
+            console.log("setting application",instance)
+            if (instance.init){
+                instance.init(window,me.amiBridge());
+            }
+        }
     }
 
     function handleMessage(message,event){
-        //console.error(message.toString);
         if (message && message.target && message.target.indexOf("metamask-")===0) return;
 
         console.log("Got Message",message);
@@ -250,7 +176,14 @@ let Applications = function(){
                         break;
                     case "ready":
                         // app is completely loaded and ready for input
-                        if (appWindow.onload) appWindow.onload(appWindow);
+                        // check if we have messages for this app
+                        if (appWindow.messageQueue && appWindow.messageQueue.length>0){
+                            appWindow.messageQueue.forEach(function(msg){
+                                appWindow.sendMessage(msg.message,msg.data);
+                            });
+                            appWindow.messageQueue = [];
+                        }
+                        //if (appWindow.onload) appWindow.onload(appWindow);
                         break;
                     case "focus":
                         appWindow.activate();
@@ -259,11 +192,9 @@ let Applications = function(){
                         appWindow.setMenu(message.data);
                         mainMenu.setMenu(message.data,appWindow);
                         break;
-                    case "requestFile":
-                        console.error("requestFile");
-                        system.requestFile().then(file=>{
+                    case "requestFileOpen":
+                        system.requestFileOpen().then(file=>{
                             var callbackId = message.callbackId;
-                            console.error(callbackId);
                             event.source.postMessage({
                                 message: "callback",
                                 data: {
@@ -272,22 +203,53 @@ let Applications = function(){
                                     filename:  file.name
                                 }
                             }, event.origin);
-                        })
+                        });
+                        break;
+                    case "requestFileSave":
+                        system.requestFileSave(message.data?message.data.path:"").then(file=>{
+                            var callbackId = message.callbackId;
+                            event.source.postMessage({
+                                message: "callback",
+                                data: {
+                                    id: callbackId,
+                                    data: file.path,
+                                    filename:  file.name
+                                }
+                            }, event.origin);
+                        });
+                        break;
                     case "readFile":
                         var data = message.data;
                         var callbackId = message.callbackId;
-                        fileSystem.readFile(data.path,data.asBinary).then(file => {
+                        fileSystem.readFile(data.path,!!data.asBinary).then(file => {
                             console.error(file);
                             event.source.postMessage({
                                 message: "callback",
                                 data: {
                                     id: callbackId,
-                                    data: file.buffer,
+                                    data: data.asBinary ? file.buffer : file,
                                     filename:  file.name
                                 }
                             }, event.origin);
 
                         });
+                        break;
+                    case "writeFile":
+                        var data = message.data;
+                        var callbackId = message.callbackId;
+                        fileSystem.writeFile(data.path,data.data,!!data.asBinary).then(result => {
+                            console.error("writeFile",result);
+                            event.source.postMessage({
+                                message: "callback",
+                                data: {
+                                    id: callbackId,
+                                    data: result
+                                }
+                            }, event.origin);
+                        });
+                        break;
+                    case "activateWindow":
+                        appWindow.activate();
                         break;
                 }
             }
@@ -297,12 +259,28 @@ let Applications = function(){
     // main object to pass to trusted plugins and apps
     me.amiBridge = function(){
         return{
-            registerApplicationActions: registerApplicationActions,
-            service:{
-                fetch: fetchService
+            fetch: fetchService,
+            readFile: fileSystem.readFile,
+            writeFile: fileSystem.writeFile,
+            getDirectory: fileSystem.getDirectory,
+            getUrl: (file)=>{
+                return new Promise(next=>{
+                    let mount = fileSystem.getMount(file);
+                    let fs = mount.handler;
+                    if (fs && fs.getUrl){
+                        fs.getUrl(file.path,mount).then(url=>{
+                            next(url);
+                        });
+                    }
+                });
             },
-            fileSystem: fileSystem,
-            system: system,
+            getMounts: fileSystem.getMounts,
+            requestFileOpen: system.requestFileOpen,
+            requestFileSave: system.requestFileSave,
+            isReadOnly: fileSystem.isReadOnly,
+            getObjectInfo: system.getObjectInfo,
+            detectFileType: system.detectFileType,
+            loadScript: system.loadScript,
             user: user
         }
     }

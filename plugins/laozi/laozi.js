@@ -9,11 +9,9 @@ var Laozi = async function() {
 
     var {default: api} = await import("./api.js");
 
-
-    me.getDirectory = async function(folder,config){
-        var path = folder.path;
-        console.error("getDirectory",path,config);
-        if (config && config.url) endPoint = config.url;
+    me.getDirectory = async function(path,config){
+        console.error("getDirectory",path);
+        setConfig(config);
 
         return new Promise((next) => {
             path = getFilePath(path);
@@ -35,9 +33,11 @@ var Laozi = async function() {
         });
     };
 
-    me.readFile = function(file,binary){
+
+    me.readFile = function(path,binary,config){
+        setConfig(config);
         return new Promise((next) => {
-            var url = me.getFileUrl(file.path);
+            var url = me.getFileUrl(path);
             console.log("Get File", url);
             if (binary){
                 fetchService.arrayBuffer(url).then(_file => {
@@ -55,14 +55,15 @@ var Laozi = async function() {
         return false;
     }
 
-    me.getFileUrl = function(path){
+    me.getFileUrl = function(path,config){
+        setConfig(config);
         path = getFilePath(path);
         return endPoint + "file/" + path;
     };
 
-    me.createDirectory = function(path,name,_next){
-        return new Promise((resolve,reject) => {
-            var next = _next || resolve;
+    me.createDirectory = function(path,name,config){
+        setConfig(config);
+        return new Promise((next) => {
             path = getFilePath(path);
             fetchService.json(endPoint + "file/createdirectory/" + path + "/" + name,function(data){
                 console.log(data);
@@ -71,7 +72,8 @@ var Laozi = async function() {
         });
     };
 
-    me.moveFile = function(fromPath,toPath){
+    me.moveFile = function(fromPath,toPath,config){
+        setConfig(config);
         return new Promise((next) => {
             fromPath = getFilePath(fromPath);
             toPath = getFilePath(toPath);
@@ -82,7 +84,8 @@ var Laozi = async function() {
         });
     };
 
-    me.renameFile = function(path,newName){
+    me.renameFile = function(path,newName,config){
+        setConfig(config);
         return new Promise((next) => {
             path = getFilePath(path);
             fetchService.json(endPoint + "file/rename/" + path + "?name=" + newName,function(data){
@@ -92,31 +95,60 @@ var Laozi = async function() {
         });
     };
 
-    me.writeFile = function(path,content){
+    me.deleteFile = function(path,config){
+        setConfig(config);
         return new Promise((next) => {
             path = getFilePath(path);
-            let data = {editorcontent:content};
-            console.error(data);
-            fetchService.post(endPoint + "file/update/" + path,data ,function(data){
-                next(data);
+            fetchService.json(endPoint + "file/delete/" + path,function(data){
+                console.log(data);
+                next(data.status === "ok");
             });
         });
     };
 
-    me.uploadFile = function(file,path){
+    me.writeFile = function(path,content,binary,config){
+        console.log("writeFile",path,content,binary);
+        setConfig(config);
         return new Promise((next) => {
             path = getFilePath(path);
-            var data = new FormData();
-            file.getAttachment((attachment) => {
-                var b = new Blob([attachment.file.buffer], {type: "application/octet-stream"});
-                data.append('files[]', b, attachment.file.name);
-                fetchService.sendBinary(endPoint + "file/uploadfile/" + path,data,function(data){
-                    console.log(data);
+            let data;
+            if (binary){
+                let buffer = content ? content.buffer || content : null;
+                let filename = path.split("/").pop();
+                path = path.substr(0,path.length-filename.length);
+
+                if (buffer){
+                    data = new FormData();
+                    let b = new Blob([buffer], {type: "application/octet-stream"});
+                    data.append('files[]', b, filename);
+                    fetchService.sendBinary(endPoint + "file/uploadfile/" + path,data,function(data){
+                        console.log(data);
+                        next(data.status === "ok");
+                    });
+                }else{
+                    console.error("nothing no write, no buffer");
                     next();
+                }
+            }else{
+                data = {editorcontent:content};
+                fetchService.post(endPoint + "file/update/" + path,data ,function(data){
+                    next(data);
                 });
-            });
+            }
         });
     };
+
+    me.getInfo = function(path,config){
+        setConfig(config);
+        return new Promise((next) => {
+            path = getFilePath(path);
+            fetchService.json(endPoint + "file/info/" + path,function(data){
+                console.log(data);
+                next(data.result);
+            });
+        });
+    }
+
 
     // strip out the mount or protocol part
     function getFilePath(path){
@@ -126,6 +158,12 @@ var Laozi = async function() {
         if (path[0] === "/") path = path.substr(1);
         if (path[0] === "/") path = path.substr(1);
         return path;
+    }
+
+    function setConfig(config){
+        if (config){
+            endPoint = config.url || endPoint;
+        }
     }
 
     fileSystem.register("laozi",me);

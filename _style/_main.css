@@ -1,14 +1,17 @@
 html {
     box-sizing: border-box;
+    touch-action: none;
 }
 *, *:before, *:after {
     box-sizing: inherit;
+    touch-action: none;
 }
 
 body{
     padding: 0;
     margin: 0;
     overflow: hidden;
+    touch-action: none;
     font-family: sans-serif;
     background-color: black;
 }

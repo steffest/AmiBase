@@ -13,6 +13,7 @@ import filesystem from "./filesystem.js";
 let System = function(){
     var me = {};
     var libraries = {};
+    let plugins = {};
 
     me.loadEnvironment = function(){
         return new Promise(function(next){
@@ -122,6 +123,48 @@ let System = function(){
         });
     };
 
+    me.loadPlugin = pluginName=>new Promise(async function(next){
+        console.log("Loading plugin " + pluginName);
+        let plugin = plugins[pluginName];
+
+        if (plugin){
+            console.log("Plugin " + pluginName + " already loaded");
+            next(plugin);
+            return;
+        }
+
+        let pluginPath = "../plugins/" + pluginName + "/";
+        plugin={};
+        let config = await fetchService.json(pluginPath + "config.json");
+        if (config){
+            plugin.config=config;
+
+            // preload code
+            if (config.module){
+                let p = await import("../" + pluginPath + config.module);
+                plugin.handler = p.default;
+            }
+
+            // preload html
+            if (config.index && config.index.indexOf("://")<0){
+                plugin.html = await fetchService.html(pluginPath + config.index);
+            }
+
+            // preload css
+            if (config.styles){
+                config.styles.forEach(function(src){
+                    loadCss(pluginPath + src);
+                });
+            }
+
+            plugins[pluginName] = plugin;
+            next(plugin);
+        }else{
+            console.error("Error: Plugin " + pluginName + " not found");
+            next();
+        }
+    });
+
 
     // detects type from binary structure
     me.inspectBinary = async function(arrayBuffer, name){
@@ -140,7 +183,6 @@ let System = function(){
     // first try to detect filetype by inspecting content
     // then fallback on extension
      me.detectFileType = async function(file,tryHard){
-         console.error(file,tryHard);
          let fileTypeLib = await me.loadLibrary("filetypes");
          return fileTypeLib.detect(file,tryHard);
      };
@@ -148,7 +190,7 @@ let System = function(){
      // execute an action on a file
      me.openFile = async function(file,plugin,action){
          
-         console.error("openFile",file,plugin,action);
+         console.log("openFile",file,plugin,action);
 
          if (plugin){
              if (plugin === "iframe"){
@@ -158,8 +200,8 @@ let System = function(){
              me.launchProgram({
                  url: "plugin:" + plugin
              }).then(window=>{
-                 console.error("app loaded",window);
-                 applications.sendMessage(window,"openfile",file);
+                 console.log("app loaded",window);
+                 applications.sendMessage(window,"openFile",file);
              })
              return;
          }
@@ -171,7 +213,7 @@ let System = function(){
                      url: (file.handler.indexOf(":")<0?"plugin:":"") + file.handler
                  }).then(window=>{
                      console.log("app loaded",window);
-                     applications.sendMessage(window,"openfile",file);
+                     applications.sendMessage(window,"openFile",file);
                  });
              }else{
                  file.handler(me);
@@ -179,42 +221,26 @@ let System = function(){
          }else{
              if (!file.filetype || !file.filetype.id) file.filetype = await me.detectFileType(file,true);
              console.error(file.filetype);
-             var filetype = file.filetype;
-             if (filetype && filetype.handler){
-                 var thisAction;
-                 if (action && filetype.actions){
-                     thisAction = filetype.actions.find(a=>a.label === action);
-                 }
-                 if (!thisAction) thisAction = filetype.handler.handle(file.file);
-                 if (!thisAction && filetype.actions) thisAction=filetype.actions[0];
-                 if (thisAction){
-                     if (thisAction.plugin){
+             let filetype = file.filetype;
+             if (filetype){
+                 let fileAction;
+                 if (action && filetype.actions) fileAction = filetype.actions.find(a=>a.label === action);
+                 if (!fileAction && filetype.handler) fileAction = filetype.handler.handle(file.file);
+                 if (!fileAction && filetype.actions) fileAction=filetype.actions[0];
 
-                         let handle = async function(){
-                             if (file.path && file.path.indexOf("ram:")===0){
-                                 if (!file.binary){
-                                     console.log("loading file from ram");
-                                 }
-                             }
-
-                             if (thisAction.plugin === "iframe"){
-                                 desktop.launchUrl(file);
-                                 return;
-                             }
-
-
-                             me.launchProgram({
-                                 url: "plugin:" + thisAction.plugin,
-                             }).then(window=>{
-                                 console.log("app loaded");
-                                 console.log(file);
-                                 applications.sendMessage(window,"openfile",file);
-                             });
+                 if (fileAction){
+                     if (fileAction.plugin){
+                         if (fileAction.plugin === "iframe"){
+                             desktop.launchUrl(file);
+                             return;
                          }
-
-                         handle();
-
-
+                         me.launchProgram({
+                             url: "plugin:" + fileAction.plugin,
+                         }).then(window=>{
+                             console.log("app loaded");
+                             console.log(file);
+                             applications.sendMessage(window,"openFile",file);
+                         });
                      }
                  }else{
                      console.warn("can't open file , no filetype default action",file);
@@ -241,28 +267,53 @@ let System = function(){
             height: config.height
         };
 
-        // hmmm...
-        if (config.url && config.url.indexOf("mediaplayer")>=0) windowConfig.border =  false;
-
         return new Promise(function(next){
             let window = desktop.createWindow(windowConfig);
+
             applications.load(config.url,window).then(()=>{
                 console.log("application loaded");
                 next(window);
             });
         });
-
     };
 
+    me.loadScript = function(url){
+        console.warn("DEPRECATED - loadScript - please move to ES6 modules if possible");
+        return new Promise(function(next){
+            let script = document.createElement("script");
+            script.onload = function(){
+                next();
+            };
+            script.src = url;
+            document.body.appendChild(script);
+        });
+    }
 
-    me.requestFile = async function(){
+
+
+
+    me.requestFileOpen = async function(path){
         let fileRequester = await me.loadLibrary("filerequester");
-        return fileRequester.open();
+        return fileRequester.open({type:"open",path:path});
+    }
+    me.requestFileSave = async function(path){
+        let fileRequester = await me.loadLibrary("filerequester");
+        return fileRequester.open({type:"save",path:path});
     }
 
     me.inspectFile = async function(file){
         let inspector = await me.loadLibrary("inspector.js");
         inspector.inspect(file);
+    }
+
+    me.getObjectInfo = async function(object){
+        let inspector = await me.loadLibrary("inspector.js");
+        return await inspector.getInfo(object);
+    }
+
+    me.exploreFolder = async function(folder){
+        let window = await me.launchProgram("filemanager");
+        applications.sendMessage(window,"openFolder",folder);
     }
 
     return me;

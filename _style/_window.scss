@@ -19,6 +19,10 @@
             top: 0;
             overflow: hidden;
         }
+
+        .bar{
+            display: none;
+        }
     }
 
     .inner{
@@ -29,6 +33,39 @@
         top: 19px;
         overflow: auto;
         transition: right 0.3s ease-in-out;
+
+        &.droptargetactive{
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        &::-webkit-scrollbar {
+            width: 11px;
+            height: 11px;
+        }
+
+        &::-webkit-scrollbar-button {
+            width: 0;
+            height: 0;
+        }
+        &::-webkit-scrollbar-thumb {
+            background: #658fc3;
+            border: 1px solid #ffffff;
+            border-bottom-color: black;
+            border-right-color: black;
+        }
+        &::-webkit-scrollbar-thumb:hover {
+            background: #719cd1;
+        }
+        &::-webkit-scrollbar-thumb:active {
+            background: #5b85b6;
+        }
+        &::-webkit-scrollbar-track {
+            background: #7a7a7a;
+            border: 0;
+        }
+        ::-webkit-scrollbar-corner {
+            background: #7a7a7a;
+        }
     }
 
 
@@ -45,6 +82,7 @@
             display: inline-block;
             font-size: 12px;
             font-family: sans-serif;
+            line-height: 12px;
         }
 
         .close{
@@ -100,68 +138,57 @@
         }
 
     }
-}
+
+    .sizer{
+        position: absolute;
+        right: -1px;
+        bottom: -1px;
+        width: 14px;
+        height: 14px;
+        border: 7px solid transparent;
+        z-index: 10;
+
+        &:before{
+            position: absolute;
+            right: -1px;
+            bottom: -1px;
+            width: 14px;
+            height: 14px;
+            border: 7px solid white;
+            border-left-color: transparent;
+            border-top-color: transparent;
+            z-index: 10;
+            content: "";
+            left: -7px;
+            top: -6px;
+            border-bottom-color: #658FC3;
+            border-right-color: #658FC3;
+    }
 
 
-#desktop .window .inner.droptargetactive{
-    background-color: rgba(255, 255, 255, 0.2);
 }
 
+    &.inactive{
+        .inner{
+            pointer-events: none;
+        }
 
+        opacity: 0.8;
 
-#desktop .window .inner::-webkit-scrollbar {
-    width: 11px;
-    height: 11px;
-}
-#desktop .window .inner::-webkit-scrollbar-button {
-    width: 0;
-    height: 0;
-}
-#desktop .window .inner::-webkit-scrollbar-thumb {
-    background: #658fc3;
-    border: 1px solid #ffffff;
-    border-bottom-color: black;
-    border-right-color: black;
-}
-#desktop .window .inner::-webkit-scrollbar-thumb:hover {
-    background: #719cd1;
-}
-#desktop .window .inner::-webkit-scrollbar-thumb:active {
-    background: #5b85b6;
-}
-#desktop .window .inner::-webkit-scrollbar-track {
-    background: #7a7a7a;
-    border: 0;
-}
+        .bar {
+            background-color: #6e8497;
+        }
+    }
 
-#desktop .window .inner::-webkit-scrollbar-corner {
-    background: #7a7a7a;
-}
-
-
-#desktop .window .sizer,
-#desktop .window .sizer:before{
-    position: absolute;
-    right: -1px;
-    bottom: -1px;
-    width: 14px;
-    height: 14px;
-    border: 7px solid white;
-    border-left-color: transparent;
-    border-top-color: transparent;
-    z-index: 10;
+    &.inactivecontent{
+        .inner{
+            pointer-events: none;
+        }
+    }
 }
 
 body.defaultpointer #desktop .window .sizer{
     cursor: nw-resize;
-}
-
-#desktop .window .sizer:before{
-    content: "";
-    left: -7px;
-    top: -6px;
-    border-bottom-color: #658FC3;
-    border-right-color: #658FC3;
 }
 
 body.defaultpointer{
@@ -175,22 +202,7 @@ body.defaultpointer{
 }
 
 
-#desktop .window.inactive{
-   .inner{
-       pointer-events: none;
-   }
 
-    /*opacity: 0.6;*/
 
-    .bar {
-        /*background-color: #b9c3c2;*/
-    }
-}
-
-#desktop .window.inactivecontent{
-    .inner{
-        pointer-events: none;
-    }
-}
 
 

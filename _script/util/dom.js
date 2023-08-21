@@ -34,8 +34,22 @@ export default function dom(tagName,options){
             continue;
         }
 
+        if (key === 'style' && typeof opt[key] === 'object'){
+            for (let styleKey in opt[key]){
+                elm.style[styleKey] = opt[key][styleKey];
+            }
+            continue;
+        }
+
+
         // custom amibase stuff
-        if (key === 'onClick') addClass(elm,opt,"handle");
+        if (key === 'onClick' || key === 'onDoubleClick' || key === 'onDrag' || key === 'onDown') addClass(elm,opt,"handle");
+        if (key === 'onDragStart'){
+            addClass(elm,opt,"draggable");
+            if (opt.globalDrag) addClass(elm,opt,"global");
+        }
+        if (key === 'onDrop') addClass(elm,opt,"droptarget");
+        if (key === 'onContext') addClass(elm,opt,"context");
         if (key === 'info') addClass(elm,opt,"info");
         // end custom stuff
 

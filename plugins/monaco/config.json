@@ -1,3 +1,5 @@
 {
-  "scripts": ["node_modules/monaco-editor/min/vs/loader.js","monaco.js"]
+  "index": "https://www.amibase.com/apps/monaco/",
+  "width": 860,
+  "height": 600
 }

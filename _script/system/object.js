@@ -10,11 +10,6 @@ let objectType={
     link: amiLink,
 }
 
-let getIcon = function(config){
-    return config.image;
-    // TODO icons according to file type
-}
-
 let AmiObject = function(config){
     if (config.isAmiObject) return config; // already wrapped
 
@@ -32,31 +27,8 @@ let AmiObject = function(config){
         me[key] = config[key];
     }
 
-    me.icon = getIcon(config);
+    me.icon = config.image;
     me.name = me.name || me.label;
-
-    /*me.open = function(){
-        switch(me.type){
-            case "drive":
-                desktop.openDrive(me);
-                break;
-            case "folder":
-                desktop.openFolder(me);
-                break;
-            case "file":
-                system.openFile(me);
-                break;
-            case "link":
-                system.launchProgram(config);
-                break;
-            case "url":
-                console.error("DEPRECATED: url type is deprecated, use link instead");
-                desktop.launchUrl(config);
-                break;
-            default:
-                console.error("Unknown Ami type: " + me.type);
-        }
-    }*/
 
     return me;
 }

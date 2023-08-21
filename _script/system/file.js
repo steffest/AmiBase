@@ -15,14 +15,12 @@ let AmiFile = function(config){
 
     me.isAmiFile = true;
 
-    if (!me.path) me.path = me.url;
-    
-    if (me.url && me.url.indexOf(":")<0){
+    if (config.url && config.url.indexOf(":")<0){
         var link = document.createElement("a");
-        link.href = me.url;
-        me.url = link.href;
-        // note: this converts the url to lowercase?
+        link.href = config.url;
+        config.url = link.href;
     }
+    if (!me.path) me.path = config.url;
 
     me.open = function(){
         system.openFile(me);

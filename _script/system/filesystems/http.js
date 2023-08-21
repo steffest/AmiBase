@@ -4,8 +4,7 @@ import fetchService from "../../util/fetchService.js";
 let Http = ()=>{
     let me = {}
 
-    me.readFile = async function(file,binary){
-        let path = file.path || file.url;
+    me.readFile = async function(path,binary){
         if (binary){
             let BinaryStream = await system.loadLibrary("binaryStream.js");
             let content = await fetchService.arrayBuffer(path);

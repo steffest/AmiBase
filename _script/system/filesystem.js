@@ -38,6 +38,7 @@ let FileSystem = function(){
             }
             mounts[volume] = drive;
             drive.volume = volume;
+            drive.path = volume + ":";
 
             if (drive.handler && typeof drive.handler === "string"){
                 if (!fileSystems[drive.handler]) await system.loadLibrary(drive.handler);
@@ -53,7 +54,8 @@ let FileSystem = function(){
     me.isReadOnly = function(file){
         let mount = me.getMount(file);
         if (typeof mount.readOnly === "boolean") return mount.readOnly;
-        if (mount.handler && typeof mount.handler.isReadOnly === "function") return mount.handler.isReadOnly(file);
+        let fs = mount.handler;
+        if (fs && typeof fs.isReadOnly === "function") return fs.isReadOnly(file);
         return true;
     }
 
@@ -96,10 +98,11 @@ let FileSystem = function(){
         }
         let path = typeof folder === "string" ? folder : folder.path;
         var mount = me.getMount(path);
-        console.log("mount",mount);
+        let fs = mount.handler;
         
-        if (mount.handler){
-            var data = await mount.handler.getDirectory(folder,mount);
+        if (fs){
+            console.log("mount",mount);
+            var data = await fs.getDirectory(path,mount);
             var result = [];
 
             for (const dir of data.directories) {
@@ -125,8 +128,9 @@ let FileSystem = function(){
                 }
                 if (resolveFiletypes) fileConfig.filetype = await system.detectFileType(file);
 
-                // TODO: where is this used?
-                if (mount.handler.getFileUrl) fileConfig.url = mount.handler.getFileUrl(path + file.name);
+                // This is used to enable "load content by url" over HTTP
+                // e.g. for videoplayers to avoid loading the whole file into memory
+                if (fs.getFileUrl) fileConfig.url = fs.getFileUrl(path + file.name,mount);
 
                 result.push(amiObject(fileConfig));
 
@@ -143,21 +147,21 @@ let FileSystem = function(){
     me.createDirectory = function(path,newName){
         console.log("createDirectory");
         var mount = me.getMount(path);
-        if  (mount.handler){
-            console.error(mount.handler);
-            mount.handler.createDirectory(path,newName);
+        let fs = mount.handler;
+        if  (fs){
+            fs.createDirectory(path,newName,mount);
         }
     };
 
     // returns the content of the file, default as ascii, optional as binarystream
     me.readFile = function(file,binary){
-        console.log("readFile",file);
+        console.log("readFile",file,binary);
         file = normalize(file);
         return new Promise(async next => {
             let mount = me.getMount(file);
-            console.error(mount);
-            if  (mount.handler){
-                let result = await mount.handler.readFile(file,binary);
+            let fs = mount.handler;
+            if  (fs){
+                let result = await fs.readFile(file.path,binary,mount);
                 next(result);
             }else{
                 console.error("Can't get file, no handler");
@@ -167,37 +171,38 @@ let FileSystem = function(){
     };
 
 
-    me.writeFile = function(path,content){
+    me.writeFile = function(file,content,binary){
+        file = normalize(file);
         return new Promise(async next => {
-            var mount = me.getMount(path);
-            if  (mount.handler){
-                var response = await mount.handler.writeFile(path,content);
-                if (response){
-                    response = JSON.parse(response);
-                    console.log(response.result);
-                }
+            var mount = me.getMount(file.path);
+            let fs = mount.handler;
+            if (fs){
+                let response = await fs.writeFile(file.path,content,binary,mount);
+                next(response);
             }else{
-                // can't get file - no handler
-                // assume it's http then
                 console.error("no handler");
-                next("error");
+                next();
             }
         });
     };
+
+    me.getFileProperties = function(file){
+        return new Promise(async next => {
+            var mount = me.getMount(file.path);
+            let fs = mount.handler;
+            if (fs && fs.getInfo){
+                let response = await fs.getInfo(file.path,mount);
+                next(response);
+            }else{
+                next({name:file.name});
+            }
+        });
+    }
     
     me.getDownloadUrl = function(path){
         var volume = me.getVolume(path);
         if (volume === "http" || volume === "https"){
             return path;
-        }
-        if (volume === "amigasys"){
-            // TODO move to amigasys filisystem handler
-            var iconSet = "Dual_png";
-            var theme = User.getTheme();
-            if (theme === "dark_reduced") iconSet = "Color_icon";
-            if (theme === "mui") iconSet = "MUI";
-            var result = path.replace("amigasys:","https://www.stef.be/amiga/ICO/amigasys/icons/48x48/"+iconSet+"/");
-            return result;
         }
         return path;
     };
@@ -209,33 +214,57 @@ let FileSystem = function(){
     me.moveFile = function(file,fromPath,toPath){
         return new Promise(async next => {
             console.log("Move File",file,fromPath,toPath);
-            var mount = me.getMount(fromPath);
-            var targetMount = me.getMount(toPath);
-            if (mount.handler){
-                // TODO: move accross different volumes
-                fromPath = fromPath + '/' + file.name;
+            let mount = me.getMount(fromPath);
+            let fs = mount.handler;
+            let targetMount = me.getMount(toPath);
+            let targetFs = targetMount.handler;
+            fromPath = fromPath + '/' + file.name;
 
-                var result = await mount.handler.moveFile(fromPath,toPath);
-                next(result);
+            if (fs){
+                if (mount.path === targetMount.path){
+                    // move inside same volume
+                    var result = await fs.moveFile(fromPath,toPath,mount);
+                    next(result);
+                }else{
+                    let content = await fs.readFile(fromPath,true,mount);
+                    toPath = toPath + '/' + file.name;
+                    let written = await targetFs.writeFile(toPath,content,true,targetMount);
+                    let deleted;
+                    if (written) deleted = await fs.deleteFile(fromPath,mount);
+                    console.log("result:",written,deleted);
+                    next(written && deleted);
+                }
             }else{
-                // can't get file - no handler
                 console.warn("can't move file - no handler");
+                next();
             }
         });
 
 
     };
 
-    me.deleteFile = function(){
-
+    me.deleteFile = function(file){
+        return new Promise(async next => {
+            console.log("Delete",file);
+            let mount = me.getMount(file.path);
+            let fs = mount.handler;
+            if (fs){
+                var result = await fs.deleteFile(file.path,mount);
+                next(result);
+            }else{
+                // can't get file - no handler
+                console.warn("can't delete file - no handler");
+            }
+        });
     };
 
     me.rename = function(path,newName){
         return new Promise(async next => {
             console.log("Rename",path,newName);
             var mount = me.getMount(path);
-            if  (mount.handler){
-                var result = await mount.handler.renameFile(path,newName);
+            let fs = mount.handler;
+            if  (fs){
+                var result = await fs.renameFile(path,newName,mount);
                 next(result);
             }else{
                 // can't get file - no handler
@@ -259,6 +288,12 @@ let FileSystem = function(){
 
     function normalize(file){
         if (typeof file === "string" || !file.isAmiObject){
+            if (typeof file === "string"){
+                file={
+                    type: "file",
+                    path: file
+                }
+            }
             file=amiObject(file);
         }
         return file;

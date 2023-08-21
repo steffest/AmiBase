@@ -34,11 +34,11 @@ let Settings = ()=>{
     let createUI = function(){
 
 
-        let container = $(".settingseditor.content.full",$(".sidebar.panel",
+        let container = $(".settingseditor.content.full",$(".panel.full",{style:{width:"200px", right: "unset"}},
             $(".button.big",{onClick:()=>{showSetting("mounts")}},"Mounts"),
             $(".button.big",{onClick:()=>{showSetting("other")}},"Other"),
-            ),$(".main.panel",panel=$(".content.full.withbuttons"),
-            $(".buttons.action.bottom",$(".button.inline",{onClick:save}, "Save"))
+            ),$(".panel.full",{style:{left:"200px"}},panel=$(".panel.full.transparent.overflow.borderbottom",{style:{bottom:"35px"}}),
+            $(".panel.buttons.bottom",$(".button.inline",{onClick:save}, "Save"))
             ))
 
         showSetting("mounts");
@@ -71,8 +71,10 @@ let Settings = ()=>{
                     let editor = $(".form",$(".divider.panel"),
                         renderProperty("Label","label",mount,onUpdate),
                         renderProperty("Volume","volume",mount,onUpdate),
-                        renderProperty("Handler","handler",mount,onUpdate,["laozi","other"]),
+                        renderProperty("Handler","handler",mount,onUpdate,["laozi","s3","dropbox","other"]),
                         renderProperty("URL","url",mount,onUpdate),
+                        renderProperty("login","login",mount,onUpdate),
+                        renderProperty("pass","pass",mount,onUpdate),
                     );
                     panel.appendChild(editor);
                 });
@@ -88,7 +90,7 @@ let Settings = ()=>{
         if (options){
             input = $("select",options.map(option=>$("option",{value:option},option)));
         }else{
-            input = $("input",{type:"text"});
+            input = $("input",{type: name==="pass"?"password":"text"});
         }
         input.value = value;
         input.oninput = (e)=>{parent[property] = e.target.value;onUpdate()}

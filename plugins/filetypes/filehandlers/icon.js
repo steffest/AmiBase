@@ -41,7 +41,7 @@ var Icon = function(){
 			actions:[
 				{label: "show", plugin:"AdfViewer"},
 				{label: "show2", plugin:"imageViewer"},
-				{label: "edit", plugin:"iconeditor"}
+				{label: "edit", plugin:"dpaint"}
 			],
 			inspect: true,
 			customIcon: true,
@@ -294,7 +294,7 @@ var Icon = function(){
 			if (typeof AdfViewer !== "undefined") AdfViewer.showImage(canvas);
 		}
 		if (action === "edit"){
-			return{plugin: "iconeditor"}
+			return{plugin: "dpaint"}
 		}
 	};
 

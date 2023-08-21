@@ -1,10 +1,11 @@
-import {uuid, $div} from "../util/dom.js";
+import $,{uuid, $div} from "../util/dom.js";
 import ui from "./ui.js";
 import amiIcon from "./icon.js";
 import desktop from "./desktop.js";
-import mouse from "./mousepointer.js";
 import mainMenu from "./mainmenu.js";
+import settings from "../settings.js";
 import fileSystem from "../system/filesystem.js";
+import popupMenu from "./popupMenu.js";
 
 let AmiWindow = function(config){
     if (typeof config === "string") config={
@@ -22,51 +23,84 @@ let AmiWindow = function(config){
     var icons = [];
     var menu;
     var selectBox;
+
+    // TODO: at creation time, we don't know yet of it's a borderless window
     var borderLess = (typeof config.border === "boolean" && !config.border);
+
+    // TODO: move Icon stuff to explorer plugin
+
     var gridWidth= 70;
     var gridHeight= 70;
     var view = "icon";
 
-    var window = $div("window",me.id);
-    window.style.zIndex = me.zIndex;
-    var caption = $div("caption","",config.caption);
-    var windowBar =  $div("bar","",caption);
-    var inner = $div("inner innerwindow");
-    var sizer = $div("sizer");
-    var close = $div("close");
-    var maximize = $div("button maximize");
-    var viewButton = $div("button view");
-    var menuButton = $div("button menu");
-    selectBox = $div("selectBox");
+    let window = $(".window" + (config.autogrid?".autogrid":"") + (borderLess?".borderless":""),{
+            id:me.id,
+            style:{
+                zIndex: me.zIndex,
+            },
+            onClick : function(e){
+                me.activate()
+            },
+            onDrop: handleDrop
+    });
 
-    windowBar.appendChild(close);
-    windowBar.appendChild(maximize);
-    //windowBar.appendChild(viewButton);
-    //windowBar.appendChild(menuButton);
+
+    var caption = $(".caption",config.caption);
+
+    let windowBar =  $(".bar",
+        {
+            onDragStart: (e)=>{
+                me.activate();
+                setTimeout(me.deActivateContent,10);
+                return([me])
+            },
+            onDoubleClick: function(){
+                me.maximize();
+            }
+        },
+        caption,
+        $(".close",{onDown:()=>{
+                me.close();
+            }}),
+        $(".button.maximize",{onDown:()=>{
+                me.maximize();
+        }})
+    );
+
+    var inner = $(".inner.innerwindow",{
+        onContext: (e)=>{
+            if (config.type === "desktop"){
+                if (settings.mainMenu && settings.mainMenu.length){
+                    popupMenu.show({
+                        x: event.clientX,
+                        y: event.clientY,
+                        items: settings.mainMenu[0].items
+                    });
+                }else{
+                    //popupMenu.hide();
+                }
+            }else{
+                let menu = mainMenu.getMenu("window");
+                console.error("window menu",menu);
+                if (menu){
+                    popupMenu.show({
+                        x: event.clientX,
+                        y: event.clientY,
+                        items: menu
+                    });
+                }
+            }
+        }
+    });
+    var sizer = $div("sizer");
+
+    //var viewButton = $div("button view");
+    //var menuButton = $div("button menu");
+
+
     if (!borderLess) window.appendChild(windowBar);
     window.appendChild(inner);
     if (!borderLess) window.appendChild(sizer);
-    inner.appendChild(selectBox);
-
-    if (borderLess){
-        window.classList.add("borderless");
-    }
-    if (config.autogrid)  window.classList.add("autogrid");
-
-    ui.onClick(close,function(){
-        me.close();
-    });
-
-    ui.onClick(maximize,function(){
-        me.maximize();
-        me.cleanUp();
-    });
-
-    ui.onClick(menuButton,function(){
-        window.classList.toggle("listview");
-        view = window.classList.contains("listview") ? "list" : "icon";
-        me.refresh();
-    });
 
     me.getInner = function(){
         return inner;
@@ -93,14 +127,15 @@ let AmiWindow = function(config){
                 width: me.width,
                 height: me.height
             }
-            me.setPosition(0,22);
-            me.setSize(desktop.width,desktop.height-22);
+            me.setPosition(0,26);
+            me.setSize(desktop.width,desktop.height-26);
         }
+        me.activate();
     };
 
-    me.createIcon = function(config){
+    me.createIcon = function(config,target){
         var icon = amiIcon(config);
-        return me.addIcon(icon);
+        return me.addIcon(icon,target);
     };
 
     me.removeIcon = function(icon){
@@ -111,18 +146,30 @@ let AmiWindow = function(config){
         icon.element.remove();
     };
 
-    me.addIcon = function(icon){
-        inner.appendChild(icon.element);
+    me.addIcon = function(icon,target){
+        target = target || inner;
+        target.appendChild(icon.element);
         icon.parent = me;
         icons.push(icon);
         return icon;
     };
+
+    me.clearIcons = function(){
+        icons=[];
+    }
 
     me.setGridSize = function(w,h){
         gridWidth=w;
         gridHeight=h;
         me.cleanUp();
     };
+
+    me.getGridSize = function(){
+        return {
+            width: gridWidth,
+            height: gridHeight
+        }
+    }
 
     me.setAutoGrid = function(state){
         if (state){
@@ -165,46 +212,10 @@ let AmiWindow = function(config){
         }
     }
 
-    me.cleanUp = function(){
-        var left= 10 + (config.paddingLeft || 0);
-        var top= 20 + (config.paddingTop || 0);
-
-        var h = (me.height||350) - gridHeight;
-        var w = (me.width||inner.offsetWidth||500) - gridWidth;
-
-        var fill = "horizontal";
-        if (me.type === "desktop"){
-            fill = "vertical";
-        }
-
-        if (fill === "horizontal"){
-            icons.forEach(function(icon){
-                if (icon){
-                    icon.setPosition(left,top);
-                    left += gridWidth;
-                    if (left>w){
-                        top+=gridHeight;
-                        left = 10 + (config.paddingLeft || 0);
-                    }
-                }
-            })
-        }else{
-            icons.forEach(function(icon){
-                if (icon){
-                    icon.setPosition(left,top);
-                    top += gridHeight;
-                    if (left>w){
-                        top+=gridHeight;
-                        left = 10 + (config.paddingLeft || 0);
-                    }
-                }
-            })
-        }
-    };
-
     me.getIcons = function(){
       return icons;
     };
+
 
     me.getSelectedIcons = function(){
         var result = [];
@@ -214,8 +225,14 @@ let AmiWindow = function(config){
         return result;
     };
 
-
     me.setSelectBox = function(x,y,w,h){
+
+        let selectBox = me.selectBox;
+        if (!selectBox){
+            console.error("no selectbox");
+            return;
+        }
+
         if (w<0){
             w=-w;
             x-=w;
@@ -250,7 +267,7 @@ let AmiWindow = function(config){
     };
 
     me.removeSelectBox = function(){
-        selectBox.classList.remove("active");
+        me.selectBox.classList.remove("active");
     };
 
     me.getTopZindex = function(){
@@ -261,59 +278,86 @@ let AmiWindow = function(config){
         return max;
     };
 
-    me.setDropTarget = function(target){
-        ui.enableDrop(target,function(droppedItems,deltaX,deltaY){
-            droppedItems.forEach(function(item){
-                var left = item.left + deltaX;
-                var top = item.top + deltaY;
-                var doMove = false;
-                if (item.parent.id === me.id){
-                    // move inside parent
-                    doMove = true;
-                    if (window.classList.contains("autogrid")) doMove = false;
+    function handleDrop(droppedItems,deltaX,deltaY){
+        console.log("dropped items",droppedItems);
+        droppedItems.forEach(function(item){
+            var left = item.left + deltaX;
+            var top = item.top + deltaY;
+            var doMove = false;
+            console.log("dropping item on window",item);
+            if (item.parent.id === me.id){
+                // move inside parent
+                console.log("dropped into same window");
+                doMove = true;
+                if (window.classList.contains("autogrid")) doMove = false;
+            }else{
+                // drop in other window
+                console.log("dropped into other window",me.application);
+                if (me.application){
+                    Applications.sendMessage(me,"dropFile",item);
                 }else{
-                    // drop in other window
-                    if (me.isApplication){
-                        Applications.sendMessage(me,"dropfile",item);
-                    }else{
-                        console.log("moving item to new parent");
-                        var oldPos = item.element.getBoundingClientRect();
-                        var oldConfig = item.parent.getConfig?item.parent.getConfig():{};
-                        var oldPath = oldConfig.path;
-                        if (!oldPath) oldPath=item.getConfig?item.getConfig().path:"";
+                    console.log("moving item to new parent");
 
-                        // propagate action to window handler
-                        if (config.path){
-                            fileSystem.moveFile(item,oldPath,config.path)
+                    if ((item.type === "icon" || item.type === "dragitem") && item.object){
+                        var itemConfig = item.parent.getConfig?item.parent.getConfig():{};
+                        var itemPath = itemConfig.path;
+                        if (!itemPath) itemPath=item.getConfig?item.getConfig().path:"";
+
+                        if (item.type === "icon"){
+                            var oldPos = item.element.getBoundingClientRect();
+                            if (config.path && itemPath){
+                                fileSystem.moveFile(item.object,itemPath,config.path)
+                            }
+
+                            item.parent.removeIcon(item);
+                            me.addIcon(item);
+                            var newPos = item.element.getBoundingClientRect();
+
+                            // get new coordinates offset relative to new parent;
+                            var cX = newPos.left-oldPos.left;
+                            var cY = newPos.top-oldPos.top;
+                            left -= cX;
+                            top -= cY;
+
+                            doMove = true;
                         }
 
-                        item.parent.removeIcon(item);
-                        me.addIcon(item);
-                        var newPos = item.element.getBoundingClientRect();
+                        if (item.type === "dragitem"){
+                            console.error("dropped dragitem",item.object);
+                        }
 
-                        // get new coordinates offset relative to new parent;
-                        var cX = newPos.left-oldPos.left;
-                        var cY = newPos.top-oldPos.top;
-                        left -= cX;
-                        top -= cY;
-
-                        doMove = true;
-
-
+                    }else{
+                        console.warn("dropped unknown item, don't know what to do with it");
                     }
+
+
                 }
+            }
 
-                if (doMove){
-                    if (left<0) left=0;
-                    if (top<0) top=0;
+            if (doMove && item.setPosition){
+                if (left<0) left=0;
+                if (top<0) top=0;
+                item.setPosition(left,top);
+            }
 
-                    item.setPosition(left,top);
-                }
-
-            });
-            //me.activate();
         });
     };
+
+    // creates a globally draggable item
+    me.createDragItem = function(config){
+        let item = $(".dragclone",{
+            style:{
+                left: config.left + "px",
+                top: config.top + "px",
+            }
+        },config.label);
+
+        item.type = "dragitem";
+        item.parent = me;
+        item.object = config.object;
+
+        return item;
+    }
     
     me.refresh = function(){
         //window.classList.
@@ -397,6 +441,7 @@ let AmiWindow = function(config){
         };
 
         me.deActivate = function(soft){
+            console.log("deactivate window");
             window.classList.add("inactive");
 
             icons.forEach(function(icon){
@@ -409,8 +454,8 @@ let AmiWindow = function(config){
         };
 
         me.deActivateContent = function(soft){
-            // TODO: why was this needed again?
-            //window.classList.add("inactivecontent");
+            // this is needed if the window contains an iframe that would otherwise steal mouse focus
+            window.classList.add("inactivecontent");
         };
 
         me.setContent = function(content){
@@ -441,6 +486,19 @@ let AmiWindow = function(config){
             mainMenu.setMenuItem(id,label,enabled);
         };
 
+        me.removeBorder = function(){
+            window.classList.add("borderless");
+            caption.style.display = "none";
+            sizer.style.display = "none";
+
+            // move drag handle to top full window
+            window.onDragStart = (e)=>{
+                me.activate();
+                return([me])
+            };
+            window.classList.add("draggable");
+        }
+
         me.getConfig = function(){
             return config;
         };
@@ -453,23 +511,34 @@ let AmiWindow = function(config){
             }
         };
 
-        // send a message to the inner frame of the window
+
+        // this uniforms communication between plugins and amiBase
+        // if the plugin is loading directly into amiBase it can register a handler for the message
+        // otherwise - if the application is running in an iframe it will be sent to the iframe through postMessage
         me.sendMessage = async function(message,data){
+            console.log("sendMessage",message,data);
+
+            // first check if the application is running a plugin directly in amiBase
+            let plugin = me.application;
+            if (plugin && plugin[message] && typeof plugin[message] === "function"){
+                plugin[message](data);
+                return;
+            }
+
+            // if not, check if the application is running in an iframe
+            // only registered applications will receive messages
+            // the "messageTarget" property is set by the application when it's ready to receive messages
             if (me.messageTarget){
                 var messageData;
                 console.log("messagedata",data);
                 
                 if (data){
-                    if (data.type === "icon"){
-                        // TODO
-                        console.error("Rework!")
-                    }
+                    if (data.type === "icon") data=data.object;
 
                     if (data.type === "file"){
                         messageData = {
                             filename: data.name,
                             path: data.path,
-                            attachment: data.attachment, // TODO: do we still use attachment?
                             url: data.url
                         };
                         if (data.binary){
@@ -479,8 +548,8 @@ let AmiWindow = function(config){
                         // TODO: only load when no HTTP is available
                         // and only when data is not loaded yet
 
-                        if (!messageData.url && !data.data){
-                            messageData.data = await fileSystem.readFile(data);
+                        if (!messageData.url && !messageData.data){
+                            messageData.data = await fileSystem.readFile(data,true);
                             // make sure it's an arraybuffer
                             if (messageData.data.buffer)  messageData.data = messageData.data.buffer;
                         }
@@ -491,10 +560,6 @@ let AmiWindow = function(config){
                         // we can't send functions or circular structures to another frame;
                         messageData = {};
                         if (data.path) messageData.path = data.path;
-                        
-                        // TODO: deprecated
-                        if (data.linkedFile) messageData.path = fileSystem.getDownloadUrl(data.linkedFile);
-                        
                         if (data.url) messageData.url = data.url;
                         if (data.filetype) {
                             messageData.filetype = {
@@ -513,7 +578,16 @@ let AmiWindow = function(config){
 
 
             }else{
-                console.error("Can't send message: no target defined");
+                if (me.isLoading){
+                    console.log("Application hasn't signalled it's ready yet, queueing message");
+                    me.messageQueue = me.messageQueue||[];
+                    me.messageQueue.push({
+                        message: message,
+                        data: data
+                    });
+                }else{
+                    console.error("Can't send message: no target defined");
+                }
             }
         };
 
@@ -527,13 +601,13 @@ let AmiWindow = function(config){
         config.width = config.width||240;
         config.height = config.height||200;
         me.setSize(config.width,config.height);
-        ui.enableDrag(me);
+        //ui.enableDrag(me);
         ui.enableResize(me);
-        ui.enableSelection(me,inner);
-        me.setDropTarget(window);
+
+        //me.setDropTarget(window);
 
 
-        window.addEventListener("mouseenter",function(){
+        /*window.addEventListener("mouseenter",function(){
             if (!mouse.isDown){
                 me.activateContent(true);
             }
@@ -550,12 +624,10 @@ let AmiWindow = function(config){
                 });
             }
         });
-        window.addEventListener("click",function(){
+
+        inner.addEventListener("onmousedown",function(){
             me.activate(true);
-        });
-        inner.addEventListener("click",function(){
-            me.activate(true);
-        });
+        });*/
     }
 
 

@@ -63,7 +63,6 @@ var FileType = function(){
 
 	me.detect = async function(file,tryHard,retry){
 
-		console.error("detect filetype",file);
 		var fileType;
 
 		if (typeof file === "string"){
@@ -100,7 +99,6 @@ var FileType = function(){
 			if (fileType.id === FILETYPE.unknown.id && tryHard && !file.binary && !retry){
 				// get file content and try again
 				file.binary = await fileSystem.readFile(file,true);
-				console.error(file.binary);
 				return await me.detect(file,tryHard,true);
 			}
 		}

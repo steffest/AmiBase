@@ -10,13 +10,18 @@ for type drive:
 
 for type folder:
     - items: an array of content items
+    - path: the path of the item inside the amiBase mounts
 
 for type file:
     - url: the url of the file to
     - handler: the name of the application to open the file with. if omitted then the file is inspected to determine the handler.
-
+    - path: the path of the item inside the amiBase mounts
 
 
 Internally these content items are converted to a amiObject object.
 this object has the following methods:
     - open: opens the item
+
+
+an "Icon" is a graphical representation of a content object
+

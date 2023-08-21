@@ -1,0 +1,20 @@
+Plugins and Libraries
+
+AmiBase is extended by plugins and libraries to provide additional functionality.
+
+
+The difference between a plugin and a library:
+    - a library doesn't have a user interface.
+    - only one instance of a library is loaded at a time.
+
+    - a plugin has a user interface.
+    - multiple instances of a plugin can be active at the same time.
+
+    both are loaded at runtime. Loading is delayed until the first time the plugin or library is required.
+
+
+Plugins and libraries are loaded from the "plugins" folder.
+Each plugin has a folder with the same name as the plugin.
+Inside that folder is a file called "config.json" which contains the plugin's configuration.
+If a library only consists of a single file, you can load it with the ".js" extension, saving you a http request for the config file.
+

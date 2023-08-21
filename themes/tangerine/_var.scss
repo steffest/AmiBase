@@ -1,0 +1,27 @@
+body.theme_tangerine{
+  --panel-background: #B4BFC8;
+  --panel-text-color: #36373d;
+    --panel-text-color-highlight: #090909;
+  --button-background: #ECECEC;
+  --button-text-color: #1f3853;
+  --button-background-highlight: #cfd5da;
+  --panel-border-dark: rgba(0, 0, 0, 0.5);
+  --panel-border-light: rgba(255, 255, 255, 0.2);
+  --input-background: #e0e4e5;
+  --input-text-color: #000000;
+}
+
+/*grid*/
+$offsetLeft: -16px;
+$offsetTop: -16px;
+$gridsize:-64px;
+
+@function col($index) {
+  @return ($gridsize*($index - 1) + $offsetLeft);
+}
+@function row($index) {
+  @return ($gridsize*($index - 1) + $offsetTop);
+}
+@function grid($col,$row) {
+  @return col($col) row($row);
+}

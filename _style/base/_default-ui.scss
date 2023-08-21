@@ -1,0 +1,244 @@
+@import "../mapping";
+
+.content{
+  .panel{
+    background-color: $panel-background;
+    color: $panel-text-color;
+    border: 1px solid $panel-border-dark;
+    border-left-color: $panel-border-light;
+    border-top-color: $panel-border-light;
+
+    &.light{
+      background-color: #6a757b;
+    }
+
+    &.transparent{
+      background-color: transparent;
+      border: none;
+    }
+
+    &.borderbottom,
+    &.transparent.borderbottom{
+      border-bottom: 1px solid $panel-border-dark;
+    }
+
+    &::-webkit-scrollbar {
+      width: 11px;
+      height: 11px;
+    }
+
+    &::-webkit-scrollbar-button {
+      width: 0;
+      height: 0;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #658fc3;
+      border: 1px solid #ffffff;
+      border-bottom-color: black;
+      border-right-color: black;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: #719cd1;
+    }
+    &::-webkit-scrollbar-thumb:active {
+      background: #5b85b6;
+    }
+    &::-webkit-scrollbar-track {
+      background: #7a7a7a;
+      border: 0;
+    }
+    ::-webkit-scrollbar-corner {
+      background: #7a7a7a;
+    }
+  }
+
+  .button{
+    border: 1px solid $panel-border-dark;
+    background-color: $button-background;
+    color: $button-text-color;
+    border-left-color: $panel-border-light;
+    border-top-color: $panel-border-light;
+    padding: 3px 6px;
+    text-align: center;
+    margin: 2px;
+    font-size: 13px;
+
+    &.big{
+      padding: 6px;
+    }
+
+    &.inline{
+      display: inline-block;
+    }
+
+    &:hover{
+      background-color: $button-background-highlight;
+      cursor: pointer;
+    }
+  }
+
+  .content{
+      &.withbuttons{
+        bottom: 35px;
+        border-bottom: 1px solid $panel-border-dark;
+        overflow: auto;
+      }
+  }
+
+  .buttons{
+    position: absolute;
+    right: 0;
+    left: 0;
+    top: 0;
+    padding: 4px 8px;
+
+    &.bottom{
+      top: auto;
+      bottom: 0;
+      height: 35px;
+      border-top: 1px solid $panel-border-light;
+      text-align: right;
+    }
+
+  }
+
+  input[type="text"],
+  input[type="password"]{
+    padding: 2px 4px;
+    border: 1px solid rgba(0, 0, 0, 0.8);
+    background-color: $input-background;
+    line-height: 14px;
+    height: 22px;
+    color: $input-text-color;
+
+    &:focus{
+      outline: none;
+    }
+  }
+
+  select{
+    padding: 2px;
+    border: 1px solid rgba(0, 0, 0, 0.8);
+    background-color: $input-background;
+  }
+
+  .cel{
+    padding: 2px 4px;
+    display: inline-block;
+    font-size: 12px;
+
+    &.label{
+      background-color: rgba(255, 255, 255, 0.1);
+      text-align: right;
+      color: rgba(255, 255, 255, 0.7);
+      width: 100px;
+    }
+
+    .value{
+
+    }
+  }
+}
+
+.full{
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.capitalize{
+  text-transform: capitalize;
+}
+
+.overflow{
+  overflow: auto;
+}
+.nooverflow{
+  overflow: hidden;
+}
+
+.hidden{
+    display: none;
+}
+
+.absolute{
+  position: absolute;
+}
+
+.relative{
+  position: relative;
+}
+
+.toolbar{
+  position: absolute;
+  height: 40px;
+  left: 0;
+  right: 0;
+  top: 0;
+
+  .button.tool{
+    position: absolute;
+    top: 1px;
+    width: 22px;
+    height: 22px;
+    background-color: transparent;
+    border-color: transparent;
+
+    .icon{
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-size: 16px 16px;
+      border-radius: 0;
+      opacity: 0.5;
+
+    }
+
+    &:hover{
+      background-color: rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+
+      .icon{
+        opacity: 1;
+      }
+    }
+  }
+}
+
+.list{
+  .listitem{
+    padding: 2px 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    color: $panel-text-color;
+    font-size: 12px;
+
+    &:hover{
+      background-color: rgba(179, 209, 232, 0.15);
+      color: $panel-text-color-highlight;
+    }
+
+    &.selected{
+      background-color: rgba(158, 199, 176, 0.2);
+    }
+
+    &.folder, &.file{
+      padding-left: 18px;
+      background-image: url("../../_img/icons/line/file.png");
+      background-repeat: no-repeat;
+      background-position: 0 2px;
+    }
+
+    &.folder{
+      background-image: url("../../_img/icons/line/folder.png");
+    }
+  }
+}
+
+

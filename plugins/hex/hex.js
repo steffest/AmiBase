@@ -19,13 +19,9 @@ let Hex = ()=>{
 
         if (host){
             amiBase = host;
-            amiBase.registerApplicationActions("hex",{
-                "openfile":openFile
-            });
         }
 
         amiWindow.setSize(584,400);
-        if (amiWindow.onload) amiWindow.onload(amiWindow);
     }
 
     let createUI = function(){
@@ -80,17 +76,17 @@ let Hex = ()=>{
     }
 
     async function open(){
-        let file = await amiBase.system.requestFile();
+        let file = await amiBase.requestFileOpen();
         if (file){
-            openFile(file);
+            me.openFile(file);
         }
     }
 
-    async function openFile(file){
+    me.openFile = async function(file){
         console.log("openFile from HEX",file);
-        let content = await amiBase.fileSystem.readFile(file,true);
+        let content = await amiBase.readFile(file,true);
         renderContent(content);
-        let readOnly = await amiBase.fileSystem.isReadOnly(file);
+        let readOnly = await amiBase.isReadOnly(file);
     }
 
     return me;

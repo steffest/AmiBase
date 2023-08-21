@@ -1,4 +1,4 @@
-import {$div, loadCss} from "../../_script/util/dom.js";
+import $,{loadCss} from "../../_script/util/dom.js";
 import fetchService from "../../_script/util/fetchService.js";
 import ui from "../../_script/ui/ui.js";
 //import AmpVisualizer from "./vis/main.js";
@@ -16,7 +16,8 @@ let MediaPlayer = function(){
     var ctx;
     var isPlaying;
     var visActive;
-    var progressDrag, volumeDrag;
+    var progressDrag = {};
+    let volumeDrag = {};
     var skinLoaded;
     var currentData;
     var buttons={};
@@ -26,21 +27,17 @@ let MediaPlayer = function(){
     let AmpVisualiser;
 
     function setup(){
-        mediaplayer = $div("mediaplayer");
+        mediaplayer = $(".mediaplayer");
     }
 
     me.init = function (app,context) {
         return new Promise((next)=>{
             console.log("mediaplayer here");
 
-            if (context && context.registerApplicationActions){
+            if (context){
                 amiBase = context;
-                context.registerApplicationActions("mediaplayer",{
-                    "openfile": handleFile,
-                    "dropfile": handleDropFile
-                });
             }
-
+            app.removeBorder();
             var inner = app.getInner();
             inner.innerHTML = "";
             currentApp = app;
@@ -53,7 +50,6 @@ let MediaPlayer = function(){
             loadSkin();
 
             app.setMenu(menu,true);
-            if (app.onload) app.onload(app);
             next();
 
         })
@@ -113,16 +109,16 @@ let MediaPlayer = function(){
         if (data.type === "icon"){
             var config = data.getConfig();
             if (config.url && !useAttachment){
-                handleFile(config);
+                me.openFile(config);
             }else if (data.attachment){
-                amiBase.fileSystem.getFile(data.attachment,true).then(file=>{
+                amiBase.readFile(data.attachment,true).then(file=>{
                     Player.playFile(file,data.attachment.filetype);
                 })
             }
         }
     }
 
-    function handleFile(file){
+    me.openFile = function(file){
         console.log("mediaplayer open file",file);
         if (file.binary){
             Player.playFile(file.binary);
@@ -131,7 +127,13 @@ let MediaPlayer = function(){
             //window.setContent(img);
             if (file.label) currentApp.setCaption(file.label);
         }else{
-            console.warn("unknown structure",file);
+            amiBase.getUrl(file).then(url=>{
+               if (url){
+                   Player.playUrl(url);
+               }else{
+                   console.warn("unknown structure",file);
+               }
+            });
         }
     }
 
@@ -164,42 +166,35 @@ let MediaPlayer = function(){
             analyserCanvas.style.top = config.analyser.top + "px";
 
             if (buttons.progress){
-                progressDrag = {
-                    left: 0,
-                    top: 0,
-                    element: buttons.progress,
-                    setPosition: function(a,b){
-                        updateProgressBar(a);
-                    },
-                    onStopDrag : function(){
-                        var min = buttons.progress.config.minLeft || 0;
-                        var max = buttons.progress.config.maxLeft || 100;
-                        var range = max-min;
+                buttons.progress.onDown = function(touchData){
+                    touchData.startDragX = progressDrag.left || 0;
+                }
+                buttons.progress.onDrag = function(touchData){
+                    updateProgressBar(touchData.startDragX + touchData.deltaX);
+                }
+                buttons.progress.onUp = function(touchData){
+                    var min = buttons.progress.config.minLeft || 0;
+                    var max = buttons.progress.config.maxLeft || 100;
+                    var range = max-min;
 
-                        buttons.progress.isDragging = false;
-                        var pos = (progressDrag.left - min)/range;
-                        Player.setPosition(pos);
-                    }
-                };
-                ui.enableDrag(progressDrag);
+                    buttons.progress.isDragging = false;
+                    var pos = (progressDrag.left - min)/range;
+                    Player.setPosition(pos);
+                }
             }
             if (buttons.volume){
-                volumeDrag = {
-                    left: 0,
-                    top: 0,
-                    element: buttons.volume,
-                    setPosition: function(a,b){
 
-                        var min = buttons.volume.config.minLeft || 0;
-                        var max = buttons.volume.config.maxLeft || 100;
-                        var range = max-min;
-
-                        updateVolumeBar(a);
-                        var pos = (volumeDrag.left - min)/range;
-                        Player.setVolume(pos);
-                    }
-                };
-                ui.enableDrag(volumeDrag);
+                buttons.volume.onDown = function(touchData){
+                    touchData.startDragX = volumeDrag.left || 0;
+                }
+                buttons.volume.onDrag = function(touchData){
+                    updateVolumeBar(touchData.startDragX + touchData.deltaX);
+                    var min = buttons.volume.config.minLeft || 0;
+                    var max = buttons.volume.config.maxLeft || 100;
+                    var range = max-min;
+                    var pos = (volumeDrag.left - min)/range;
+                    Player.setVolume(pos);
+                }
             }
             Player.setVolume(0.7,true);
 
@@ -230,7 +225,7 @@ let MediaPlayer = function(){
     }
 
     function createButton(item,addClassName){
-        var button = $div("button");
+        var button = $(".button");
         if (addClassName){
             button.classList.add(item.name);
         }
@@ -245,23 +240,25 @@ let MediaPlayer = function(){
 
         setBackground(button,"texture");
         if (!button.inActive){
+            button.classList.add("handle");
+            button.classList.add("preventdefaultdrag");
             button.onmouseenter = function(){
                 setBackground(button,"hover");
             };
             button.onmouseleave = function(){
                 setBackground(button,"texture");
             };
-            button.onmousedown = function(){
+            button.onDown = function(){
                 console.log("button.onmousedown",item.name);
                 handleAction(item.name);
                 setBackground(button,"down");
                 if (addClassName) button.classList.add("down");
-            };
-            button.onmouseup = function(){
+            }
+            button.onUp = function(){
                 console.log("button.onmouseup");
                 setBackground(button,"hover");
                 if (addClassName) button.classList.remove("down");
-            };
+            }
         }
         buttons[item.name] = button;
 
@@ -299,8 +296,9 @@ let MediaPlayer = function(){
         }
     }
 
-    function openFile(){
-        amiBase.system.requestFile();
+    async function openFile(){
+        let file = await amiBase.requestFileOpen();
+        if (file) me.openFile(file);
     }
 
     function openUrl(){
@@ -484,7 +482,7 @@ let MediaPlayer = function(){
                 }else{
                     console.log("Can't decode audio data, detecting file type");
                     (async()=>{
-                        type = await amiBase.system.detectFileType(file);
+                        type = await amiBase.detectFileType(file);
                         if (type && type.name && type.name.indexOf("laylist")>=0){
                             return me.playList(file,type)
                         }
@@ -499,7 +497,7 @@ let MediaPlayer = function(){
             if (url && url.buffer){
                 var list = url.toString();
             }else{
-                list =  await amiBase.fileSystem.readFile(url);
+                list =  await amiBase.readFile(url);
             }
 
             // let's just play the first entry for now
@@ -963,70 +961,6 @@ let MediaPlayer = function(){
 
     }();
 
-
-    var libOpenMPTPlayer = function(){
-        var me = {};
-        var initDone;
-        var player;
-        var masterVolume;
-
-        me.init = function(next){
-            if (initDone){
-                next();
-            }else{
-                masterVolume = audioContext.createGain();
-
-                amiBase.system.loadScripts("plugins/mediaplayer/players/openmpt/",["chiptune2.js","libopenmpt.js"],function(){
-                    libopenmpt.onRuntimeInitialized = _ =>
-                    {
-
-                        if (player == undefined) {
-                            player = new ChiptuneJsPlayer({
-                                repeatCount:0,
-                                output: analyser,
-                                audioContext: audioContext,
-                                audioDestination: masterVolume
-                            });
-                        } else {
-                            player.stop();
-                            //playPauseButton();
-                        }
-
-
-                        let path = "plugins/mediaplayer/players/openmpt/test.mod";
-                        player.load(path, function(buffer) {
-                            console.error(buffer);
-                            //document.getElementById('play').innerHTML = "Pause";
-                            player.play(buffer);
-                            //setMetadata(path);
-                            //pausePauseButton();
-                            //updateAutoPlay();
-                            //setInterval(progress, 500);
-                        });
-                    };
-                });
-            }
-        };
-
-        me.setSrc=function(){
-            me.init();
-        };
-
-        me.play = function(){
-            masterVolume.connect(analyser);
-            player.togglePause();
-        };
-
-        me.pause = function(){
-            player.togglePause();
-        };
-
-        me.stop = function(){
-            masterVolume.disconnect();
-        };
-
-        return me;
-    }();
 
     return me;
 

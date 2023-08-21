@@ -15,6 +15,7 @@
     top: 0;
     bottom: 0;
     overflow: hidden;
+    z-index: 1;
 }
 
 #mousepointer{
@@ -56,6 +57,13 @@ iframe{
     z-index: 100000;
     opacity: 0;
     transition: opacity 0.4s ease;
+}
+
+#globalDragItem .dragclone{
+    position: absolute;
+    background-color: #D7E7F3;
+    padding: 2px;
+    border: 1px solid rgba(0, 0, 0, 0.5);
 }
 
 #globalDragItem.visible{

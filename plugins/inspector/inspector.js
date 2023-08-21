@@ -11,8 +11,43 @@ let Inspector = function(){
         });
         w.setSize(320,300);
         w.setContent(await generateInfo(target));
-
     };
+
+    me.getInfo = async function(target){
+        return new Promise(async function(next){
+            let result = {
+                name: target.name || target.label
+            };
+
+            if (target.isAmiFile){
+                result.type = "file";
+                let fileType = target.filetype || await system.detectFileType(target);
+                if (fileType){
+                    result.filetype = fileType.name || "Unknown";
+                }
+
+                let fileInfo = await filesystem.getFileProperties(target);
+                if (fileInfo){
+                    if (fileInfo.file){
+                        result.size = fileInfo.file.size;
+                        result.modified = fileInfo.file.modified;
+                    }
+                    if (fileInfo.exif){
+                        if (fileInfo.exif.ImageSize){
+                            result.imageSize = fileInfo.exif.ImageSize;
+                        }
+                    }
+                }
+                console.error(fileInfo);
+            }
+
+
+            console.error(target);
+
+
+            next(result);
+        });
+    }
 
     async function generateInfo(target){
         console.error(target);
@@ -52,6 +87,10 @@ let Inspector = function(){
         }
 
         if (target.type === "folder"){
+            renderProperty("Path",target.path);
+        }
+
+        if (target.type === "drive"){
             renderProperty("Path",target.path);
         }
 

@@ -95,7 +95,7 @@
             "type": "file",
             "label": "Amiga Icon",
             "path": "content/files/RamDiskAlt_64c.info",
-            "handler" : "plugin:iconeditor",
+            "handler" : "plugin:dpaint",
             "icon" : "content/files/RamDiskAlt_64c.info"
           },
           {

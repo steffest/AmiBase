@@ -1,21 +1,6 @@
+@import "var";
+
 body.theme_tangerine{
-
-  /* grid */
-  $offsetLeft: -16px;
-  $offsetTop: -16px;
-  $gridsize:-64px;
-
-
-  @function col($index) {
-    @return ($gridsize*($index - 1) + $offsetLeft);
-  }
-  @function row($index) {
-    @return ($gridsize*($index - 1) + $offsetTop);
-  }
-  @function grid($col,$row) {
-    @return col($col) row($row);
-  }
-
 
   #desktop{
     background: url("Wallpapers/boing_soft_1.jpg");
@@ -30,6 +15,10 @@ body.theme_tangerine{
         background: none;
       }
     }
+  }
+
+  .toolbar .button.tool.light{
+    filter: invert(100%);
   }
 
   .topbar{
@@ -124,8 +113,6 @@ body.theme_tangerine{
             background-position: -48px 0;
           }
         }
-
-
       }
 
       .label{
@@ -134,5 +121,5 @@ body.theme_tangerine{
     }
   }
 
-
 }
+

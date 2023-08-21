@@ -51,7 +51,7 @@ var FetchService = function() {
 	};
 
 	me.json = function(url,callback){
-		return new Promise(function(resolve,reject){
+		return new Promise(function(resolve){
 			var next = callback || resolve;
 			me.ajax({
 				url : url,
@@ -64,13 +64,16 @@ var FetchService = function() {
 		});
 	};
 
-	me.html = function(url,next){
-		me.ajax({
-			url : url,
-			cache: false,
-			datatype: "html",
-			success: function(data){next(data)},
-			error: function(xhr){next(undefined,xhr)}
+	me.html = function(url,callback){
+		return new Promise(function(resolve){
+			let next = callback || resolve;
+			me.ajax({
+				url : url,
+				cache: false,
+				datatype: "html",
+				success: function(data){next(data)},
+				error: function(xhr){next(undefined,xhr)}
+			});
 		});
 	};
 

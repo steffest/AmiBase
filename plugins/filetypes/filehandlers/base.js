@@ -13,7 +13,7 @@ var BaseFileExtensions = function(){
                 fileExtensions:["adf"]
             },
             ADFDOS: {name: "Amiga DOS Disk File", actions:[
-                {label: "mount disk", plugin:"adftools"},
+                {label: "mount disk", plugin:"filemanager"},
                 {label: "run in Amiga emulator", plugin:"uae"}
                 ], className:"adf",mountFileSystem:{plugin:"AmigaFileSystem",volume:"ADF"}
             },
@@ -44,6 +44,12 @@ var BaseFileExtensions = function(){
                 className:"mp3",
                 fileExtensions:["mp3"]
             },
+            MP4: {name: "MP4 video", actions:[
+                    {label: "play", plugin:"videoplayer"}
+                ],
+                className:"mp4",
+                fileExtensions:["mp4"]
+            },
             PLS: {name: "Music playlist", actions:[
                     {label: "play", plugin:"mediaplayer"}
                 ], className:"pls",
@@ -61,13 +67,17 @@ var BaseFileExtensions = function(){
                 ], className:"txt",
                 fileExtensions:["json"]},
             HTML: {name: "HTML File", actions:[
-                    {label: "edit", plugin:"notepad"}
+                    {label: "edit", plugin:"monaco"}
                 ], className:"txt",
                 fileExtensions:["htm","html"]},
             CODE: {name: "CODE File", actions:[
-                    {label: "edit", plugin:"notepad"}
+                    {label: "edit", plugin:"monaco"}
                 ], className:"txt",
                 fileExtensions:["c"]},
+            MARKDOWN: {name: "MarkDown File", actions:[
+                    {label: "edit", plugin:"monaco"}
+                ], className:"txt",
+                fileExtensions:["md"]},
         }
     };
 

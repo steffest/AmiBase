@@ -1,23 +1,32 @@
-var dos_plugin_init = function(app){
-    console.log("dos here");
+let DosBox = ()=>{
+    let me = {
+        name:"dosbox",
+    };
 
-    //Applications.registerApplicationActions("dos",{
-    //    "openfile": handleFile,
-    //    "dropfile": handleDropFile
-    //});
+    me.init = function(containerWindow,context){
+        console.log("dos init");
+        return new Promise((next)=>{
+            context.system.loadScript("plugins/dos/js-dos.js").then(()=>{
+                console.log("js-dos loaded");
 
-    Dos(document.getElementById("jsdos"), {
-        wdosboxUrl: "plugins/dos/wdosbox.js",
-        cycles: 1000,
-        autolock: false,
-    }).ready(function (fs, main) {
-        fs.extract("plugins/dos/raydem.zip").then(function () {
-            main(["-c", "raydem.bat"]).then(function (ci) {
-                window.ci = ci;
+                Dos(document.getElementById("jsdos"), {
+                    wdosboxUrl: "plugins/dos/wdosbox.js",
+                    cycles: 1000,
+                    autolock: false,
+                }).ready(function (fs, main) {
+                    fs.extract("plugins/dos/raydem.zip").then(function () {
+                        main(["-c", "raydem.bat"]).then(function (ci) {
+                            window.ci = ci;
+                        });
+                    });
+                });
+
             });
+            next();
         });
-    });
+    }
 
-    if (app.onload) app.onload(app);
+    return me;
+}
 
-};
+export default DosBox;

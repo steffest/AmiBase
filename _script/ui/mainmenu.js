@@ -1,7 +1,6 @@
-import {$div} from "../util/dom.js";
+import $ from "../util/dom.js";
 import settings from "../settings.js";
 import desktop from "./desktop.js";
-import ui from "./ui.js";
 import eventBus from "../util/eventBus.js";
 import {EVENT} from "../enum.js";
 import applications from "../applications.js";
@@ -30,7 +29,7 @@ let MainMenu = function(){
                             width: 400,
                             height: 200
                         }).then(window=>{
-                            applications.sendMessage(window,"openfile",amiObject({
+                            applications.sendMessage(window,"openFile",amiObject({
                                 type: "file",
                                 label: "About " + settings.name || "Amibase",
                                 url: settings.aboutUrl || "content/files/about.txt"
@@ -42,7 +41,7 @@ let MainMenu = function(){
                 {
                     label:"Open File",
                     action: async ()=>{
-                        let file = await system.requestFile();
+                        let file = await system.requestFileOpen();
                         if (file){
                             system.openFile(file)
                         }
@@ -82,11 +81,22 @@ let MainMenu = function(){
                 {
                     label:"Rename",
                     action: function(){
-                        var name =  prompt("Enter the new name:");
+                        var icon =  desktop.getFocusElement();
+                        let oldName = icon.object.name;
+                        let path = icon.object.path;
+                        var name =  prompt("Enter the new name:",oldName);
                         if (name){
-                            var icon =  desktop.getFocusElement();
                             icon.setLabel(name);
+                            fileSystem.rename(path,name);
                         }
+                    }
+                },
+                {
+                    label:"Delete",
+                    action: async function(){
+                        var icon =  desktop.getFocusElement();
+                        fileSystem.deleteFile(icon.object);
+                        icon.parent.removeIcon(icon);
                     }
                 },
                 {
@@ -94,7 +104,7 @@ let MainMenu = function(){
                     action: async function(){
                         var icon =  desktop.getFocusElement();
                         let inspector = await system.loadLibrary("inspector.js");
-                        inspector.inspect(icon);
+                        inspector.inspect(icon.object);
                     }
                 }
             ]
@@ -164,17 +174,12 @@ let MainMenu = function(){
     ];
 
     me.init = function(){
-        var topbar = $div("topbar");
+        var topbar = $(".topbar",
+            $(".homebutton",$("div"),(settings.name || "Amibase"),$("small","v" + settings.version)),
+            messageContainer = $(".message"),
+            root=$(".menu")
+        );
 
-        //var homebutton =$div("homebutton","","<div>AmiBase <small>v" + settings.version + "</small></div>");
-        var homebutton =$div("homebutton","","<div>" + (settings.name || "Amibase") + " <small>v" + settings.version + "</small></div>");
-
-        messageContainer = $div("message");
-        root=$div("menu");
-
-        topbar.appendChild(homebutton);
-        topbar.appendChild(messageContainer);
-        topbar.appendChild(root);
         desktop.getScreen().appendChild(topbar);
 
         if (settings.themes && settings.themes.length>1){
@@ -202,6 +207,7 @@ let MainMenu = function(){
 
         eventBus.on(EVENT.ACTIVATE_DESKTOP_ELEMENT,function(){
             var focusElement = desktop.getFocusElement() || {};
+
             switch (focusElement.type) {
                 case "desktop":
                     me.setMenu(mainMenu);
@@ -218,13 +224,7 @@ let MainMenu = function(){
                         me.setMenu(windowMenu);
                     }
                     break;
-                case "drawer":
-                    if (focusElement.getMenu()){
-                        me.setMenu(focusElement.getMenu(),focusElement);
-                    }else{
-                        me.setMenu(windowMenu);
-                    }
-                    break;
+                case "folder":
                 case "drive":
                     if (focusElement.getMenu()){
                         me.setMenu(focusElement.getMenu(),focusElement);
@@ -247,6 +247,12 @@ let MainMenu = function(){
         menuActive=false;
         currentMenuTarget = window;
     };
+
+    me.getMenu = function(type){
+        if (type === "window") return windowMenu[0].items;
+        if (type === "icon") return iconMenu[0].items;
+        return mainMenu;
+    }
 
     me.hideMenu = function(){
         var items = root.querySelectorAll(".hassubmenu");
@@ -272,35 +278,26 @@ let MainMenu = function(){
         messageContainer.innerHTML = message;
     };
 
-    function createMenuItem(struct){
-        var elm = $div("menuitem");
-        if (struct.label === "-"){
-            elm.classList.add("divider");
-            return elm;
-        }
-        if (struct.disabled){
-            elm.classList.add("disabled");
-        }
-        if (struct.id){
-            elm.id="am_" + struct.id;
+    function createMenuItem(config){
+        if (config.label === "-"){
+           return $(".menuitem.divider")
         }
 
-        elm.innerHTML = "<label>" + struct.label + "</label>";
-        ui.onClick(elm,function(e){
-            e.stopPropagation();
-            handleMenuClick(struct);
-        });
+        let elm = $(".menuitem"+(config.disabled?".disabled":"")+(config.items?".hassubmenu":""),
+            {onClick:()=> {handleMenuClick(config)},
+            id:config.id?"am_" + config.id:undefined},
+            $("label",config.label)
+        );
 
-        if (struct.items){
-            var submenu = $div("submenu");
-            struct.items.forEach(function(item){
+        if (config.items){
+            var submenu = $(".submenu");
+            config.items.forEach(function(item){
                 if (item){
                     submenu.appendChild(createMenuItem(item));
                 }
             });
             elm.appendChild(submenu);
-            struct.submenu = submenu;
-            elm.classList.add("hassubmenu");
+            config.submenu = submenu;
         }
 
         elm.onmouseover  = function(){

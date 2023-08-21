@@ -1,10 +1,11 @@
-@use 'main.css';
-@use 'desktop.css';
-@use 'mainmenu.scss';
-@use 'popupmenu.scss';
-@use 'window.scss';
-@use 'icon.scss';
+@import 'var';
+@import 'main';
+@import 'desktop';
+@import 'mainmenu';
+@import 'popupmenu';
+@import 'window';
+@import 'icon';
+@import 'base/default-ui';
 
-@use 'default-ui.scss';
 
 

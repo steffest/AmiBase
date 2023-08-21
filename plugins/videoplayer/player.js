@@ -7,30 +7,13 @@ var VideoPlayer = function(){
     var video;
     var player;
     var titleElm;
+    let amiBase;
 
     me.init = (containerWindow,context)=>{
 
         console.error("videoplayer here");
 
-        if (context && context.registerApplicationActions){
-            context.registerApplicationActions("videoplayer",{
-                "openfile": handleFile
-            });
-        }
-
-
-        function handleFile(attachment){
-            console.log("videoplayer open file");
-            if(attachment.url){
-                me.playUrl(attachment.url);
-                //window.setContent(img);
-                if (attachment.label) app.setCaption(attachment.label);
-            }else{
-                console.warn("unknown structure",attachment);
-            }
-        }
-
-
+        amiBase = context;
         containerWindow.setSize(800,450);
         me.setPlayerWindow(containerWindow);
         if (containerWindow.onload) containerWindow.onload(containerWindow);
@@ -39,6 +22,23 @@ var VideoPlayer = function(){
     me.setPlayerWindow = function(w){
         playerWindow = w;
     };
+
+    me.openFile = function(file){
+        console.log("videoplayer open file");
+        if(file.url){
+            me.playUrl(file.url);
+            //window.setContent(img);
+            if (file.label) app.setCaption(file.label);
+        }else{
+            amiBase.getUrl(file).then(url=>{
+                if (url){
+                    me.playUrl(url);
+                }else{
+                    console.warn("unknown structure",file);
+                }
+            });
+        }
+    }
 
     me.playUrl = function(url){
         if (!video) createPlayer();
@@ -87,4 +87,4 @@ var VideoPlayer = function(){
     return me;
 };
 
-export default VideoPlayer();
+export default VideoPlayer;

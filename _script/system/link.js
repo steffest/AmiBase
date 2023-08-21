@@ -1,4 +1,5 @@
 import desktop from "../ui/desktop.js";
+import system from "./system.js";
 
 let amiLink = function(){
     let me = {
@@ -6,7 +7,16 @@ let amiLink = function(){
     };
 
     me.open = function(){
-        desktop.launchUrl(me);
+        if (me.handler){
+            system.launchProgram(me.handler);
+        }else{
+            if (me.url && me.url.indexOf("plugin:") === 0){
+                system.launchProgram(me.url);
+            }else{
+                desktop.launchUrl(me);
+            }
+        }
+
     }
     return me;
 }

@@ -1,6 +1,17 @@
 body.theme_tangerine {
-  /* grid */
+  --panel-background: #B4BFC8;
+  --panel-text-color: #36373d;
+  --panel-text-color-highlight: #090909;
+  --button-background: #ECECEC;
+  --button-text-color: #1f3853;
+  --button-background-highlight: #cfd5da;
+  --panel-border-dark: rgba(0, 0, 0, 0.5);
+  --panel-border-light: rgba(255, 255, 255, 0.2);
+  --input-background: #e0e4e5;
+  --input-text-color: #000000;
 }
+
+/*grid*/
 body.theme_tangerine #desktop {
   background: url("Wallpapers/boing_soft_1.jpg");
   background-repeat: no-repeat;
@@ -12,6 +23,9 @@ body.theme_tangerine #desktop .window {
 }
 body.theme_tangerine #desktop .window.borderless {
   background: none;
+}
+body.theme_tangerine .toolbar .button.tool.light {
+  filter: invert(100%);
 }
 body.theme_tangerine .topbar {
   background-color: #ECECEC;

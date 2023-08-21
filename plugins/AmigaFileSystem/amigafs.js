@@ -4,22 +4,32 @@ import BinaryStream from "../../binaryStream/binaryStream.js";
 
 let AmigaFileSystem = async function() {
     var me = {};
+    let cache = [];
 
-
-    me.getDirectory = async function(folder,_next){
-        var path = folder.path;
+    me.getDirectory = async function(path,config){
         var mount = fileSystem.getMount(path);
-        console.error(folder);
+        console.error(path);
+        console.error(config);
+        console.error(mount);
 
-        return new Promise((resolve,reject) => {
-            var next = _next || resolve;
-            console.error(path);
+        return new Promise(async next => {
             path = getFilePath(path);
-            console.error(mount.data);
+            console.error(path);
 
-            var info = ADF.setDisk(mount.data.binary);
-            if (folder.head){
-                var dir = ADF.readFolderAtSector(folder.head);
+            if (!config.binary){
+                config.binary = await fileSystem.readFile(config.url,true);
+            }
+
+            var info = ADF.setDisk(config.binary);
+            let sector;
+
+            if (path){
+                let cached = cache.find(item=>item.path === path);
+                if (cached) sector = cached.sector;
+            }
+
+            if (sector){
+                var dir = ADF.readFolderAtSector(sector);
             }else{
                 dir = ADF.readRootFolder();
             }
@@ -27,9 +37,13 @@ let AmigaFileSystem = async function() {
             var directories = [];
             var files = [];
             dir.folders.forEach(folder=>{
+                folder.path = path + folder.name + "/";
+                cache.push(folder);
                 directories.push({name: folder.name, head: folder.sector});
             })
             dir.files.forEach(file=>{
+                file.path = path + file.name;
+                cache.push(file);
                 files.push({name: file.name, head: file.sector});
             })
 
@@ -40,27 +54,27 @@ let AmigaFileSystem = async function() {
         });
     };
 
-    me.readFile = function(file,asBinaryStream){
+    me.readFile = function(path,binary,config){
+        console.error("readFile",path,binary,config);
         return new Promise((next) => {
-            var path = file.path;
             var mount = fileSystem.getMount(path);
-            if (typeof file.head === "number"){
-                var result = ADF.readFileAtSector(file.head,true);
+            path = getFilePath(path);
+            let sector;
+            let file = cache.find(item=>item.path === path);
+            console.error("file",file,path,cache);
+            if (file) sector = file.sector;
 
-                if (asBinaryStream){
-                    next(BinaryStream(result.content.buffer,true));
-                }else{
-                    next(result.content);
-                }
+            if (!sector) sector = resolvePath(path);
+            console.error("final sector",sector);
+            var result = ADF.readFileAtSector(sector,true);
+
+            if (binary){
+                next(BinaryStream(result.content.buffer,true));
             }else{
-                let sector = resolvePath(path);
-                console.log("final sector",sector);
-                let result = ADF.readFileAtSector(sector,true);
-                if (asBinaryStream){
-                    next(BinaryStream(result.content.buffer,true));
-                }else{
-                    next(result.content);
-                }
+                console.error(typeof result.content);
+                console.error(result.content);
+                next(new TextDecoder().decode(result.content));
+               //next(result.content);
             }
         });
     };

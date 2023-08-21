@@ -1,7 +1,5 @@
 {
   "name" : "VideoPlayer",
   "version" : "0.0.1",
-  "module": "player.js",
-  "styles": [],
-  "index": ""
+  "module": "player.js"
 }
