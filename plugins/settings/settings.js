@@ -6,10 +6,12 @@ let Settings = ()=>{
     let settings = {};
 
     me.init = (amiWindow,host)=>{
-        return new Promise((next)=>{
+        console.log("init settings",amiWindow,host);
+        return new Promise(async (next)=>{
             if (host){
                 amiBase = host;
-                settings = amiBase.user.getAmiSettings();
+                settings = await amiBase.user.getAmiSettings();
+                console.error("settings",settings)
             }
 
             amiWindow.setContent(createUI());
@@ -65,7 +67,7 @@ let Settings = ()=>{
                 values.forEach((mount,index)=>{
                      let onUpdate = ()=>{
                          mount.type = "drive";
-                        values[index] = mount;
+                         values[index] = mount;
                          settings[setting] = values;
                      }
                     let editor = $(".form",$(".divider.panel"),

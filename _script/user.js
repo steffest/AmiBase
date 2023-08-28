@@ -1,14 +1,30 @@
 import settings from "./settings.js";
+import Security from "./security.js";
+import Storage  from "./storage.js";
 let User = function(){
     var me = {};
 
-    me.init = function(){
+    let userKey = "test";
+    Security.setUserPass(userKey);
 
+    me.init = async function(){
+        let localSettings = await me.getAmiSettings();
+        console.log("localSettings",localSettings);
+        if (localSettings){
+            for (let key in localSettings){
+                settings[key] = localSettings[key];
+            }
+        }
     }
 
-    me.storeSetting = function(key,value){
-        if (typeof value === "object") value = "json:" + JSON.stringify(value);
-        localStorage.setItem(key,value);
+    me.storeSetting = function(key,value,encrypted){
+        if (encrypted){
+            Security.encrypt(value).then(function(data){
+                Storage.set(key + "_enc",data);
+            });
+        }else{
+            Storage.set(key,value);
+        }
     };
 
     me.getSetting = function(key){
@@ -19,18 +35,39 @@ let User = function(){
         return value;
     };
 
-    me.getAmiSettings = function(){
-        return me.getSetting("settings") || {};
+    me.decryptSetting = function(key){
+        return new Promise(async function(next){
+            let data = await Storage.get(key + "_enc");
+            console.error(data);
+            if (data && data.encrypted && data.iv){
+                Security.decrypt(data.encrypted,data.iv).then(function(data){
+                    console.error("ok",data);
+                    next(data);
+                }).catch(function(e){
+                    console.error(e);
+                    next({});
+                })
+            }else{
+                next({});
+            }
+        })
+    }
+
+    me.getAmiSettings = async function(){
+        let settings = await me.decryptSetting("settings");
+        if (!settings) settings = {};
+        return settings;
     }
 
     me.setAmiSettings = function(settings){
-        me.storeSetting("settings",settings);
+        me.storeSetting("settings",settings,true);
     }
 
     me.getTheme = function(){
-        var theme = me.getSetting("theme") || settings.defaultTheme;
+        let theme = me.getSetting("theme") || settings.defaultTheme;
+        console.error(theme,settings.themes);
         if (settings.themes && settings.themes.length){
-            var exists = false;
+            let exists = false;
             settings.themes.forEach(function(_theme){
                 if (_theme.name === theme) exists = true;
             });
@@ -38,6 +75,8 @@ let User = function(){
         }
         return theme;
     };
+
+
 
 
     return me;
