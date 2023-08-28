@@ -271,6 +271,8 @@ let Applications = function(){
                         fs.getUrl(file.path,mount).then(url=>{
                             next(url);
                         });
+                    }else{
+                        next();
                     }
                 });
             },

@@ -6,6 +6,7 @@ import mainMenu from "./mainmenu.js";
 import settings from "../settings.js";
 import fileSystem from "../system/filesystem.js";
 import popupMenu from "./popupMenu.js";
+import mouse from "./mousepointer.js";
 
 let AmiWindow = function(config){
     if (typeof config === "string") config={
@@ -56,6 +57,9 @@ let AmiWindow = function(config){
             },
             onDoubleClick: function(){
                 me.maximize();
+            },
+            onUp: function(){
+                me.activate();
             }
         },
         caption,
@@ -601,23 +605,19 @@ let AmiWindow = function(config){
         config.width = config.width||240;
         config.height = config.height||200;
         me.setSize(config.width,config.height);
-        //ui.enableDrag(me);
         ui.enableResize(me);
-
-        //me.setDropTarget(window);
-
 
         /*window.addEventListener("mouseenter",function(){
             if (!mouse.isDown){
                 me.activateContent(true);
             }
         });
-        inner.addEventListener("mousemove",function(){
+        inner.addEventListener("pointermove",function(){
             if (!mouse.isDown){
                 me.activateContent(true);
             }
-        });
-        window.addEventListener("mousedown",function(e){
+        });*/
+        /*window.addEventListener("mousedown",function(e){
             if (e.target.classList.contains("window") || e.target.classList.contains("inner")){
                 me.getSelectedIcons().forEach(function(item){
                     item.deActivate();

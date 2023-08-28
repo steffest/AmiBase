@@ -1,10 +1,16 @@
-import $,{loadCss} from "../../_script/util/dom.js";
+import $,{loadCss,loadImage} from "../../_script/util/dom.js";
 import fetchService from "../../_script/util/fetchService.js";
-import ui from "../../_script/ui/ui.js";
 //import AmpVisualizer from "./vis/main.js";
 
 let MediaPlayer = function(){
     let me = {};
+
+    let PLAYER = {
+        HTMLAUDIO: "HTMLAudio.js",
+        BASSOON: "bassoon.js",
+        OPENMPT: "libOpenMPTPlayer.js", // more accurate but a little heavy on CPU and memory
+    }
+    let players = {};
 
     var audioContext;
     var dataArray;
@@ -19,32 +25,35 @@ let MediaPlayer = function(){
     var progressDrag = {};
     let volumeDrag = {};
     var skinLoaded;
+    let skinConfig;
+    let currentTitle;
     var currentData;
     var buttons={};
     var mediaplayer;
     let currentApp;
     let amiBase;
     let AmpVisualiser;
+    let titleCanvas;
+    let timeCanvas;
+    let previoustime;
 
-    function setup(){
-        mediaplayer = $(".mediaplayer");
-    }
+    /*
+
+    "now playing " for the soma streams: https://somafm.com/songs/groovesalad.json
+    https://somafm.com/songs/secretagent.json
+
+     */
 
     me.init = function (app,context) {
         return new Promise((next)=>{
-            console.log("mediaplayer here");
 
-            if (context){
-                amiBase = context;
-            }
+            if (context) amiBase = context;
             app.removeBorder();
             var inner = app.getInner();
             inner.innerHTML = "";
             currentApp = app;
 
-            if (!mediaplayer){
-                setup();
-            }
+            if (!mediaplayer) mediaplayer = $(".mediaplayer");
             inner.appendChild(mediaplayer);
             if (!audioContext) setupAudio();
             loadSkin();
@@ -101,40 +110,37 @@ let MediaPlayer = function(){
     ];
 
 
-
-
-    function handleDropFile(data,useAttachment){
-        console.error(data);
-        currentData = data;
-        if (data.type === "icon"){
-            var config = data.getConfig();
-            if (config.url && !useAttachment){
-                me.openFile(config);
-            }else if (data.attachment){
-                amiBase.readFile(data.attachment,true).then(file=>{
-                    Player.playFile(file,data.attachment.filetype);
-                })
-            }
-        }
-    }
-
     me.openFile = function(file){
         console.log("mediaplayer open file",file);
         if (file.binary){
-            Player.playFile(file.binary);
+            console.log("mediaplayer play file from binary");
+            Player.playFile(file);
         }else if(file.url){
+            console.log("mediaplayer play file from url");
             Player.playUrl(file.url);
-            //window.setContent(img);
-            if (file.label) currentApp.setCaption(file.label);
         }else{
             amiBase.getUrl(file).then(url=>{
+                console.log("mediaplayer open file",url);
                if (url){
                    Player.playUrl(url);
                }else{
-                   console.warn("unknown structure",file);
+                   if (file.path){
+                       console.log("mediaplayer open file from path",file.path);
+                       amiBase.readFile(file.path,true).then(data=>{
+                           file.binary = data;
+                           Player.playFile(file);
+                       });
+                   }else{
+                       console.warn("unknown structure",file);
+                   }
                }
             });
         }
+    }
+
+    me.dropFile = function(file){
+        if (file && file.object) file=file.object;
+        me.openFile(file);
     }
 
     function loadSkin(name){
@@ -142,6 +148,12 @@ let MediaPlayer = function(){
         console.log("loading Mediaplayer skin " + name);
         var path = "plugins/mediaplayer/skins/" + name + "/";
         fetchService.json(path + "skin.json",function (config) {
+            skinConfig = config;
+            skinConfig.path = path;
+            if (skinConfig.textureUrl) loadImage(skinConfig.path + "/" + skinConfig.textureUrl).then(function(texture){
+                skinConfig.texture = texture;
+                if (currentTitle) setTitle(currentTitle);
+            });
             Object.keys(buttons).forEach(function(button){
                 buttons[button].remove();
             });
@@ -197,7 +209,6 @@ let MediaPlayer = function(){
                 }
             }
             Player.setVolume(0.7,true);
-
             skinLoaded = true;
         });
     }
@@ -249,13 +260,11 @@ let MediaPlayer = function(){
                 setBackground(button,"texture");
             };
             button.onDown = function(){
-                console.log("button.onmousedown",item.name);
                 handleAction(item.name);
                 setBackground(button,"down");
                 if (addClassName) button.classList.add("down");
             }
             button.onUp = function(){
-                console.log("button.onmouseup");
                 setBackground(button,"hover");
                 if (addClassName) button.classList.remove("down");
             }
@@ -266,7 +275,6 @@ let MediaPlayer = function(){
     }
 
     function setBackground(elm,stateName){
-
         var config = elm.config;
         if (elm.state && config.state && config.state[elm.state]) config = config.state[elm.state];
         var state = config[stateName];
@@ -291,6 +299,7 @@ let MediaPlayer = function(){
                 }
                 break;
             case "close":
+                Player.stop();
                 currentApp.close();
                 break;
         }
@@ -303,9 +312,7 @@ let MediaPlayer = function(){
 
     function openUrl(){
         let url = prompt("Url:","http://radio.xpd.co.nz:8000/stream.m3u");
-        if (url){
-            Player.playUrl(url);
-        }
+        if (url) Player.playUrl(url);
     }
 
     function setupAudio(){
@@ -454,6 +461,103 @@ let MediaPlayer = function(){
         buttons.volumeHighLight.style.width = (left-min) + "px";
     }
 
+    async function setTitle(title){
+        currentTitle = title;
+        if (!skinLoaded) return;
+        let font = skinConfig?skinConfig.playingFont:undefined;
+        if (!font) return;
+        if (!titleCanvas){
+            let c = $("canvas",{
+                width: font.display.width,
+                height: 20,
+                parent: mediaplayer,
+                style: {
+                    position: "absolute",
+                    left: font.display.left + "px",
+                    top: font.display.top + "px"
+                }
+            });
+            titleCanvas = c.getContext("2d");
+        }
+        if (!skinConfig.texture) return;
+        titleCanvas.clearRect(0,0,titleCanvas.canvas.width,titleCanvas.canvas.height);
+
+        let x = 0;
+        title= title.split("/").pop();
+        title = title.toUpperCase();
+        for (let i = 0; i<title.length; i++){
+            let char = title.charCodeAt(i)-33;
+            writeChar(char);
+        }
+
+        function writeChar(code){
+            if (code<0){
+                let char = String.fromCharCode(code+33);
+                code=0;
+            }
+            let line = Math.floor(code/font.lineWidth);
+            let pos = code-(line*font.lineWidth);
+            let left = font.left + (pos * font.width);
+            let top = font.top + (line * font.lineHeight);
+            let width = font.width;
+            let height = font.height;
+
+            //let code = ch.charCodeAt(0);
+
+            titleCanvas.drawImage(skinConfig.texture,left,top,width,height,x,0,width,height);
+            x += font.width;
+        }
+    }
+
+    function updateTime(){
+        if (!skinConfig.texture) return;
+        let font = skinConfig.timeFont;
+        if (!font) return;
+        if (!timeCanvas){
+            let c = $("canvas",{
+                width: font.display.width,
+                height: font.height,
+                parent: mediaplayer,
+                style: {
+                    position: "absolute",
+                    left: font.display.left + "px",
+                    top: font.display.top + "px"
+                }
+            });
+            timeCanvas = c.getContext("2d");
+        }
+
+        let t = Player.getCurrentTime();
+        let seconds = Math.floor(t%60);
+        if (seconds===previoustime) return;
+        previoustime = seconds;
+        let minutes = Math.floor(t/60);
+        let time = (minutes<10?"0":"")+ minutes + ":" + (seconds<10?"0":"") + seconds;
+
+        let x = 0;
+        timeCanvas.clearRect(0,0,timeCanvas.canvas.width,timeCanvas.canvas.height)
+        for (let i = 0; i<time.length; i++){
+            let char = time.charCodeAt(i)-48;
+            writeChar(char);
+            x+=font.width;
+        }
+
+        function writeChar(code){
+            let left = code*font.width + font.left;
+            let top = font.top;
+            let width = font.width;
+            let height = font.height;
+            if (code===10){
+                // :
+                left = font.colon.left;
+                width = font.colon.width;
+                x-=1;
+            }
+            timeCanvas.drawImage(skinConfig.texture,left,top,width,height,x,0,width,height);
+            if (code===10) x-=6;
+        }
+    }
+
     function setUIState(state){
         if (buttons.play){
 
@@ -461,36 +565,36 @@ let MediaPlayer = function(){
     }
 
     var Player = function(){
-        var me = {};
-        var player;
-        var mute = false;
-        var currentVolume = 0.7;
+        let me = {
+            getContext:()=>audioContext,
+            getInput:()=>analyser,
+            getContainer:()=>mediaplayer,
+            onTimeUpdate:()=>{
+                updateProgressBar();
+                updateTime();
+            }
+        };
+        let player;
+        let playerType;
+        let mute = false;
+        let currentVolume = 0.7;
 
-        me.playFile = function(file,type){
+        me.playFile = async function(file){
+            console.error("playFile",file);
             me.stop();
-            player = audioContextPlayer;
+            playerType = PLAYER.HTMLAUDIO;
+            let type = file.filetype;
             if (type && type.name && type.name.indexOf("Music Module")>=0){
-                player = audioModPlayer;
+                playerType = PLAYER.OPENMPT;
             }
             if (type && type.name && type.name.indexOf("laylist")>=0){
-                player = undefined;
+                playerType = undefined;
                 return me.playList(file,type)
             }
-            player.setSrc(file.buffer.slice(0),file.name,function(success){
-                if (success){
-                    me.play();
-                }else{
-                    console.log("Can't decode audio data, detecting file type");
-                    (async()=>{
-                        type = await amiBase.detectFileType(file);
-                        if (type && type.name && type.name.indexOf("laylist")>=0){
-                            return me.playList(file,type)
-                        }
-                    })();
-
-                }
-            });
-
+            player = await getPlayer();
+            setTitle(file.name);
+            player.setSrc(file.binary.buffer.slice(0),file.name);
+            me.play();
         };
 
         me.playList = async function(url,type){
@@ -509,21 +613,24 @@ let MediaPlayer = function(){
                     me.playUrl(url);
                 }
             });
-
-
-
         };
 
-        me.playUrl = function(src){
+        me.playUrl = async function(src){
             me.stop();
-            player = htmlAudioPlayer;
-            //player = libOpenMPTPlayer;
-            var extention = src.split(".").pop().toLowerCase();
-            if (extention === "m3u8"){
-                player = HlsAudioPlayer;
+            player = undefined;
+            playerType = PLAYER.HTMLAUDIO;
+            let extention = src.split(".").pop().toLowerCase();
+            if (extention === "mod" || extention === "xm" || extention === "s3m" || extention === "it" || extention === "mptm" || extention === "med"){
+                //playerType = PLAYER.BASSOON;
+                playerType = PLAYER.OPENMPT;
             }
+            if (extention === "m3u8"){
+                //player = HlsAudioPlayer;
+            }
+            player = await getPlayer();
             player.setSrc(src);
             me.play();
+            setTitle(src);
         };
 
         // pos ranges from 0 to 1
@@ -546,14 +653,14 @@ let MediaPlayer = function(){
         };
 
         me.play = function(){
-            player.play();
+            if (player) player.play();
             isPlaying = true;
             mediaplayer.classList.add("playing");
             setUIState("playing");
             updateAnalyser();
         };
         me.pause = function(){
-            player.pause();
+            if (player) player.pause();
             isPlaying = false;
             mediaplayer.classList.remove("playing");
             setUIState("paused");
@@ -566,117 +673,32 @@ let MediaPlayer = function(){
         };
         me.toggleMute = function(){
             mute = !mute;
-            player.setMute(mute);
+            if (player) player.setMute(mute);
         };
         me.isMuted = function(){
             return mute;
         };
         me.getCurrentTime = function(){
-            return player.getCurrentTime();
+            if (player) return player.getCurrentTime();
         };
         me.getDuration = function(){
-            return player.getDuration();
+            if (player) return player.getDuration();
         };
 
-        return me;
-    }();
-
-    var htmlAudioPlayer = function(){
-        var me = {};
-        var initDone;
-        let audio;
-        var source;
-
-        me.init = function(){
-            if (!initDone){
-                audio = document.createElement("audio");
-                audio.crossOrigin = "anonymous";
-                mediaplayer.appendChild(audio);
-                source = audioContext.createMediaElementSource(audio);
-                audio.ontimeupdate = function(){
-                    updateProgressBar();
-                };
-                audio.addEventListener('error', function failed(e) {
-                    // audio playback failed - show a message saying why
-                    // to get the source of the audio element use $(this).src
-                    switch (e.target.error.code) {
-                        case e.target.error.MEDIA_ERR_ABORTED:
-
-                            break;
-                        case e.target.error.MEDIA_ERR_NETWORK:
-                            console.error("Network Error");
-                            break;
-                        case e.target.error.MEDIA_ERR_DECODE:
-                            console.error('The audio playback was aborted due to a corruption problem or because the video used features your browser did not support.');
-                            break;
-                        case e.target.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                            console.log('Audio source not supported falling back to file player');
-                            handleDropFile(currentData,true);
-                            break;
-                        default:
-                            console.error('An unknown error occurred.');
-                            break;
-                    }
-                }, true);
+        async function getPlayer(){
+            player = players[playerType];
+            if (!player){
+                let module = await import("./players/" + playerType);
+                player = module.default(me);
+                players[playerType] = player;
             }
-            initDone = true;
-        };
-
-        me.setSrc = function(src){
-            if (!initDone) me.init();
-            audio.src = src;
-            source.connect(analyser);
-        };
-
-        me.play = function(){
-           let p = audio.play();
-                if (p !== undefined) {
-                    p.then(_ => {
-                        // Autoplay started!
-                    }).catch(error => {
-                        // Autoplay was prevented.
-                        // Show a "Play" button so that user can start playback.
-                        console.error("Could not play audio");
-                        console.error(error);
-
-                        audio.controls = "controls";
-                        audio.volume = 1;
-                        audio.style.zIndex = 100;
-                        let inner = currentApp.getInner();
-                        //inner.innerHTML="";
-                        console.error(audio.src);
-                        //inner.appendChild(audio);
-
-                    });
-                }
-        };
-        me.pause = function(){
-            audio.pause();
-        };
-        me.stop = function(){
-            source.disconnect();
-            audio.pause();
-        };
-        me.setPosition = function(pos){
-            audio.currentTime = pos*audio.duration;
-        };
-        me.setVolume = function(vol){
-            audio.volume = vol;
-        };
-        me.setMute = function(muted){
-            audio.muted = muted;
-        };
-        me.getCurrentTime = function(){
-            return audio.currentTime;
-        };
-        me.getDuration = function(){
-            return audio.duration;
-        };
+            return player;
+        }
 
         return me;
     }();
 
-    var audioContextPlayer = function(){
+    /*var audioContextPlayer = function(){
         var me = {};
         var source;
         var startTime;
@@ -764,6 +786,7 @@ let MediaPlayer = function(){
         function timeUpdate(){
             if (_isPlaying){
                 updateProgressBar();
+                updateTime();
                 setTimeout(timeUpdate,200);
             }
         }
@@ -771,83 +794,6 @@ let MediaPlayer = function(){
         return me;
     }();
 
-    var audioModPlayer = function(){
-        var me = {};
-        var initDone;
-        var initLoading;
-
-        me.init = function(next){
-            if (initDone){
-                next();
-            }else{
-                if (!initLoading){
-                    initLoading = true;
-                    loadScript("plugins/mediaplayer/players/bassoonplayer.js",function(){
-                        console.error("Bassoon");
-                        console.error(BassoonPlayer);
-                        BassoonPlayer.init({
-                            audioContext: audioContext
-                        });
-                        initDone = true;
-                        next();
-                    });
-                }
-            }
-
-        };
-
-        me.setSrc = function(data,name){
-            me.init(function () {
-                BassoonPlayer.processFile(data,name,function(isMod){
-                    if (isMod){
-                        me.stop();
-                        setTimeout(me.play,100);
-                    }
-                })
-            });
-        };
-
-        me.play = function(){
-            BassoonPlayer.audio.masterVolume.connect(analyser);
-            BassoonPlayer.playSong();
-            timeUpdate();
-        };
-
-        me.pause = function(){
-            BassoonPlayer.stop();
-        };
-
-        me.stop = function(){
-            BassoonPlayer.audio.masterVolume.disconnect();
-            BassoonPlayer.stop();
-        };
-
-        me.setPosition = function(pos){
-
-        };
-
-        me.setVolume = function(vol){
-            BassoonPlayer.audio.masterVolume.gain.setValueAtTime(vol,0);
-        };
-        me.setMute = function(muted){
-            BassoonPlayer.audio.masterVolume.gain.setValueAtTime(muted?0:Player.getVolume(),0);
-        };
-        me.getCurrentTime = function(){
-            //return BassoonPlayer.getStateAtTime();
-        };
-        me.getDuration = function(){
-
-        };
-
-        function timeUpdate(){
-            if (BassoonPlayer.isPlaying){
-                updateProgressBar();
-                setTimeout(timeUpdate,200);
-            }
-        }
-
-        return me;
-    }();
 
     var HlsAudioPlayer = function(){
         var me = {};
@@ -858,8 +804,7 @@ let MediaPlayer = function(){
 
         var init = function(next){
             if (!initDone){
-                loadScript("plugins/mediaplayer/players/hls.js",function(){
-
+                amiBase.loadScript("plugins/mediaplayer/players/hls.js").then(()=>{
                     audio = mediaplayer.querySelector("video");
                     if (!audio){
                         audio = document.createElement("video");
@@ -959,7 +904,7 @@ let MediaPlayer = function(){
         return me;
 
 
-    }();
+    }();*/
 
 
     return me;

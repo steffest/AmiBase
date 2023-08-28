@@ -78,6 +78,16 @@ var BaseFileExtensions = function(){
                     {label: "edit", plugin:"monaco"}
                 ], className:"txt",
                 fileExtensions:["md"]},
+            SCREAMTRACKER: {
+                name: "ScreamTracker Music Module",
+                actions:[{label: "Play",plugin:"mediaplayer"}],
+                className:"musicmod",
+                fileExtensions:["s3m"]},
+            IMPULSETRACKER: {
+                name: "Impulse tracker Music Module",
+                actions:[{label: "Play",plugin:"mediaplayer"}],
+                className:"musicmod",
+                fileExtensions:["it"]}
         }
     };
 

@@ -1,6 +1,7 @@
 {
   "width": 354,
   "height" : 160,
+  "textureUrl" : "winamp4.png",
   "items" : [
     { "name" : "close",
       "left": 336,
@@ -120,6 +121,34 @@
     "wave": {
       "fftSize": 256,
       "color" : "#AAC4F5C0"
+    }
+  },
+  "playingFont": {
+    "width": 10,
+    "height": 13,
+    "left": 0,
+    "top": 308,
+    "lineWidth": 32,
+    "lineHeight": 14,
+    "display": {
+      "left": 24,
+      "top": 80,
+      "width": 300
+    }
+  },
+  "timeFont": {
+    "left": 0,
+    "top": 289,
+    "width": 13,
+    "height": 20,
+    "display": {
+      "left": 38,
+      "top": 40,
+      "width": 120
+    },
+    "colon": {
+      "left": 154,
+      "width": 5
     }
   }
 }

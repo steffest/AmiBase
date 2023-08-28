@@ -115,6 +115,20 @@ export function loadCss(src,onload){
     head.appendChild(link);
 }
 
+export function loadImage(src){
+    return new Promise((next)=>{
+        var img = new Image();
+        img.onload = ()=>{
+            next(img);
+        };
+        img.onerror = ()=>{
+            next();
+        }
+        img.src = src;
+    });
+
+}
+
 
 let append = (parent, child) => {
     if (child) {

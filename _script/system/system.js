@@ -19,14 +19,6 @@ let System = function(){
         return new Promise(function(next){
             let env = document.location.search;
 
-            let localSettings = user.getAmiSettings();
-            if (localSettings){
-                console.log("localSettings",localSettings);
-                for (var key in localSettings){
-                    settings[key] = localSettings[key];
-                }
-            }
-
             if (env){
                 env = env.substring(1);
                 if (env.indexOf("=")) env=env.split("=")[0];

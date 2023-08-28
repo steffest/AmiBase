@@ -280,6 +280,7 @@ let Desktop = function(){
     };
 
     me.loadTheme = function(name){
+        console.log("load theme " + name);
         return new Promise(function (resolve,reject) {
             var url = "themes/" + name + "/theme.css";
             var loaded = false;

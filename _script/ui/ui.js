@@ -252,14 +252,10 @@ let UI = function(){
     }
 
     function handleTouchMove(event){
-
-        //event.preventDefault();
-        //event.stopPropagation();
         var touch = getTouch(event);
         mouse.update(touch);
 
         if (isDragging){
-
             if (globalDragItem){
                 var x = touch.clientX - UIData.startDragX;
                 var y = touch.clientY - UIData.startDragY;

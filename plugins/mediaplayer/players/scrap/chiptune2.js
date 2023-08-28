@@ -17,7 +17,7 @@ ChiptuneAudioContext = AudioContext || webkitAudioContext;
 
 // player
 function ChiptuneJsPlayer(config) {
-	this.context = config.audioContext || new ChiptuneAudioContext;
+	this.context = config.audioContext;
 	this.config = config;
 	this.currentPlayingNode = null;
 	this.handlers = [];
@@ -155,7 +155,7 @@ ChiptuneJsPlayer.prototype.play = function(buffer) {
 		return;
 	}
 	
-	debugger;
+	//debugger;
 
 	// set config options on module
 	libopenmpt._openmpt_module_set_repeat_count(processNode.modulePtr, this.config.repeatCount);
@@ -177,6 +177,10 @@ ChiptuneJsPlayer.prototype.togglePause = function() {
 	if (this.currentPlayingNode != null) {
 		this.currentPlayingNode.togglePause();
 	}
+}
+
+ChiptuneJsPlayer.prototype.isPlaying = function() {
+	return this.currentPlayingNode && !this.currentPlayingNode.paused;
 }
 
 ChiptuneJsPlayer.prototype.setRepeatCount = function(repeatCount) {

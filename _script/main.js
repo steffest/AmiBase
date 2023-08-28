@@ -10,17 +10,24 @@ var Main=function(){
     var initDone;
 
     me.init = async function(){
-        await system.loadEnvironment();
-        await desktop.loadTheme(user.getTheme());
-        input.init();
-        desktop.init();
-        ui.init();
+        // TODO: wait until userkey is set ...
 
+        setTimeout(async function(){
+            await system.loadEnvironment();
+            await desktop.loadTheme(user.getTheme());
+            input.init();
+            desktop.init();
+            ui.init();
 
-        desktop.loadContent(settings.initialContent,settings.mounts);
+            await user.init();
+            console.log("user",user);
 
-        desktop.cleanUp();
-        initDone = true;
+            desktop.loadContent(settings.initialContent,settings.mounts);
+
+            desktop.cleanUp();
+            initDone = true;
+        },100);
+
 
     };
 
