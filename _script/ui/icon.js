@@ -1,9 +1,7 @@
 import $,{uuid, $div, cleanString} from "../util/dom.js";
 import settings from "../settings.js";
-import ui from "./ui.js";
 import desktop from "./desktop.js";
 import system from "../system/system.js";
-import input from "../input.js";
 import popupMenu from "./popupMenu.js";
 import fileSystem from "../system/filesystem.js";
 
@@ -71,6 +69,25 @@ let AmiIcon = function(object){
                         items=[
                             {label:"File Manager",
                                 action: function(){system.exploreFolder(object)}
+                            },
+                            {
+                                label:"Rename",
+                                action: function(){
+                                    let oldName = object.name;
+                                    let path = object.path;
+                                    var name =  prompt("Enter the new name:",oldName);
+                                    if (name){
+                                        me.setLabel(name);
+                                        fileSystem.rename(path,name);
+                                    }
+                                }
+                            },
+                            {
+                                label:"Delete",
+                                action: function(){
+                                    fileSystem.deleteDirectory(object);
+                                    me.parent.removeIcon(me);
+                                }
                             }
                         ]
                         break;
@@ -95,7 +112,7 @@ let AmiIcon = function(object){
                 }
             }
         });
-    var img = $div("image " + " " + object.type);
+    var img = $div("glyph " + " " + object.type);
     var label = $div("label","","<span>" + object.name + "</span>");
 
     if (object.icon){
@@ -104,11 +121,10 @@ let AmiIcon = function(object){
         img.classList.add("cover");
     }else{
         let name = object.path || object.url || object.name || object.label || "";
-        let ext = name.split(".").pop().toLowerCase();
-        if (ext){
-            ext = cleanString(ext);
-            img.classList.add(ext);
-        }
+        system.getFileTypeFromName(name).then(fileType=>{
+            if (fileType.className) img.classList.add(fileType.className);
+            if (fileType.classType) img.classList.add(fileType.classType);
+        });
     }
 
     icon.appendChild(img);

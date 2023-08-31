@@ -33,6 +33,7 @@ var FileType = function(){
 						actions: type.actions,
 						inspect: type.inspect,
 						className: type.className,
+						classType: type.classType,
 						mountFileSystem: type.mountFileSystem,
 						customIcon: type.customIcon
 					}
@@ -94,7 +95,7 @@ var FileType = function(){
 		if (fileType){
 			if (fileType.inspect) fileType.info = fileType.handler.inspect(file);
 		}else{
-			fileType = detectFromFileExtension(file.name);
+			fileType = me.detectFromFileExtension(file.name);
 
 			if (fileType.id === FILETYPE.unknown.id && tryHard && !file.binary && !retry){
 				// get file content and try again
@@ -106,7 +107,7 @@ var FileType = function(){
 		return fileType;
 	};
 
-	function detectFromFileExtension(name){
+	me.detectFromFileExtension = function(name){
 		let extension = name.split(".").pop().toLowerCase();
 		return registeredFileExtensions[extension] || FILETYPE.unknown;
 	}

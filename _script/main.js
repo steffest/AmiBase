@@ -14,7 +14,7 @@ var Main=function(){
 
         setTimeout(async function(){
             await system.loadEnvironment();
-            await desktop.loadTheme(user.getTheme());
+            await desktop.loadTheme(await user.getTheme());
             input.init();
             desktop.init();
             ui.init();

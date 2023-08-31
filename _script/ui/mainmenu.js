@@ -116,59 +116,13 @@ let MainMenu = function(){
             label:"Window",
             items:[
                 {
-                    label:"Cleanup",
+                    label:"Close",
                     action: function(){
                         var w =  desktop.getFocusElement();
-                        if (w && w.cleanUp) w.cleanUp();
+                        if (w && w.close) w.close();
                     }
                 },
-                {
-                    label:"Rename",
-                    action: function(){
-                        var name =  prompt("Enter the new name:");
-                        if (name){
-                            var w =  desktop.getFocusElement();
-                            w.setCaption(name);
-                        }
-                    }
-                },
-                {
-                    label:"Upload File",
-                    action: function(){
-                        desktop.uploadFile(desktop.getFocusElement());
-                    }
-                },
-                {
-                    label:"New Drawer",
-                    action: function(){
-                        var w =  desktop.getFocusElement();
-                        if (w){
-                            var newName = "My Content";
-                            var config = w.getConfig();
-                            if (config.path){
-                                fileSystem.createDirectory(config.path,newName);
-                            }
-                            w.createIcon({label: newName, type: "drawer"});
-                            w.cleanUp();
-                        }
-                    }
-                },
-                {
-                    label:"New File",
-                    action: async function(){
-                        var w =  desktop.getFocusElement();
-                        if (w){
-                            var newName = "new.txt";
-                            var config = w.getConfig();
-                            if (config.path){
-                                let created = await fileSystem.saveFile(config.path + "/" + newName,"");
-                                console.log("created:" + created);
-                                w.createIcon({label: newName, type: "file"});
-                                w.cleanUp();
-                            }
-                        }
-                    }
-                },
+
             ]
         }
     ];

@@ -10,14 +10,13 @@ let RAM = ()=>{
     let items = [];
     let folders = [];
 
-    me.readFile = async function(file,binary){
-        if (!file.binary){
-            // file was passed as filename only
-            let path = getFilePath(file.path || file);
-            file = items.find(a=>a.path === path);
-            console.log("reading file",path,file);
-            console.log("items",items);
-        }
+    me.readFile = async function(path,binary){
+        path = getFilePath(path);
+        let file = items.find(a=>a.path === path);
+        path = "ram:" + path;
+        if (!file) file = items.find(a=>a.path === path);
+        console.log("reading file",path,file);
+        console.log("items",items);
         if (binary){
             return file.binary;
         }else{

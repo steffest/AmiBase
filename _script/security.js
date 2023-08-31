@@ -101,7 +101,6 @@ var Security = function(){
             cryptoKey,
             text
         );
-        console.error(decrypted);
         let decryptedValue = new TextDecoder().decode(decrypted);
         if (decryptedValue.indexOf("json:")===0){
             try{

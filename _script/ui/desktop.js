@@ -211,35 +211,29 @@ let Desktop = function(){
 
                 var file = amiObject(fileInfo);
 
-                if (target && target.createIcon && target.getConfig){
-                    // upload to folder or drive
-                    let path = target.getConfig().path;
-                    file.path = path + file.name;
-                    target.createIcon(file);
-                    target.cleanUp();
-                    fileSystem.writeFile(file,file.binary,true);
+                if (target){
+                    // upload to application
+                    if (target.uploadFile){
+                        target.uploadFile(file);
+                        return;
+                    }
+                }
+
+                // upload to desktop/ram
+                me.createIcon(file);
+                me.cleanUp();
+
+                if (file.filetype.mountFileSystem){
+                    let drive = {
+                        type: "drive",
+                        name: file.name,
+                        volume: file.filetype.mountFileSystem.volume,
+                        handler: file.filetype.mountFileSystem.plugin,
+                        binary:file.binary
+                    }
+                    fileSystem.mount(drive);
                 }else{
-                    if (target){
-                        // upload to application? does this happen? upload to desktop as fallback?
-                        console.error("upload to application not implemented yet")
-                    }
-
-                    // upload to desktop/ram
-                    me.createIcon(file);
-                    me.cleanUp();
-
-                    if (file.filetype.mountFileSystem){
-                        let drive = {
-                            type: "drive",
-                            name: file.name,
-                            volume: file.filetype.mountFileSystem.volume,
-                            handler: file.filetype.mountFileSystem.plugin,
-                            binary:file.binary
-                        }
-                        fileSystem.mount(drive);
-                    }else{
-                        fileSystem.getMount("ram:").handler.addFile(file);
-                    }
+                    fileSystem.getMount("ram:").handler.addFile(file);
                 }
 
             };

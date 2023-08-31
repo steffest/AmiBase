@@ -1,5 +1,6 @@
 import $ from "../../../_script/util/dom.js";
 import SelectBox from "../../../_script/ui/selectBox.js";
+import fileSystem from "../../_script/system/filesystem.js";
 
 let FileManager = function(){
     var me = {};
@@ -16,6 +17,31 @@ let FileManager = function(){
     me.init = function(containerWindow,context){
         amiWindow = containerWindow;
         amiWindow.setSize(600,400);
+
+        let menu = [
+            {label: "File Manager",items:[
+                    {label: "Refresh",id:"fm-refresh",action:()=>me.refresh()},
+                    {label: "Clean Up",action:()=>amiWindow.cleanUp()},
+                    {label: "Upload File",action:()=>amiBase.uploadFile(me)},
+                    {label: "New Drawer",action:()=>{
+                        let newName = "My Content";
+                        amiBase.createDirectory(currentFolder.path,newName).then(result=>{
+                            me.refresh();
+                        })
+                    }},
+                    {label: "New File",action:()=>{
+                        let newName = "new.txt";
+                        amiBase.writeFile(currentFolder.path + "/" + newName,"").then(result=>{
+                            me.refresh();
+                        });
+                    }},
+                    {label: "Close",id:"fm-close",action:()=>amiWindow.close()}
+                ]}
+        ];
+        containerWindow.setMenu(menu,true);
+
+
+
         let toolBar = $(".panel.toolbar",
             toolButton("file","Show as preview",()=>{}),
             toolButton("icons","Show as icons",()=>{
@@ -100,9 +126,33 @@ let FileManager = function(){
 
         amiWindow.setContent(container);
         //amiWindow.enableSelection(mainPanel);
-        if (context)amiBase = context;
+        if (context) amiBase = context;
         setUI();
         listMounts();
+    }
+
+    me.openFile = async function(file){
+        if (file && file.filetype && file.filetype.mountFileSystem){
+
+            if (!file.binary){
+                file.binary = await fileSystem.readFile(file,true);
+            }
+            console.error(file.binary)
+
+            let drive = {
+                type: "drive",
+                name: file.name,
+                volume: file.filetype.mountFileSystem.volume,
+                handler: file.filetype.mountFileSystem.plugin,
+                binary:file.binary
+            }
+            fileSystem.mount(drive).then(()=>{
+                me.openFolder(drive);
+                listMounts();
+            });
+        }else{
+            console.error("Cannot open file, no filesystem",file);
+        }
     }
 
     me.openFolder = async function(folder){
@@ -160,7 +210,34 @@ let FileManager = function(){
     }
 
     me.dropFile = function(file){
-        console.error("dropFile",file);
+        console.log("drop file to filemanager",file);
+
+        if ((file.type === "icon" || file.type === "dragitem") && file.object){
+
+            if (file.object.type === "file"){
+                amiBase.copyFile(file.object,currentFolder.path).then(result=>{
+                    if (result) me.refresh();
+                })
+            }
+        }
+    }
+
+    me.uploadFile = function(file){
+        console.log("upload file",file);
+        file.path = currentFolder.path + "/" + file.name;
+        amiBase.writeFile(file,file.binary,true).then(result=>{
+            if (result) me.refresh();
+        });
+
+        /*
+
+        let path = target.getConfig().path;
+                    file.path = path + file.name;
+                    target.createIcon(file);
+                    target.cleanUp();
+                    fileSystem.writeFile(file,file.binary,true);
+         */
+
     }
 
     me.hideSideBar = function(){
@@ -168,7 +245,12 @@ let FileManager = function(){
         setUI();
     }
 
+    me.refresh = function(){
+        me.openFolder(currentFolder);
+    }
+
     function listMounts(){
+        sideBar.innerHTML = "";
         var mounts = amiBase.getMounts();
         Object.keys(mounts).forEach(key => {
             var mount = mounts[key];

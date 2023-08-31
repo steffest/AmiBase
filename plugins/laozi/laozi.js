@@ -106,6 +106,17 @@ var Laozi = async function() {
         });
     };
 
+    me.deleteFolder = function(path,config){
+        setConfig(config);
+        return new Promise((next) => {
+            path = getFilePath(path);
+            fetchService.json(endPoint + "file/delete/" + path,function(data){
+                console.log(data);
+                next(data.status === "ok");
+            });
+        });
+    };
+
     me.writeFile = function(path,content,binary,config){
         console.log("writeFile",path,content,binary);
         setConfig(config);
@@ -157,6 +168,7 @@ var Laozi = async function() {
         if (p>0) path = path.substr(p+1);
         if (path[0] === "/") path = path.substr(1);
         if (path[0] === "/") path = path.substr(1);
+        if (path[path.length-1] === "/") path = path.substr(0,path.length-1);
         return path;
     }
 

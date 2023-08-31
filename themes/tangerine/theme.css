@@ -42,7 +42,7 @@ body.theme_tangerine .topbar .menuitem .submenu {
   border: 1px solid #b5c6ce;
   box-shadow: 0 0 2px rgba(57, 63, 66, 0.4);
 }
-body.theme_tangerine .icon .image {
+body.theme_tangerine .icon .glyph {
   width: 48px;
   height: 48px;
   background-color: transparent;
@@ -51,93 +51,93 @@ body.theme_tangerine .icon .image {
   background-position: -16px -18px;
   background-repeat: no-repeat;
 }
-body.theme_tangerine .icon .image.drawer {
+body.theme_tangerine .icon .glyph.drawer {
   background-position: -16px -16px;
 }
-body.theme_tangerine .icon .image.drawer.prefs {
+body.theme_tangerine .icon .glyph.drawer.prefs {
   background-position: -16px -80px;
 }
-body.theme_tangerine .icon .image.drive {
+body.theme_tangerine .icon .glyph.drive {
   background-position: -144px -208px;
 }
-body.theme_tangerine .icon .image.file {
+body.theme_tangerine .icon .glyph.file {
   background-position: -656px -272px;
 }
-body.theme_tangerine .icon .image.file.musicmod {
+body.theme_tangerine .icon .glyph.file.musicmod {
   background-position: -784px -80px;
 }
-body.theme_tangerine .icon .image.file.adf {
+body.theme_tangerine .icon .glyph.file.adf {
   background-position: -848px -80px;
 }
-body.theme_tangerine .icon .image.ram.drive {
+body.theme_tangerine .icon .glyph.ram.drive {
   background-position: -16px -208px;
 }
-body.theme_tangerine .icon .image.notepad {
+body.theme_tangerine .icon .glyph.notepad {
   background-position: -16px -272px;
 }
-body.theme_tangerine .icon .image.bassoon {
+body.theme_tangerine .icon .glyph.bassoon {
   background-position: -784px -80px;
 }
-body.theme_tangerine .icon .image.postmessage {
+body.theme_tangerine .icon .glyph.postmessage {
   background-position: -784px -16px;
 }
-body.theme_tangerine .icon .image.googledocs {
+body.theme_tangerine .icon .glyph.googledocs {
   background-position: -656px -272px;
 }
-body.theme_tangerine .icon .image.uae {
+body.theme_tangerine .icon .glyph.uae {
   background-position: -144px -16px;
 }
-body.theme_tangerine .icon .image.canvasicon {
+body.theme_tangerine .icon .glyph.canvasicon {
   background-position: 0 0;
 }
 body.theme_tangerine .icon .label {
   text-shadow: 0 0 2px black;
   padding: 0;
 }
-body.theme_tangerine .icon.active .image {
+body.theme_tangerine .icon.active .glyph {
   box-shadow: none;
   background-position: -80px -16px;
 }
-body.theme_tangerine .icon.active .image.drawer {
+body.theme_tangerine .icon.active .glyph.drawer {
   filter: contrast(120%) saturate(120%);
   background-position: -80px -16px;
 }
-body.theme_tangerine .icon.active .image.drawer.prefs {
+body.theme_tangerine .icon.active .glyph.drawer.prefs {
   filter: contrast(150%) saturate(150%);
   background-position: -16px -80px;
 }
-body.theme_tangerine .icon.active .image.drive {
+body.theme_tangerine .icon.active .glyph.drive {
   background-position: -208px -208px;
 }
-body.theme_tangerine .icon.active .image.ram.drive {
+body.theme_tangerine .icon.active .glyph.ram.drive {
   background-position: -80px -208px;
 }
-body.theme_tangerine .icon.active .image.file {
+body.theme_tangerine .icon.active .glyph.file {
   background-position: -720px -272px;
 }
-body.theme_tangerine .icon.active .image.file.adf {
+body.theme_tangerine .icon.active .glyph.file.adf {
   filter: contrast(140%) saturate(140%);
   background-position: -848px -80px;
 }
-body.theme_tangerine .icon.active .image.notepad {
+body.theme_tangerine .icon.active .glyph.notepad {
   background-position: -80px -272px;
 }
-body.theme_tangerine .icon.active .image.bassoon {
+body.theme_tangerine .icon.active .glyph.bassoon {
   background-position: -784px -80px;
 }
-body.theme_tangerine .icon.active .image.postmessage {
+body.theme_tangerine .icon.active .glyph.postmessage {
   background-position: -784px -16px;
 }
-body.theme_tangerine .icon.active .image.googledocs {
+body.theme_tangerine .icon.active .glyph.googledocs {
   background-position: -720px -272px;
 }
-body.theme_tangerine .icon.active .image.uae {
+body.theme_tangerine .icon.active .glyph.uae {
   background-position: -208px -16px;
 }
-body.theme_tangerine .icon.active .image.canvasicon {
+body.theme_tangerine .icon.active .glyph.canvasicon {
   background-position: 0 0;
 }
-body.theme_tangerine .icon.active .image.canvasicon.dual {
+body.theme_tangerine .icon.active .glyph.canvasicon.dual {
   background-position: -48px 0;
 }
 body.theme_tangerine .icon.active .label {

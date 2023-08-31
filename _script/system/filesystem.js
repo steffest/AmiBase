@@ -61,7 +61,6 @@ let FileSystem = function(){
 
     me.getMount = function(path){
         let volume = me.getVolume(path);
-        console.error(volume);
         return mounts[volume] || {
             name: "http",
             filesystem: "http",
@@ -149,7 +148,7 @@ let FileSystem = function(){
         var mount = me.getMount(path);
         let fs = mount.handler;
         if  (fs){
-            fs.createDirectory(path,newName,mount);
+            return fs.createDirectory(path,newName,mount);
         }
     };
 
@@ -207,8 +206,33 @@ let FileSystem = function(){
         return path;
     };
 
-    me.copyFile = function(file,fromPath,toPath){
-        console.log("Copy File",file,fromPath,toPath);
+    me.copyFile = function(file,toPath){
+        return new Promise(async next => {
+            let fromPath = file.path;
+            console.log("Copy File",fromPath,toPath);
+            let mount = me.getMount(fromPath);
+            let fs = mount.handler;
+            let targetMount = me.getMount(toPath);
+            let targetFs = targetMount.handler;
+
+            if (fs){
+                if (mount.path === targetMount.path){
+                    // copy inside same volume
+                    var result = await fs.copyFile(fromPath,toPath,mount);
+                    next(result);
+                }else{
+                    let content = await fs.readFile(fromPath,true,mount);
+                    toPath = toPath + '/' + file.name;
+                    let written = await targetFs.writeFile(toPath,content,true,targetMount);
+                    console.log("result:",written);
+                    next(written);
+                }
+            }else{
+                console.warn("can't copy file - no handler");
+                next();
+            }
+        });
+
     };
 
     me.moveFile = function(file,fromPath,toPath){
@@ -257,6 +281,20 @@ let FileSystem = function(){
             }
         });
     };
+
+    me.deleteDirectory = function(folder){
+        return new Promise(async next => {
+            console.log("Delete",folder);
+            let mount = me.getMount(folder.path);
+            let fs = mount.handler;
+            if (fs){
+                var result = await fs.deleteFolder(folder.path,mount);
+                next(result);
+            }else{
+                console.warn("can't delete folder - no handler");
+            }
+        });
+    }
 
     me.rename = function(path,newName){
         return new Promise(async next => {

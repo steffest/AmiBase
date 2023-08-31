@@ -117,7 +117,6 @@ let UI = function(){
     };
 
     me.handleGlobalDrop = function(){
-        console.error("handleGlobalDrop")
         if (touchData.isGlobalDragging){
             if (currentDropTarget){
                 currentDropTarget.classList.remove("droptargetactive");

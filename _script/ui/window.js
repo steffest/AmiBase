@@ -72,7 +72,7 @@ let AmiWindow = function(config){
     );
 
     var inner = $(".inner.innerwindow",{
-        onContext: (e)=>{
+        onContext: (event)=>{
             if (config.type === "desktop"){
                 if (settings.mainMenu && settings.mainMenu.length){
                     popupMenu.show({
@@ -84,13 +84,13 @@ let AmiWindow = function(config){
                     //popupMenu.hide();
                 }
             }else{
-                let menu = mainMenu.getMenu("window");
-                console.error("window menu",menu);
                 if (menu){
+                    let submenu = menu;
+                    if (menu[0] && menu[0].items) submenu = menu[0].items;
                     popupMenu.show({
                         x: event.clientX,
                         y: event.clientY,
-                        items: menu
+                        items:  submenu
                     });
                 }
             }
@@ -136,6 +136,10 @@ let AmiWindow = function(config){
         }
         me.activate();
     };
+
+    me.refresh = function(){
+        if (me.application) me.sendMessage("refresh");
+    }
 
     me.createIcon = function(config,target){
         var icon = amiIcon(config);
@@ -283,12 +287,11 @@ let AmiWindow = function(config){
     };
 
     function handleDrop(droppedItems,deltaX,deltaY){
-        console.log("dropped items",droppedItems);
+        console.log("dropping item on window",droppedItems);
         droppedItems.forEach(function(item){
             var left = item.left + deltaX;
             var top = item.top + deltaY;
             var doMove = false;
-            console.log("dropping item on window",item);
             if (item.parent.id === me.id){
                 // move inside parent
                 console.log("dropped into same window");
@@ -298,9 +301,10 @@ let AmiWindow = function(config){
                 // drop in other window
                 console.log("dropped into other window",me.application);
                 if (me.application){
-                    Applications.sendMessage(me,"dropFile",item);
+                    me.sendMessage("dropFile",item);
                 }else{
                     console.log("moving item to new parent");
+                    // I think this is deprecated ?
 
                     if ((item.type === "icon" || item.type === "dragitem") && item.object){
                         var itemConfig = item.parent.getConfig?item.parent.getConfig():{};
@@ -361,26 +365,6 @@ let AmiWindow = function(config){
         item.object = config.object;
 
         return item;
-    }
-    
-    me.refresh = function(){
-        //window.classList.
-
-        var top = 0;
-        
-        if (view === "list"){
-            icons.forEach(function(icon){
-                icon.setListPosition(top);
-                top += 20;
-            });
-        }
-
-        if (view === "icon"){
-            icons.forEach(function(icon){
-                icon.setPosition(icon.left,icon.top);
-            });
-        }
-        
     }
 
     if (config.type !== "desktop"){

@@ -7,13 +7,15 @@ var MUSICMOD = function(){
             MOD: {
                 name: "Mod Music Module",
                 actions:[{label: "Play in Tracker",plugin:"bassoon"}],
-                className:"musicmod",
+                classType:"audio",
+                className:"mod",
                 fileExtensions:["mod"]
             },
             XM: {
                 name: "XM Music Module",
                 actions:["Play in Tracker"],
-                className:"musicmod",
+                classType:"audio",
+                className:"mod",
                 fileExtensions:["xm"]
             },
         }

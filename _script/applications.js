@@ -5,6 +5,7 @@ import mainMenu from "./ui/mainmenu.js";
 import fileSystem from "./system/filesystem.js";
 import user from "./user.js";
 import {loadCss} from "./util/dom.js";
+import desktop from "./ui/desktop.js";
 
 /*
 Provides a bridge for external applications and plugins
@@ -262,7 +263,10 @@ let Applications = function(){
             fetch: fetchService,
             readFile: fileSystem.readFile,
             writeFile: fileSystem.writeFile,
+            copyFile: fileSystem.copyFile,
+            uploadFile: desktop.uploadFile,
             getDirectory: fileSystem.getDirectory,
+            createDirectory: fileSystem.createDirectory,
             getUrl: (file)=>{
                 return new Promise(next=>{
                     let mount = fileSystem.getMount(file);

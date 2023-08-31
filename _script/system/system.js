@@ -7,8 +7,6 @@ import {loadCss} from "../util/dom.js";
 import fetchService from "../util/fetchService.js";
 import desktop from "../ui/desktop.js";
 import applications from "../applications.js";
-import user from "../user.js";
-import filesystem from "./filesystem.js";
 
 let System = function(){
     var me = {};
@@ -38,7 +36,6 @@ let System = function(){
                     setEnv(module.default);
                 }).catch(e=>{
                     console.log("No config file found for " + env);
-                    console.log(e);
                     next();
                 });
 
@@ -178,6 +175,11 @@ let System = function(){
          let fileTypeLib = await me.loadLibrary("filetypes");
          return fileTypeLib.detect(file,tryHard);
      };
+
+     me.getFileTypeFromName = async function(name){
+         let fileTypeLib = await me.loadLibrary("filetypes");
+         return fileTypeLib.detectFromFileExtension(name);
+     }
      
      // execute an action on a file
      me.openFile = async function(file,plugin,action){

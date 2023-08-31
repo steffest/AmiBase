@@ -9,7 +9,6 @@ let User = function(){
 
     me.init = async function(){
         let localSettings = await me.getAmiSettings();
-        console.log("localSettings",localSettings);
         if (localSettings){
             for (let key in localSettings){
                 settings[key] = localSettings[key];
@@ -27,34 +26,23 @@ let User = function(){
         }
     };
 
-    me.getSetting = function(key){
-        var value = localStorage.getItem(key);
-        if (value && value.indexOf("json:"===0)){
-            try{value = JSON.parse(value.substr(5));}catch (e) {}
+    me.getSetting = async function(key,encrypted){
+        if (encrypted) key+="_enc";
+        let data = await Storage.get(key);
+
+        if (data && data.encrypted && data.iv){
+            try{
+                data = await Security.decrypt(data.encrypted,data.iv);
+            }catch (e) {
+                console.error(e);
+                data = {};
+            }
         }
-        return value;
+        return data;
     };
 
-    me.decryptSetting = function(key){
-        return new Promise(async function(next){
-            let data = await Storage.get(key + "_enc");
-            console.error(data);
-            if (data && data.encrypted && data.iv){
-                Security.decrypt(data.encrypted,data.iv).then(function(data){
-                    console.error("ok",data);
-                    next(data);
-                }).catch(function(e){
-                    console.error(e);
-                    next({});
-                })
-            }else{
-                next({});
-            }
-        })
-    }
-
     me.getAmiSettings = async function(){
-        let settings = await me.decryptSetting("settings");
+        let settings = await me.getSetting("settings",true);
         if (!settings) settings = {};
         return settings;
     }
@@ -63,9 +51,8 @@ let User = function(){
         me.storeSetting("settings",settings,true);
     }
 
-    me.getTheme = function(){
-        let theme = me.getSetting("theme") || settings.defaultTheme;
-        console.error(theme,settings.themes);
+    me.getTheme = async function(){
+        let theme = await me.getSetting("theme") || settings.defaultTheme;
         if (settings.themes && settings.themes.length){
             let exists = false;
             settings.themes.forEach(function(_theme){
@@ -75,9 +62,6 @@ let User = function(){
         }
         return theme;
     };
-
-
-
 
     return me;
 };

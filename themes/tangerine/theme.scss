@@ -49,7 +49,7 @@ body.theme_tangerine{
 
 
   .icon{
-    .image{
+    .glyph{
       width: 48px;
       height: 48px;
       background-color: transparent;
@@ -86,7 +86,7 @@ body.theme_tangerine{
     }
 
     &.active{
-      .image{
+      .glyph{
         box-shadow: none;
         background-position: -80px -16px;
 
