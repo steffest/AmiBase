@@ -9,6 +9,7 @@
 
   .homebutton{
     user-select: none;
+    -webkit-user-select: none;
     position: absolute;
     top:0;
     left: 0;
@@ -50,6 +51,7 @@
 
   .menuitem{
     user-select: none;
+    -webkit-user-select: none;
     display: inline-block;
 
     &.divider{

@@ -20,7 +20,7 @@ let PopupMenu = function(){
 
             popupMenu.innerHTML = "";
             config.items.forEach(function(item){
-                popupMenu.appendChild(createMenuItem(item));
+                popupMenu.appendChild(createMenuItem(item,config));
             });
 
             popupMenu.style.display = "block";
@@ -38,7 +38,7 @@ let PopupMenu = function(){
         }
     };
 
-    function createMenuItem(struct){
+    function createMenuItem(struct,config){
         var elm = $div("menuitem");
         if (struct.label === "-"){
             elm.classList.add("divider");
@@ -50,7 +50,7 @@ let PopupMenu = function(){
 
         elm.innerHTML = "<label>" + struct.label + "</label>";
         elm.onclick = function(){
-            handleMenuClick(struct);
+            handleMenuClick(struct,config);
         };
 
         if (struct.items){
@@ -80,7 +80,7 @@ let PopupMenu = function(){
         return elm;
     }
 
-    function handleMenuClick(item){
+    function handleMenuClick(item,config){
         if (item.submenu){
             item.submenu.classList.toggle("active");
             popupMenuActive = item.submenu.classList.contains("active");
@@ -95,6 +95,7 @@ let PopupMenu = function(){
                         system.launchProgram(item.action);
                     }
                 }
+                if (config.onAction) config.onAction(item);
             },0);
         }
     }

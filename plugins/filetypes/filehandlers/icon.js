@@ -39,9 +39,8 @@ var Icon = function(){
 		ICON: {
 			name: "Amiga icon file",
 			actions:[
-				{label: "show", plugin:"AdfViewer"},
-				{label: "show2", plugin:"imageViewer"},
-				{label: "edit", plugin:"dpaint"}
+				{label: "View", plugin:"imageViewer"},
+				{label: "Edit", plugin:"dpaint"}
 			],
 			inspect: true,
 			customIcon: true,
@@ -340,6 +339,15 @@ var Icon = function(){
 
 		return canvas;
 	};
+
+	me.getIcon = function(file){
+		return new Promise((next)=>{
+			me.parse(file,function(icon){
+				let image = me.getImage(icon);
+				next(image);
+			});
+		});
+	}
 	
 	me.create = function(width,height){
 		var icon = {};

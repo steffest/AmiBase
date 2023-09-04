@@ -111,7 +111,7 @@ let MediaPlayer = function(){
 
 
     me.openFile = function(file){
-        console.log("mediaplayer open file",file);
+        console.error("mediaplayer open file",file);
         if (file.binary){
             console.log("mediaplayer play file from binary");
             Player.playFile(file);
@@ -628,6 +628,7 @@ let MediaPlayer = function(){
                 //player = HlsAudioPlayer;
             }
             player = await getPlayer();
+            console.error("player",player);
             player.setSrc(src);
             me.play();
             setTitle(src);

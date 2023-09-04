@@ -7,8 +7,6 @@ var Laozi = async function() {
 
     var endPoint = "https://www.amibase.com/api/";
 
-    var {default: api} = await import("./api.js");
-
     me.getDirectory = async function(path,config){
         console.error("getDirectory",path);
         setConfig(config);
@@ -117,7 +115,7 @@ var Laozi = async function() {
         });
     };
 
-    me.writeFile = function(path,content,binary,config){
+    me.writeFile = function(path,content,binary,config,onProgress){
         console.log("writeFile",path,content,binary);
         setConfig(config);
         return new Promise((next) => {
@@ -132,9 +130,8 @@ var Laozi = async function() {
                     data = new FormData();
                     let b = new Blob([buffer], {type: "application/octet-stream"});
                     data.append('files[]', b, filename);
-                    fetchService.sendBinary(endPoint + "file/uploadfile/" + path,data,function(data){
-                        console.log(data);
-                        next(data.status === "ok");
+                    fetchService.sendBinary(endPoint + "file/uploadfile/" + path,data,onProgress).then(result=>{
+                        next(result.status === "ok");
                     });
                 }else{
                     console.error("nothing no write, no buffer");

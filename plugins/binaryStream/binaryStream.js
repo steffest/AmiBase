@@ -93,6 +93,8 @@ function BinaryStream(arrayBuffer, bigEndian){
 
     obj.readString = function(len,position){
         setIndex(position);
+        if (this.index >= this.length) return "";
+        if (this.index<0) return "";
         var i = this.index;
         var src = this.dataView;
         var text = "";
@@ -110,6 +112,7 @@ function BinaryStream(arrayBuffer, bigEndian){
     };
 
     obj.toString = function(){
+        // TODO: TextDecoder should be faster ?
         return String.fromCharCode.apply(null, new Uint8Array(arrayBuffer));
     };
 
@@ -135,6 +138,8 @@ function BinaryStream(arrayBuffer, bigEndian){
     // same as readUshort
     obj.readWord = function(position){
         setIndex(position);
+        if (this.index >= this.length) return 0;
+        if (this.index<0) return 0;
         var w = this.dataView.getUint16(this.index, this.litteEndian);
         this.index += 2;
         return w;
@@ -150,6 +155,8 @@ function BinaryStream(arrayBuffer, bigEndian){
 
     obj.readShort = function(value,position){
         setIndex(position);
+        if (this.index >= this.length) return 0;
+        if (this.index<0) return 0;
         var w = this.dataView.getInt16(this.index, this.litteEndian);
         this.index += 2;
         return w;

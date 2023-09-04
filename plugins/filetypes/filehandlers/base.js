@@ -30,8 +30,9 @@ var BaseFileExtensions = function(){
                 className:"hdf"
             },
             PNG: {name: "PNG image", actions:[
-                    {label: "view", plugin:"imageviewer"}
-                    ],
+                    {label: "View", plugin:"imageviewer"},
+                    {label: "Edit", plugin:"dpaint"}
+                ],
                 classType:"image",
                 className:"png",
                 fileExtensions:["png"]
@@ -44,11 +45,19 @@ var BaseFileExtensions = function(){
                 fileExtensions:["pdf"]
             },
             JPG: {name: "JPG image", actions:[
-                    {label: "view", plugin:"imageviewer"}
+                    {label: "View", plugin:"imageviewer"},
+                    {label: "Edit", plugin:"dpaint"}
                 ],
                 classType:"image",
                 className:"jpg",
                 fileExtensions:["jpg","jpeg"]},
+            GIF: {name: "GIF image", actions:[
+                    {label: "View", plugin:"imageviewer"},
+                    {label: "Edit", plugin:"dpaint"}
+                ],
+                classType:"image",
+                className:"gif",
+                fileExtensions:["gif"]},
             MP3: {name: "MP3 audio", actions:[
                     {label: "play", plugin:"mediaplayer"}
                 ],
@@ -95,17 +104,6 @@ var BaseFileExtensions = function(){
                     {label: "edit", plugin:"monaco"}
                 ],  classType:"code",className:"txt",
                 fileExtensions:["md"]},
-            SCREAMTRACKER: {
-                name: "ScreamTracker Music Module",
-                actions:[{label: "Play",plugin:"mediaplayer"}],
-                classType:"audio",
-                className:"mod",
-                fileExtensions:["s3m"]},
-            IMPULSETRACKER: {
-                name: "Impulse tracker Music Module",
-                actions:[{label: "Play",plugin:"mediaplayer"}],
-                classType:"audio",className:"mod",
-                fileExtensions:["it"]},
             ZIP:{
                 name: "ZIP Archive",
                 actions:[{label: "Extract",plugin:"filemanager"}],

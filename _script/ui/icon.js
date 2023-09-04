@@ -4,6 +4,8 @@ import desktop from "./desktop.js";
 import system from "../system/system.js";
 import popupMenu from "./popupMenu.js";
 import fileSystem from "../system/filesystem.js";
+import ui from "./ui.js";
+import Modal from "./modal.js";
 
 let AmiIcon = function(object){
     var me = {
@@ -25,62 +27,24 @@ let AmiIcon = function(object){
                 object.open();
             },
             onContext: (e)=>{
+                let modal = ui.getModal();
+                if (modal) return;
+
                 let x = e.clientX;
                 let y = e.clientY;
                 var items = [];
                 switch (object.type){
                     case "file":
-                        items=[
-                            {
-                                label:"Open",
-                                action: function(){
-                                    system.openFile(object);
-                                }
-                            },
-                            {
-                                label:"Open With",
-                                action: function(){
-                                    desktop.openWith(object);
-                                }
-                            },
-                            {
-                                label:"Rename",
-                                action: function(){
-                                    let oldName = object.name;
-                                    let path = object.path;
-                                    var name =  prompt("Enter the new name:",oldName);
-                                    if (name){
-                                        me.setLabel(name);
-                                        fileSystem.rename(path,name);
-                                    }
-                                }
-                            },
-                            {
-                                label:"Delete",
-                                action: function(){
-                                    fileSystem.deleteFile(object);
-                                    me.parent.removeIcon(me);
-                                }
-                            }
-                        ]
+                        items=object.getActions(me);
                         break;
                     case "drive":
                     case "folder":
                         items=[
-                            {label:"File Manager",
+                            {label:"Open",
                                 action: function(){system.exploreFolder(object)}
                             },
                             {
-                                label:"Rename",
-                                action: function(){
-                                    let oldName = object.name;
-                                    let path = object.path;
-                                    var name =  prompt("Enter the new name:",oldName);
-                                    if (name){
-                                        me.setLabel(name);
-                                        fileSystem.rename(path,name);
-                                    }
-                                }
+                                label:"Rename"
                             },
                             {
                                 label:"Delete",
@@ -107,7 +71,28 @@ let AmiIcon = function(object){
                         items: items,
                         target: me,
                         x: x,
-                        y: y
+                        y: y,
+                        onAction:(menuItem)=>{
+                            if (menuItem.label === "Rename"){
+                                label.innerHTML = "";
+                                let input = $("input",{value:object.name});
+                                let modal = Modal({
+                                    content:input,
+                                    onClose:(isOk)=>{
+                                        let newName = isOk?input.value:object.name;
+                                        if (newName !== object.name){
+                                            fileSystem.rename(object.path,newName);
+                                        }
+                                        me.setLabel(newName);
+                                        icon.classList.add("draggable");
+                                    },
+                                    autoCloseOnBlur:true
+                                });
+                                label.appendChild(modal);
+                                input.focus();
+                                icon.classList.remove("draggable");
+                            }
+                        }
                     })
                 }
             }
@@ -124,7 +109,18 @@ let AmiIcon = function(object){
         system.getFileTypeFromName(name).then(fileType=>{
             if (fileType.className) img.classList.add(fileType.className);
             if (fileType.classType) img.classList.add(fileType.classType);
+            img.classList.add(cleanString(object.name));
         });
+
+        if (object.getIcon){
+            object.getIcon().then(icon=>{
+                if (icon && icon.tagName){
+                    img.style.backgroundImage = "none";
+                    img.innerHTML = "";
+                    img.appendChild(icon);
+                }
+            });
+        }
     }
 
     icon.appendChild(img);
@@ -136,10 +132,29 @@ let AmiIcon = function(object){
         icon.style.transform = "translate(" + left + "px," + top + "px)";
     };
 
+    me.setSize = function(width,height){
+        me.width = width;
+        me.height = height;
+        icon.style.width = width + "px";
+        icon.style.height = height + "px";
+        img.style.width = width + "px";
+        img.style.height = height + "px";
+    }
+
+    me.setImage = function(element){
+        img.style.backgroundImage = "none";
+        img.innerHTML = "";
+        img.appendChild(element);
+    }
+
     me.setIndex = function(zIndex){
         me.zIndex = zIndex+1;
         icon.style.zIndex = me.zIndex;
     };
+
+    me.onDown = function(action){
+        icon.onDown = action;
+    }
 
     me.moveToTop = function(){
         var zIndex = desktop.getTopZindex();
@@ -191,10 +206,8 @@ let AmiIcon = function(object){
     };
 
 
-
     me.element = icon;
     me.setPosition(50,50);
-    //ui.enableDrag(me,true);
 
     return me;
 };

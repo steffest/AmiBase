@@ -1,16 +1,55 @@
 .filemanager .infobar {
   position: absolute;
   bottom: 0;
-  width: 100px;
+  width: 120px;
   font-size: 12px;
   color: var(--panel-text-color);
 }
 .filemanager .infobar h4 {
   margin: 0 0 4px 0;
-  padding: 2px 0;
-  font-weight: 100;
   font-size: 12px;
+  padding: 5px 10px;
+  font-weight: bold;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.filemanager .infobar .preview {
+  width: 100px;
+  height: 100px;
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-content: center;
+}
+.filemanager .infobar .preview img {
+  max-width: 100%;
+  max-height: 100%;
+  border: 2px solid rgb(255, 255, 255);
+}
+.filemanager .infobar .info {
+  padding: 0 10px;
+}
+.filemanager .infobar .info i {
+  display: block;
+  font-size: 11px;
+  margin: 4px 0 2px 0;
+}
+.filemanager .infobar .action {
+  padding: 2px 10px;
+  font-weight: bold;
+}
+.filemanager .infobar .action:hover {
+  cursor: pointer;
+  text-decoration: underline;
+  color: var(--panel-text-color-highlight);
+}
+.filemanager .infobar .divider {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  height: 8px;
+  margin-bottom: 7px;
 }
 
 /*# sourceMappingURL=filemanager.css.map */

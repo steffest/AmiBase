@@ -11,6 +11,7 @@ import applications from "../applications.js";
 import fileSystem from "../system/filesystem.js";
 import system from "../system/system.js";
 import amiObject from "../system/object.js";
+import Notification from "./notification.js";
 
 let Desktop = function(){
     let me = amiWindow({
@@ -356,6 +357,13 @@ let Desktop = function(){
             }
 
         }
+    }
+
+    me.showNotification = function(config){
+        return Notification.show(config);
+    }
+    me.hideNotification = function(config){
+        return Notification.hide(config);
     }
 
     me.openWith = function(object){

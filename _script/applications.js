@@ -4,7 +4,7 @@ import system from "./system/system.js";
 import mainMenu from "./ui/mainmenu.js";
 import fileSystem from "./system/filesystem.js";
 import user from "./user.js";
-import {loadCss} from "./util/dom.js";
+import amiIcon from "./ui/icon.js";
 import desktop from "./ui/desktop.js";
 
 /*
@@ -18,7 +18,6 @@ There are 2 types of plugins:
 let Applications = function(){
     var me = {};
     var plugins={};
-    var mainContext = window;
 
     window.addEventListener("message", receiveMessage, false);
 

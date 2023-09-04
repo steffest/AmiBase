@@ -1,0 +1,57 @@
+.loader{
+  position: absolute;
+  box-shadow: 0 0 0 8px rgba(238, 238, 238, 0.4) inset;
+  width: 40px;
+  height: 40px;
+  margin: 10px;
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+
+  &.fade{
+    opacity: 0;
+  }
+
+  &.centered{
+    margin: auto;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+  }
+
+  &:before,
+  &:after{
+    position: absolute;
+    background: #fff;
+    content: "";
+    width: 8px;
+    height: 8px;
+    left: 0;
+    top: 0;
+    animation: square 2s linear infinite;
+  }
+
+  &:after{
+    background: #000;
+    animation-delay: -1s;
+  }
+
+}
+
+@keyframes square {
+  25% {
+    left: 100%;
+    top: 0;
+    transform: translate(-100%, 0);
+  }
+  50% {
+    left: 100%;
+    top: 100%;
+    transform: translate(-100%, -100%);
+  }
+  75% {
+    left: 0;
+    top: 100%;
+    transform: translate(0, -100%);
+  }
+}

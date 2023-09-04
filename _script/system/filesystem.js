@@ -3,6 +3,7 @@ import system from "./system.js";
 import amiObject from "./object.js";
 import http from "./filesystems/http.js";
 import ram from "./filesystems/ram.js";
+import desktop from "../ui/desktop.js";
 
 let FileSystem = function(){
    var me = {};
@@ -170,13 +171,15 @@ let FileSystem = function(){
     };
 
 
-    me.writeFile = function(file,content,binary){
+    me.writeFile = function(file,content,binary,onProgress){
         file = normalize(file);
         return new Promise(async next => {
             var mount = me.getMount(file.path);
             let fs = mount.handler;
             if (fs){
-                let response = await fs.writeFile(file.path,content,binary,mount);
+                let response = await fs.writeFile(file.path,content,binary,mount,progress=>{
+                    if (onProgress) onProgress(progress);
+                });
                 next(response);
             }else{
                 console.error("no handler");
@@ -223,7 +226,20 @@ let FileSystem = function(){
                 }else{
                     let content = await fs.readFile(fromPath,true,mount);
                     toPath = toPath + '/' + file.name;
-                    let written = await targetFs.writeFile(toPath,content,true,targetMount);
+
+                    let notification = {
+                        label:"Copying",
+                        text:file.name
+                    }
+                    notification.id = desktop.showNotification(notification);
+
+                    let written = await targetFs.writeFile(toPath,content,true,targetMount,(progress)=>{
+                        console.error("progress",progress);
+                        if (progress.computable) notification.progress = progress.loaded/progress.total;
+                        notification.progressText = formatSize(progress.loaded) + " of " + formatSize(progress.total);
+                        desktop.showNotification(notification);
+                    });
+                    desktop.hideNotification(notification.id);
                     console.log("result:",written);
                     next(written);
                 }
@@ -315,6 +331,19 @@ let FileSystem = function(){
         return list.map(item=>amiObject(item));
     }
 
+    me.getParentPath = function(path){
+        if (!path) return;
+        let volume = me.getVolume(path);
+        if (volume) path = path.substr(volume.length+1);
+        if (path.endsWith("/")) path = path.substr(0,path.length-1);
+        let parts = path.split("/");
+        parts.pop();
+        path = parts.join("/");
+        if (parts.length) path += "/";
+        if (volume) path = volume + ":" + path;
+        return path;
+    }
+
     function getVolumeIndex(volume){
         var result = 0;
         Object.keys(mounts).forEach(key=>{
@@ -335,6 +364,13 @@ let FileSystem = function(){
             file=amiObject(file);
         }
         return file;
+    }
+
+    function formatSize(byte){
+        if (byte<1024) return byte + " bytes";
+        if (byte<1024*1024) return Math.round(byte/1024) + " KB";
+        if (byte<1024*1024*1024) return Math.round(byte/1024/1024) + " MB";
+        return Math.round(byte/1024/1024/1024) + " GB";
     }
 
 

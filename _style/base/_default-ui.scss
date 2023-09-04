@@ -213,7 +213,7 @@
 
 .list{
   .listitem{
-    padding: 2px 4px;
+    padding: 3px 4px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     cursor: pointer;
     color: $panel-text-color;
@@ -226,6 +226,7 @@
 
     &.selected{
       background-color: rgba(158, 199, 176, 0.2);
+      color: $panel-text-color-highlight;
     }
 
     &.folder, &.file{
@@ -237,6 +238,20 @@
 
     &.folder{
       background-image: url("../../_img/icons/line/folder.png");
+    }
+
+    .modal{
+      input{
+        text-align: left;
+        width: 100%;
+        font-size: 12px;
+        border: 1px solid black;
+        background-color: rgba(255, 255, 255, 0.9);
+
+        &:focus{
+          outline: none;
+        }
+      }
     }
   }
 }

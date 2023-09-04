@@ -7,11 +7,13 @@ import {loadCss} from "../util/dom.js";
 import fetchService from "../util/fetchService.js";
 import desktop from "../ui/desktop.js";
 import applications from "../applications.js";
+import filesystem from "./filesystem.js";
 
 let System = function(){
     var me = {};
     var libraries = {};
     let plugins = {};
+    let saveAs;
 
     me.loadEnvironment = function(){
         return new Promise(function(next){
@@ -180,6 +182,26 @@ let System = function(){
          let fileTypeLib = await me.loadLibrary("filetypes");
          return fileTypeLib.detectFromFileExtension(name);
      }
+
+     me.getPreview = async function(file){
+        if (file.filetype && file.filetype.classType === "image"){
+            if (file.url){
+                let img = new Image();
+                img.src = file.url;
+                return img;
+            }
+        }
+
+        return false;
+     }
+
+     me.getIcon = async function(file){
+         let fileType = file.filetype;
+         if (fileType && fileType.handler && fileType.handler.getIcon){
+             let content = await filesystem.readFile(file,true);
+             return fileType.handler.getIcon(content);
+         }
+     }
      
      // execute an action on a file
      me.openFile = async function(file,plugin,action){
@@ -195,7 +217,7 @@ let System = function(){
                  url: "plugin:" + plugin
              }).then(window=>{
                  console.log("app loaded",window);
-                 applications.sendMessage(window,"openFile",file);
+                 window.sendMessage("openFile",file);
              })
              return;
          }
@@ -207,7 +229,7 @@ let System = function(){
                      url: (file.handler.indexOf(":")<0?"plugin:":"") + file.handler
                  }).then(window=>{
                      console.log("app loaded",window);
-                     applications.sendMessage(window,"openFile",file);
+                     window.sendMessage("openFile",file);
                  });
              }else{
                  file.handler(me);
@@ -232,8 +254,7 @@ let System = function(){
                              url: "plugin:" + fileAction.plugin,
                          }).then(window=>{
                              console.log("app loaded");
-                             console.log(file);
-                             applications.sendMessage(window,"openFile",file);
+                             window.sendMessage("openFile",file);
                          });
                      }
                  }else{
@@ -246,6 +267,50 @@ let System = function(){
              }
          }
      };
+
+     me.downloadFile = async function(file){
+         if (file.urssl){
+                let link = document.createElement("a");
+                link.href = file.url;
+                link.setAttribute("download", file.name);
+                link.target = "_blank";
+                document.body.appendChild(link);
+                link.click();
+                link.parentNode.removeChild(link);
+                console.error(file.name)
+         }else{
+             let content = await filesystem.readFile(file,true);
+             console.error("content",content);
+             let blob = new Blob([content.buffer], {type: "application/octet-stream"});
+
+             let fileName = file.name;
+
+             if (window.showSaveFilePicker){
+                 try {
+                     let handle = await window.showSaveFilePicker({
+                         suggestedName: fileName
+                     });
+                     let writable = await handle.createWritable();
+                     await writable.write(blob);
+                     await writable.close();
+                     return;
+                 }catch (e){
+                     console.error(e);
+                     save();
+                 }
+             }else{
+                 save();
+             }
+
+             async function save(){
+                 if (!saveAs){
+                     let module = await import("../lib/filesaver.js");
+                     saveAs = module.default;
+                 }
+                 saveAs(blob,fileName);
+             }
+         }
+     }
 
     me.launchProgram = function(config){
         if (typeof config === "string"){
@@ -307,7 +372,7 @@ let System = function(){
 
     me.exploreFolder = async function(folder){
         let window = await me.launchProgram("filemanager");
-        applications.sendMessage(window,"openFolder",folder);
+        window.sendMessage("openFolder",folder);
     }
 
     return me;

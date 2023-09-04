@@ -1,4 +1,6 @@
 import system from "./system.js";
+import fileSystem from "./filesystem.js";
+import desktop from "../ui/desktop.js";
 let AmiFile = function(config){
     let me = {
         type:"file"
@@ -22,8 +24,64 @@ let AmiFile = function(config){
     }
     if (!me.path) me.path = config.url;
 
-    me.open = function(){
-        system.openFile(me);
+    me.open = function(plugin){
+        system.openFile(me,plugin);
+    }
+
+    me.getIcon = function(){
+        return system.getIcon(me);
+    }
+
+    me.getPreview = function(){
+       return system.getPreview(me);
+    }
+
+    me.getActions = function(icon){
+        let actions = [];
+        if (me.filetype && me.filetype.actions && me.filetype.actions.length){
+            me.filetype.actions.forEach(action=>{
+                actions.push({
+                    label: action.label,
+                    action: function(){
+                        system.openFile(me,action.plugin,action.label);
+                    }
+                })
+            });
+        }else{
+            actions.push({
+                label:"Open",
+                action: function(){
+                    system.openFile(me);
+                }
+            });
+        }
+
+        actions.push(
+            {
+                label:"Open With",
+                action: function(){
+                    desktop.openWith(me);
+                }
+            },
+            {
+                label:"Download",
+                action: function(){
+                    system.downloadFile(me);
+                }
+            },
+            {
+                label:"Rename"
+            },
+            {
+                label:"Delete",
+                action: function(){
+                    fileSystem.deleteFile(me);
+                    icon.parent.removeIcon(icon);
+                }
+            });
+
+        return actions;
+
     }
 
     return me;

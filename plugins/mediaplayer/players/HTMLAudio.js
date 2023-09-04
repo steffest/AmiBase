@@ -21,7 +21,7 @@ let HTMLAudioPlayer = function(host){
                 console.error('The audio playback was aborted due to a corruption problem or because the video used features your browser did not support.');
                 break;
             case e.target.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                console.log('Audio source not supported falling back to file player');
+                console.error('Audio source not supported falling back to file player');
                 handleDropFile(currentData,true);
                 break;
             default:

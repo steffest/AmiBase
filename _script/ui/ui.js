@@ -5,6 +5,7 @@ import input from "../input.js";
 import {$div} from "../util/dom.js";
 import settings from "../settings.js";
 import desktop from "./desktop.js";
+import notification from "./notification.js";
 
 let UI = function(){
     var me = {};
@@ -24,15 +25,22 @@ let UI = function(){
     var isResizing;
     var isSelecting;
     var selectingComponent;
+    var modalComponent;
 
     me.init = function(){
         mouse.init();
         mainMenu.init();
+        notification.init();
 
         document.body.style.touchAction = "none";
         document.body.addEventListener("pointerdown",handleTouchDown);
         document.body.addEventListener("pointerup",handleTouchUp);
         document.body.addEventListener("pointermove",handleTouchMove);
+        document.body.addEventListener("dblclick",(e)=>{
+            console.error("dblclick");
+            e.preventDefault();
+            e.stopPropagation();
+        });
 
         document.body.addEventListener("dragenter", handleDragenter, false);
         document.body.addEventListener("dragover", handleDragover, false);
@@ -132,7 +140,7 @@ let UI = function(){
         }else{
             // we didn't drag => click
             if (touchData.clickTarget && touchData.clickTarget.onClick){
-                touchData.clickTarget.onClick();
+                touchData.clickTarget.onClick(touchData.event);
             }
         }
 
@@ -156,6 +164,14 @@ let UI = function(){
 
 
     };
+
+    me.setModal = function(component){
+        modalComponent = component;
+    }
+
+    me.getModal = function(){
+        return modalComponent;
+    }
 
     me.enableResize = function(component){
         var handle =  component.resizeHandle || component.element;
@@ -201,13 +217,22 @@ let UI = function(){
     };
 
     function handleTouchDown(event){
-        var inpopup = event.target.closest(".popupmenu");
-        if (!inpopup) popupMenu.hide();
+        var inPopup = event.target.closest(".popupmenu");
+        if (!inPopup) popupMenu.hide();
+
+        if (modalComponent){
+            var inModal = event.target.closest(".modal");
+            if (!inModal){
+                modalComponent.blur();
+                return;
+            }
+        }
 
         mouse.isDown = true;
         document.body.classList.add("mousedown");
         touchData.startX = event.clientX;
         touchData.startY = event.clientY;
+        touchData.event = event;
 
         let clickTarget = event.target.closest(".handle");
         let dragTarget = event.target.closest(".draggable");
@@ -244,7 +269,7 @@ let UI = function(){
             }
         }
 
-        if (!handled && clickTarget && clickTarget.onClick) clickTarget.onClick();
+        if (!handled && clickTarget && clickTarget.onClick) clickTarget.onClick(event);
         if (clickTarget && clickTarget.onDown) clickTarget.onDown(touchData);
         currentClickTarget = clickTarget;
 

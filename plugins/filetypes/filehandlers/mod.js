@@ -6,18 +6,35 @@ var MUSICMOD = function(){
         fileTypes:{
             MOD: {
                 name: "Mod Music Module",
-                actions:[{label: "Play in Tracker",plugin:"bassoon"}],
+                actions:[
+                    {label: "Open in Tracker",plugin:"bassoon"},
+                    {label: "Play",plugin:"mediaplayer"}
+                ],
                 classType:"audio",
                 className:"mod",
                 fileExtensions:["mod"]
             },
             XM: {
                 name: "XM Music Module",
-                actions:["Play in Tracker"],
+                actions:[
+                    {label: "Open in Tracker",plugin:"bassoon"},
+                    {label: "Play",plugin:"mediaplayer"}
+                ],
                 classType:"audio",
                 className:"mod",
                 fileExtensions:["xm"]
             },
+            IMPULSETRACKER: {
+                name: "Impulse tracker Music Module",
+                actions:[{label: "Play",plugin:"mediaplayer"}],
+                classType:"audio",className:"mod",
+                fileExtensions:["it"]},
+            SCREAMTRACKER: {
+                name: "ScreamTracker Music Module",
+                actions:[{label: "Play",plugin:"mediaplayer"}],
+                classType:"audio",
+                className:"mod",
+                fileExtensions:["s3m"]},
         }
     };
 

@@ -1,6 +1,11 @@
 import $ from "../../../_script/util/dom.js";
 import SelectBox from "../../../_script/ui/selectBox.js";
 import fileSystem from "../../_script/system/filesystem.js";
+import amiIcon from "../../_script/ui/icon.js";
+import system from "../../_script/system/system.js";
+import popupMenu from "../../_script/ui/popupMenu.js";
+import Modal from "../../_script/ui/modal.js";
+import desktop from "../../_script/ui/desktop.js";
 
 let FileManager = function(){
     var me = {};
@@ -43,7 +48,10 @@ let FileManager = function(){
 
 
         let toolBar = $(".panel.toolbar",
-            toolButton("file","Show as preview",()=>{}),
+            toolButton("file","Show as preview",()=>{
+                currentFolder.viewMode = viewMode = "preview";
+                me.openFolder(currentFolder);
+            }),
             toolButton("icons","Show as icons",()=>{
                 currentFolder.viewMode = viewMode = "icons";
                 me.openFolder(currentFolder);
@@ -156,37 +164,73 @@ let FileManager = function(){
     }
 
     me.openFolder = async function(folder){
-        console.error("openFolder",folder);
+        console.log("openFolder",folder);
         if (typeof folder === "string") folder={path:folder};
         currentFolder = folder;
 
         mainPanel.innerHTML = "";
+        let loader = $(".loader.centered.fade");
+        mainPanel.appendChild(loader);
+        setTimeout(()=>loader.classList.remove("fade"),50);
         amiWindow.clearIcons();
         amiWindow.setCaption(folder.name || folder.path);
         let list = folder.getContent ? await folder.getContent() : await amiBase.getDirectory(folder,true);
-        console.error(list);
-
         viewMode = currentFolder.viewMode || viewMode;
-        if (list){
-            list.forEach(object => {
-                if (viewMode === "icons"){
-                    if (object.type === "folder"){
-                        amiWindow.createIcon(object,mainPanel);
+        if (!list) return;
+
+        let itemRenderer;
+        switch (viewMode){
+            case "icons":
+                amiWindow.setGridSize(70,70);
+                itemRenderer = function(object){
+                    let icon = amiIcon(object);
+                    icon.onDown(()=>{
+                        currentFile = object;
+                        displayFileInfo();
+                    })
+                    amiWindow.addIcon(icon,mainPanel);
+                }
+                break;
+            case "preview":
+                amiWindow.setGridSize(110,120);
+                itemRenderer = function(object){
+                    let icon = amiIcon(object);
+                    icon.onDown(()=>{
+                        currentFile = object;
+                        displayFileInfo();
+                    })
+                    icon.setSize(100,100);
+                    let image = $(".preview");
+
+                    if (object.getPreview){
+                        object.getPreview().then(preview=>{
+                            console.error("preview",preview)
+                            if (preview) image.appendChild(preview);
+                            icon.setImage(image);
+                        })
+                    }else{
+                        image.classList.add("default");
+                        icon.setImage(image);
                     }
-                    if (object.type === "file" || object.type === "link"){
-                        amiWindow.createIcon(object,mainPanel);
-                    }
-                }else{
+                    amiWindow.addIcon(icon,mainPanel);
+                }
+                break;
+            default:
+                itemRenderer = function(object){
                     let item = $(".listitem." + object.type,{
                         onClick:()=>{
+                            currentFile = object;
+                            item.classList.add("selected");
+                            displayFileInfo();
+                            selectItem(item);
+                        },
+                        onDoubleClick:()=>{
                             if (object.type === "folder"){
                                 me.openFolder(object);
                             }else{
-                                currentFile = object;
-                                displayFileInfo();
+                                object.open()
                             }
                         },
-                        onDoubleClick:()=>{console.error("doubleClick");object.open()},
                         onDragStart:()=>{
                             let pos = item.getBoundingClientRect();
                             return [amiWindow.createDragItem({
@@ -197,16 +241,65 @@ let FileManager = function(){
                                 top:pos.top,
                             })];
                         },
+                        onContext:(e)=>{
+                            selectItem(item);
+                            let x = e.clientX;
+                            let y = e.clientY;
+                            let items = object.getActions();
+                            items.push({
+                                label:"Info",
+                                action: function(){
+                                    system.inspectFile(object);
+                                }
+                            });
+
+                            popupMenu.show({
+                                items: items,
+                                target: me,
+                                x: x,
+                                y: y,
+                                onAction:(menuItem)=>{
+                                    if (menuItem.label === "Rename"){
+                                        item.innerHTML = "";
+                                        let input = $("input",{value:object.name});
+                                        let modal = Modal({
+                                            content:input,
+                                            onClose:(isOk)=>{
+                                                let newName = isOk?input.value:object.name;
+                                                if (newName !== object.name){
+                                                    fileSystem.rename(object.path,newName);
+                                                }
+                                                item.innerHTML = newName;
+                                                item.classList.add("draggable");
+                                            },
+                                            autoCloseOnBlur:true
+                                        });
+
+                                        item.appendChild(modal);
+                                        item.classList.remove("draggable");
+                                        input.focus();
+                                    }
+                                    console.error("onAction",item);
+                                }
+                            })
+                        },
                         globalDrag:true
                     },object.name);
                     mainPanel.appendChild(item);
                 }
-            })
-
-            if (viewMode === "icons"){
-                amiWindow.cleanUp();
-            }
         }
+
+        mainPanel.innerHTML = "";
+        if (viewMode === "list" && currentFolder.path.indexOf("/")>0){
+           let parent = fileSystem.getParentPath(currentFolder.path);
+              let item = $(".listitem.folder",{onClick:()=>me.openFolder(parent)}, "..");
+                mainPanel.appendChild(item);
+        }
+
+        list.forEach(object => itemRenderer(object))
+        if (viewMode !== "list") amiWindow.cleanUp();
+
+        displayFolderInfo();
     }
 
     me.dropFile = function(file){
@@ -225,8 +318,20 @@ let FileManager = function(){
     me.uploadFile = function(file){
         console.log("upload file",file);
         file.path = currentFolder.path + "/" + file.name;
-        amiBase.writeFile(file,file.binary,true).then(result=>{
+        let notification = {
+            label:"Uploading",
+            text:file.name
+        }
+        notification.id = desktop.showNotification(notification);
+
+        amiBase.writeFile(file,file.binary,true,(progress)=>{
+            console.error("progress",progress);
+            if (progress.computable) notification.progress = progress.loaded/progress.total;
+            notification.progressText = formatSize(progress.loaded) + " of " + formatSize(progress.total);
+            desktop.showNotification(notification);
+        }).then(result=>{
             if (result) me.refresh();
+            desktop.hideNotification(notification);
         });
 
         /*
@@ -260,18 +365,51 @@ let FileManager = function(){
 
     async function displayFileInfo(){
         if (infoBar.classList.contains("hidden") || !currentFile) return;
-
         infoBar.innerHTML = "";
+
+        if (currentFile.getPreview){
+            let preview = await currentFile.getPreview();
+            if (preview) infoBar.appendChild($(".preview",preview));
+        }
+
         let info = await amiBase.getObjectInfo(currentFile);
         console.error(info);
         infoBar.appendChild($("h4",info.name));
 
-        for (let key in info){
-            if (key === "name") continue;
-            infoBar.appendChild($("div",key + ": " + info[key]));
+        if (info.type === "file"){
+            infoBar.appendChild($(".info",info.filetype));
+            if (info.imageSize) infoBar.appendChild($(".info",info.imageSize + " px"));
+            if (typeof info.size === "number") infoBar.appendChild($(".info",formatSize(info.size)));
+            if (info.modified) infoBar.appendChild($(".info",$("i","Last Modified"),formatDate(info.modified)));
+
+        }else{
+            for (let key in info){
+                if (key === "name") continue;
+                infoBar.appendChild($("div",key + ": " + info[key]));
+            }
         }
 
-        infoBar.appendChild($(".button",{onClick:()=>currentFile.open()}, "Open"));
+
+        infoBar.appendChild($(".divider"));
+        if (currentFile.filetype && currentFile.filetype.actions && currentFile.filetype.actions.length){
+            currentFile.filetype.actions.forEach(action=>{
+                infoBar.appendChild($(".action",{onClick:()=>currentFile.open(action.plugin)}, action.label));
+            });
+        }else{
+            infoBar.appendChild($(".action",{onClick:()=>currentFile.open()}, "Open"));
+        }
+
+
+    }
+
+    function displayFolderInfo(){
+        if (infoBar.classList.contains("hidden") || !currentFolder) return;
+        infoBar.innerHTML = "";
+
+        let name = currentFolder.name ||  currentFolder.path;
+        name = name.split("/").pop();
+        infoBar.appendChild($("h4",name));
+        infoBar.appendChild($(".info",name.endsWith(":")?"Drive":"Drawer"));
 
     }
 
@@ -300,10 +438,31 @@ let FileManager = function(){
         }
         if (!infoBar.classList.contains("hidden")){
             infoBar.style.left = left + "px";
-            left += 100;
+            left += 120;
         }
 
         mainPanel.style.left = left + "px";
+    }
+
+    function formatSize(byte){
+        if (byte<1024) return byte + " bytes";
+        if (byte<1024*1024) return Math.round(byte/1024) + " KB";
+        if (byte<1024*1024*1024) return Math.round(byte/1024/1024) + " MB";
+        return Math.round(byte/1024/1024/1024) + " GB";
+    }
+
+    function formatDate(nr){
+        let date = new Date(nr);
+        return date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear() + " " + date.getHours() + ":" + date.getMinutes();
+    }
+
+    function selectItem(item){
+        // TODO multi select
+        let selected = mainPanel.querySelectorAll(".selected");
+        selected.forEach(item=>item.classList.remove("selected"));
+        if (item){
+            item.classList.add("selected");
+        }
     }
 
     return me;

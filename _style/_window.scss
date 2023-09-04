@@ -8,6 +8,7 @@
     box-shadow: -1px -1px 0 0 rgba(255, 255, 255, 0.8), 1px 1px 0 0 rgba(0, 0, 0, 0.8);
     background-color: rgba(206, 205, 205, 0.9);
     user-select: none;
+    -webkit-user-select: none;
     will-change: transform;
 
     &.borderless{

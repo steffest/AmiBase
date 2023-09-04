@@ -1,6 +1,7 @@
 import desktop from "../ui/desktop.js";
 import fileSystem from "./filesystem.js";
 import file from "./file.js";
+import system from "./system.js";
 
 var AmiFolder = function(config){
     var me = {
@@ -31,6 +32,26 @@ var AmiFolder = function(config){
             }
         });
 
+    }
+
+    me.getActions = function(icon){
+        let actions=[
+            {label:"Open",
+                action: function(){system.exploreFolder(me)}
+            },
+            {
+                label:"Rename"
+            },
+            {
+                label:"Delete",
+                action: function(){
+                    fileSystem.deleteDirectory(object);
+                    icon.parent.removeIcon(icon);
+                }
+            }
+        ]
+
+        return actions;
     }
 
     return me;

@@ -531,6 +531,8 @@ let AmiWindow = function(config){
                         };
                         if (data.binary){
                             messageData.data = data.binary.buffer;
+                            //var enc = new TextDecoder("utf-8");
+                            //messageData.text = enc.decode(data.binary.buffer);
                         }
                         
                         // TODO: only load when no HTTP is available

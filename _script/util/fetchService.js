@@ -15,7 +15,6 @@ var FetchService = function() {
 				error: function(xhr){next(undefined,xhr)}
 			});
 		});
-
 	};
 
 	me.post = function(url,data,next){
@@ -39,15 +38,19 @@ var FetchService = function() {
 		})
 	};
 
-	me.sendBinary = function(url,data,next){
-		me.ajax({
-			method: "POST",
-			url : url,
-			data: data,
-			datatype: "json",
-			success: function(data){next(data)},
-			error: function(xhr){next(undefined,xhr)}
-		})
+	me.sendBinary = function(url,data,onProgress){
+		return new Promise(function(next){
+			me.ajax({
+				method: "POST",
+				url : url,
+				data: data,
+				datatype: "json",
+				success: function(data){next(data)},
+				error: function(xhr){next(undefined,xhr)},
+				progress: onProgress
+			})
+		});
+
 	};
 
 	me.json = function(url,callback){
@@ -97,15 +100,9 @@ var FetchService = function() {
 
 		config.error = config.error || function(){config.success(false)};
 
-		if (config.datatype === "jsonp"){
-			console.error(log.error() +  " ERROR: JSONP is not supported!");
-			config.error(xhr);
-		}
-
 		if (config.datatype === "arrayBuffer"){
 			xhr.responseType = "arraybuffer"
 		}
-
 
 		var url = config.url;
 
@@ -115,6 +112,8 @@ var FetchService = function() {
 		}
 
 		var method = config.method || "GET";
+		var length = 0;
+		if (config.data) length = config.data.length;
 
 		xhr.onreadystatechange = function(){
 			if(xhr.readyState < 4) {
@@ -150,6 +149,26 @@ var FetchService = function() {
 		xhr.ontimeout = function (e) {
 			console.error(log.error() + "timeout while getting " + url);
 		};
+
+
+		if (config.progress){
+			xhr.upload.onprogress = function(e){
+				if (config.progress) config.progress({
+					loaded: e.loaded,
+					total: e.total,
+					computable: e.lengthComputable
+				});
+			}
+
+			xhr.onprogress = function(e){
+				if (config.progress) config.progress({
+					loaded: e.loaded,
+					total: e.total,
+					computable: e.lengthComputable
+				});
+			}
+		}
+
 
 		xhr.open(method, url, true);
 		xhr.timeout = config.timeout || defaultAjaxTimeout;
