@@ -54,6 +54,12 @@ let MainMenu = function(){
                     }
                 },
                 {
+                    label:"Mount Drive",
+                    action: function(){
+                        desktop.mountWithDialog();
+                    }
+                },
+                {
                     label:"New Drawer",
                     action: function(){
                         desktop.createIcon(amiObject({label: "My Content", type: "folder", items: []}));

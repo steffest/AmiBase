@@ -91,7 +91,10 @@ let FileRequester = function(){
     }
 
     function onOk(){
-        next({path: currentFolder + "/" + input.value});
+        let path = currentFolder;
+        if (!path.endsWith("/")) path += "/";
+        path += input.value
+        next({path: path});
         parent.close();
     }
 

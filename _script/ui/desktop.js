@@ -255,24 +255,24 @@ let Desktop = function(){
 
         function setContent(content){
             content.forEach(function(item){
-                addContent(item)
+                me.addObject(item)
             })
             if (mounts && mounts.length){
                 mounts.forEach(function(item){
-                    addContent(item)
+                    me.addObject(item);
                 });
             }
             me.cleanUp();
         }
-
-        function addContent(item){
-            let object = amiObject(item);
-            me.createIcon(object);
-            if (object.type === "drive"){
-                fileSystem.mount(object);
-            }
-        }
     };
+
+    me.addObject = function(item){
+        let object = amiObject(item);
+        me.createIcon(object);
+        if (object.type === "drive"){
+            fileSystem.mount(object);
+        }
+    }
 
     me.loadTheme = function(name){
         console.log("load theme " + name);
@@ -366,6 +366,17 @@ let Desktop = function(){
         return Notification.hide(config);
     }
 
+    me.showError = function(message,autoHide){
+        console.error(message);
+        if (typeof autoHide === "undefined") autoHide = false;
+        me.showNotification({
+            label:"Error",
+            text:message,
+            type:"error",
+            autoHide: autoHide
+        });
+    }
+
     me.openWith = function(object){
         let w = me.createWindow({
             caption: "Open With",
@@ -384,7 +395,6 @@ let Desktop = function(){
             {name: "Monaco Editor",icon: "vs",plugin: "monaco"},
             {name: "Image Viewer",icon: "imageviewer",plugin: "imageviewer"},
             {name: "Media Player",icon: "mediaplayer",plugin: "mediaplayer"},
-            {name: "Media Player (HTML)",icon: "mediaplayer",plugin: "htmlAudio"},
             {name: "Video Player",icon: "videoplayer",plugin: "videoplayer"},
             {name: "Bassoon Tracker",icon: "mediaplayer",plugin: "bassoon"},
             {name: "Dpaint",icon: "iconeditor",plugin: "dpaint"},
@@ -397,7 +407,26 @@ let Desktop = function(){
         });
 
         w.setContent(list);
+    }
 
+    me.mountWithDialog = function(object){
+        let w = me.createWindow({
+            caption: "Add Mount",
+            width: 400,
+            height: 300,
+        });
+
+
+        let mountList = [
+            {name: "Local Folder",icon: "notepad",action: fileSystem.mountLocalDrive,disabled: !window.showDirectoryPicker},
+        ]
+
+        let list = $(".content.full");
+        mountList.forEach(program=>{
+            list.appendChild($(".button." + program.icon,{onClick:()=>{w.close();program.action()}},program.name));
+        });
+
+        w.setContent(list);
     }
 
     me.getScreen = function(){

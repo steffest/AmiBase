@@ -251,6 +251,11 @@ let Applications = function(){
                     case "activateWindow":
                         appWindow.activate();
                         break;
+                    case "relay":
+                        // The window has opened other frames and wants to relay messages to them
+                        console.error(appWindow);
+                        appWindow.sendMessage("relay",message);
+
                 }
             }
         }

@@ -1,0 +1,34 @@
+body.theme_minimal{
+  #desktop{
+    background-color: #2d2d2d;
+  }
+
+  .icon{
+    width: 64px;
+    height: 64px;
+    .glyph{
+      width: 64px;
+      height: 64px;
+      border-radius: 0;
+    }
+
+    .label{
+      text-shadow: 0 0 2px black;
+      padding: 0;
+    }
+
+    &.active{
+
+      .glyph {
+        box-shadow: none;
+        filter: drop-shadow(0px 0px 6px orange) sepia(0.4) brightness(1.2);
+      }
+
+      .label{
+        text-shadow: 0 0 2px yellow;
+      }
+    }
+  }
+
+}
+

@@ -1,4 +1,4 @@
-import $ from "../../_script/util/dom.js";
+import $, {uuid} from "../../_script/util/dom.js";
 let Settings = ()=>{
     let me = {}
     let amiBase;
@@ -70,10 +70,14 @@ let Settings = ()=>{
                          values[index] = mount;
                          settings[setting] = values;
                      }
-                    let editor = $(".form",$(".divider.panel"),
+                    let editor = $(".form",$(".divider.panel",$(".close",{
+                        onClick:()=>{
+                            values.splice(index,1);
+                            showSetting(setting,values)
+                        }},"X")),
                         renderProperty("Label","label",mount,onUpdate),
                         renderProperty("Volume","volume",mount,onUpdate),
-                        renderProperty("Handler","handler",mount,onUpdate,["laozi","s3","dropbox","other"]),
+                        renderProperty("Handler","handler",mount,onUpdate,["laozi","s3","dropbox","local","other"]),
                         renderProperty("URL","url",mount,onUpdate),
                         renderProperty("login","login",mount,onUpdate),
                         renderProperty("pass","pass",mount,onUpdate),
@@ -81,7 +85,7 @@ let Settings = ()=>{
                     panel.appendChild(editor);
                 });
 
-                $(".button.inline",{parent:panel,onClick:()=>{values.push({});showSetting(setting,values)}},"Add Mount");
+                $(".button.inline",{parent:panel,onClick:()=>{values.push({id:uuid()});showSetting(setting,values)}},"Add Mount");
                 break;
         }
     }

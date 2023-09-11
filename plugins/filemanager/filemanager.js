@@ -305,7 +305,7 @@ let FileManager = function(){
     me.dropFile = function(file){
         console.log("drop file to filemanager",file);
 
-        if ((file.type === "icon" || file.type === "dragitem") && file.object){
+        if (file.object && file.object.isAmiObject){
 
             if (file.object.type === "file"){
                 amiBase.copyFile(file.object,currentFolder.path).then(result=>{
@@ -320,12 +320,13 @@ let FileManager = function(){
         file.path = currentFolder.path + "/" + file.name;
         let notification = {
             label:"Uploading",
-            text:file.name
+            text:file.name,
+            type: "progress"
         }
         notification.id = desktop.showNotification(notification);
 
         amiBase.writeFile(file,file.binary,true,(progress)=>{
-            console.error("progress",progress);
+            console.log("progress",progress);
             if (progress.computable) notification.progress = progress.loaded/progress.total;
             notification.progressText = formatSize(progress.loaded) + " of " + formatSize(progress.total);
             desktop.showNotification(notification);

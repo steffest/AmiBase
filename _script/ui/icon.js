@@ -35,9 +35,9 @@ let AmiIcon = function(object){
                 var items = [];
                 switch (object.type){
                     case "file":
+                    case "drive":
                         items=object.getActions(me);
                         break;
-                    case "drive":
                     case "folder":
                         items=[
                             {label:"Open",

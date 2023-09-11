@@ -164,7 +164,13 @@
             top: -6px;
             border-bottom-color: #658FC3;
             border-right-color: #658FC3;
-    }
+        }
+
+        &.custom{
+            &:before{
+                display: none;
+            }
+        }
 
 
 }

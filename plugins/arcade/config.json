@@ -1,0 +1,6 @@
+{
+  "name" : "Arcade",
+  "version" : "0.0.1",
+  "module": "arcade.js",
+  "styles": ["arcade.css"]
+}

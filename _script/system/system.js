@@ -269,7 +269,7 @@ let System = function(){
      };
 
      me.downloadFile = async function(file){
-         if (file.urssl){
+         if (file.url){
                 let link = document.createElement("a");
                 link.href = file.url;
                 link.setAttribute("download", file.name);

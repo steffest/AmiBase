@@ -1,0 +1,144 @@
+.arcade{
+
+  .slice{
+    position: absolute;
+    &.topleft{
+      width: 156px;
+      height: 169px;
+    }
+    &.top{
+      left: 156px;
+      right: 145px;
+      height: 169px;
+      background-size: 100% 100%;
+    }
+    &.topright{
+      width: 145px;
+      height: 169px;
+      right: 0;
+    }
+    &.left{
+      top: 169px;
+      bottom: 216px;
+      width: 156px;
+      background-size: 100% 100%;
+    }
+    &.center{
+        top: 169px;
+        bottom: 216px;
+        left: 156px;
+        right: 145px;
+        background-size: 100% 100%;
+    }
+
+    &.right{
+      top: 169px;
+      bottom: 216px;
+      width: 145px;
+      right: 0;
+      background-size: 100% 100%;
+    }
+    &.bottomleft{
+        width: 156px;
+        height: 216px;
+        bottom: 0;
+    }
+    &.bottom{
+        left: 156px;
+        right: 145px;
+        height: 216px;
+        bottom: 0;
+        background-size: 100% 100%;
+    }
+    &.bottomright{
+      width: 145px;
+      height: 216px;
+      bottom: 0;
+      right: 0;
+    }
+  }
+
+
+
+  .arcadeitem{
+    width: 100px;
+    height: 60px;
+    background-size: contain;
+    background-position: center center;
+    position: relative;
+    margin: 8px;
+    display: inline-block;
+    opacity: 0.8;
+    border-radius: 4px;
+
+    &:hover{
+      background-color: #985f3c;
+      cursor: pointer;
+      border-color: #8b896f;
+      filter: contrast(1.2) brightness(1.2);
+      opacity: 0.8;
+      box-shadow: 0 0 6px 0px #5498a3;
+    }
+
+    label{
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      color: white;
+      text-shadow: 0 0 2px black;
+      padding: 4px;
+      background: linear-gradient(0deg, rgba(0,0,0,1) 27%, rgba(0,0,0,0) 100%);
+      pointer-events: none;
+      font-size: 12px;
+    }
+
+  }
+
+  .arcadebutton{
+    position: absolute;
+    height: 40px;
+    width: 45px;
+    background-size: 95px 40px;
+    background-position: -5px 0px;
+    top: 80px;
+
+    &:hover{
+        filter: brightness(1.2);
+        cursor: pointer;
+    }
+
+    &.down{
+      background-position: -50px 0px;
+    }
+  }
+
+  .arcadebase{
+    position: absolute;
+    right: -20px;
+    top: 70px;
+    width: 61px;
+    height: 50px;
+    background-size: 100% 100%;
+    background-position: center center;
+    background-repeat: no-repeat;
+    z-index: 1;
+  }
+
+  .arcadeball{
+    position: absolute;
+    right: -11px;
+    top: 60px;
+    width: 48px;
+    height: 60px;
+    background-size: 100% 100%;
+    background-position: center center;
+    background-repeat: no-repeat;
+    z-index: 2;
+    transition: transform 0.2s ease-in-out;
+
+    &.active{
+      transition: none;
+    }
+  }
+}

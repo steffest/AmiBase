@@ -6,7 +6,6 @@ import mainMenu from "./mainmenu.js";
 import settings from "../settings.js";
 import fileSystem from "../system/filesystem.js";
 import popupMenu from "./popupMenu.js";
-import mouse from "./mousepointer.js";
 
 let AmiWindow = function(config){
     if (typeof config === "string") config={
@@ -17,6 +16,8 @@ let AmiWindow = function(config){
         type: config.type || "window",
         id: config.id || uuid(),
         zIndex: 0,
+        minWidth: 120,
+        minHeight: 100,
     };
 
     config.caption = config.caption||config.label||config.name;
@@ -34,7 +35,7 @@ let AmiWindow = function(config){
     var gridHeight= 70;
     var view = "icon";
 
-    let window = $(".window" + (config.autogrid?".autogrid":"") + (borderLess?".borderless":""),{
+    let amiWindow = $(".window" + (config.autogrid?".autogrid":"") + (borderLess?".borderless":""),{
             id:me.id,
             style:{
                 zIndex: me.zIndex,
@@ -74,15 +75,21 @@ let AmiWindow = function(config){
     var inner = $(".inner.innerwindow",{
         onContext: (event)=>{
             if (config.type === "desktop"){
-                if (settings.mainMenu && settings.mainMenu.length){
-                    popupMenu.show({
-                        x: event.clientX,
-                        y: event.clientY,
-                        items: settings.mainMenu[0].items
-                    });
-                }else{
-                    //popupMenu.hide();
-                }
+                let items = [
+                    {
+                        label:"Mount Drive",
+                        action: ()=>{
+                            desktop.mountWithDialog();
+                        }
+                    },
+                ];
+                if (settings.mainMenu && settings.mainMenu.length) items = items.concat(settings.mainMenu[0].items);
+
+                popupMenu.show({
+                    x: event.clientX,
+                    y: event.clientY,
+                    items: items
+                });
             }else{
                 if (menu){
                     let submenu = menu;
@@ -102,9 +109,9 @@ let AmiWindow = function(config){
     //var menuButton = $div("button menu");
 
 
-    if (!borderLess) window.appendChild(windowBar);
-    window.appendChild(inner);
-    if (!borderLess) window.appendChild(sizer);
+    if (!borderLess) amiWindow.appendChild(windowBar);
+    amiWindow.appendChild(inner);
+    if (!borderLess) amiWindow.appendChild(sizer);
 
     me.getInner = function(){
         return inner;
@@ -181,9 +188,9 @@ let AmiWindow = function(config){
 
     me.setAutoGrid = function(state){
         if (state){
-            window.classList.add('autogrid');
+            amiWindow.classList.add('autogrid');
         }else{
-            window.classList.remove('autogrid');
+            amiWindow.classList.remove('autogrid');
         }
     };
 
@@ -296,11 +303,12 @@ let AmiWindow = function(config){
                 // move inside parent
                 console.log("dropped into same window");
                 doMove = true;
-                if (window.classList.contains("autogrid")) doMove = false;
+                if (amiWindow.classList.contains("autogrid")) doMove = false;
             }else{
                 // drop in other window
                 console.log("dropped into other window",me.application);
                 if (me.application){
+                    console.log("sending drop message",item.object);
                     me.sendMessage("dropFile",item);
                 }else{
                     console.log("moving item to new parent");
@@ -378,20 +386,24 @@ let AmiWindow = function(config){
         };
 
         me.addClass = function(className){
-            window.classList.add(className);
+            amiWindow.classList.add(className);
         };
 
         me.removeClass = function(className){
-            window.classList.remove(className);
+            amiWindow.classList.remove(className);
         };
 
         me.setPosition = function(left,top,zIndex){
             me.left = left;
             me.top = top;
-            window.style.transform = "translate(" + left + "px," + top + "px)";
+            amiWindow.style.transform = "translate(" + left + "px," + top + "px)";
         };
 
         me.setSize = function(width,height,fitOnScreen){
+            console.log("setSize",width,height);
+            if (width<me.minWidth) width=me.minWidth;
+            if (height<me.minHeight) height=me.minHeight;
+
             if (fitOnScreen){
                 var dw = desktop.width-100;
                 var dh = desktop.height-100;
@@ -403,13 +415,18 @@ let AmiWindow = function(config){
             }
             me.width = width;
             me.height = height;
-            window.style.width = width + "px";
-            window.style.height = height + "px";
+            amiWindow.style.width = width + "px";
+            amiWindow.style.height = height + "px";
         };
+
+        me.setMinSize = function(width,height){
+            me.minWidth = width;
+            me.minHeight = height;
+        }
 
         me.setIndex = function(zIndex){
             me.zIndex = zIndex+1;
-            window.style.zIndex = me.zIndex;
+            amiWindow.style.zIndex = me.zIndex;
         };
 
         me.moveToTop = function(){
@@ -420,8 +437,9 @@ let AmiWindow = function(config){
         };
 
         me.activate = function(soft){
-            window.classList.remove("inactive");
-            window.classList.remove("inactivecontent");
+            amiWindow.classList.remove("inactive");
+            amiWindow.classList.remove("inactivecontent");
+            setTimeout(()=>me.sendMessage("focus"),200);
             if (!soft){
                 me.moveToTop();
                 desktop.setFocusElement(me);
@@ -430,7 +448,7 @@ let AmiWindow = function(config){
 
         me.deActivate = function(soft){
             console.log("deactivate window");
-            window.classList.add("inactive");
+            amiWindow.classList.add("inactive");
 
             icons.forEach(function(icon){
                 if (icon) icon.deActivate();
@@ -438,12 +456,12 @@ let AmiWindow = function(config){
         };
 
         me.activateContent = function(soft){
-            window.classList.remove("inactivecontent");
+            console.error("activate window content")
         };
 
         me.deActivateContent = function(soft){
             // this is needed if the window contains an iframe that would otherwise steal mouse focus
-            window.classList.add("inactivecontent");
+            amiWindow.classList.add("inactivecontent");
         };
 
         me.setContent = function(content){
@@ -475,16 +493,16 @@ let AmiWindow = function(config){
         };
 
         me.removeBorder = function(){
-            window.classList.add("borderless");
+            amiWindow.classList.add("borderless");
             caption.style.display = "none";
             sizer.style.display = "none";
 
             // move drag handle to top full window
-            window.onDragStart = (e)=>{
+            amiWindow.onDragStart = (e)=>{
                 me.activate();
                 return([me])
             };
-            window.classList.add("draggable");
+            amiWindow.classList.add("draggable");
         }
 
         me.getConfig = function(){
@@ -506,7 +524,7 @@ let AmiWindow = function(config){
         me.sendMessage = async function(message,data){
             console.log("sendMessage",message,data);
 
-            // first check if the application is running a plugin directly in amiBase
+            // first check if the application is running as plugin directly in amiBase
             let plugin = me.application;
             if (plugin && plugin[message] && typeof plugin[message] === "function"){
                 plugin[message](data);
@@ -521,18 +539,17 @@ let AmiWindow = function(config){
                 console.log("messagedata",data);
                 
                 if (data){
-                    if (data.type === "icon") data=data.object;
+                    if (data.object && data.object.isAmiObject) data=data.object;
 
                     if (data.type === "file"){
                         messageData = {
                             filename: data.name,
                             path: data.path,
-                            url: data.url
+                            url: data.url,
+                            action: data.action,
                         };
                         if (data.binary){
                             messageData.data = data.binary.buffer;
-                            //var enc = new TextDecoder("utf-8");
-                            //messageData.text = enc.decode(data.binary.buffer);
                         }
                         
                         // TODO: only load when no HTTP is available
@@ -551,6 +568,7 @@ let AmiWindow = function(config){
                         messageData = {};
                         if (data.path) messageData.path = data.path;
                         if (data.url) messageData.url = data.url;
+                        if (data.action && typeof data.action==="string") messageData.action = data.action;
                         if (data.filetype) {
                             messageData.filetype = {
                                 id: data.filetype.id,
@@ -582,8 +600,8 @@ let AmiWindow = function(config){
         };
 
 
-        me.element = window;
-        me.dragHandle = borderLess ? window : windowBar;
+        me.element = amiWindow;
+        me.dragHandle = borderLess ? amiWindow : windowBar;
         me.resizeHandle = sizer;
         config.left = config.left||200;
         config.top = config.top||200;

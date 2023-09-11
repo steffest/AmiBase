@@ -22,6 +22,14 @@ var Security = function(){
             url = basePath + url;
         }
         console.log("registering url " + url);
+
+        /*let w = registeredWindows.find(function(item){return item.id === _window.id});
+        if (w){
+            w.urls = w.urls || [];
+            w.urls.push(url);
+            return;
+        }*/
+
         registeredWindows.unshift({
             id: _window.id,
             url: url,

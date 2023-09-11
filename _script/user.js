@@ -43,12 +43,39 @@ let User = function(){
 
     me.getAmiSettings = async function(){
         let settings = await me.getSetting("settings",true);
+        let fileHandlers = await me.getSetting("fileHandlers",false);
         if (!settings) settings = {};
+        if (!fileHandlers) fileHandlers = {};
+
+        if (settings.mounts){
+            settings.mounts.forEach(function(mount){
+                if (mount && mount.handler === "local"){
+                    let handler = fileHandlers[mount.handler + "_" + mount.label];
+                    if (handler){
+                        mount.handle = handler;
+                    }
+                }
+            });
+        }
         return settings;
     }
 
     me.setAmiSettings = function(settings){
+        // don't encrypt file handler objects
+        let fileHandlers = {};
+        if (settings && settings.mounts){
+            settings.mounts.forEach(function(mount){
+               if (mount.handle){
+                   fileHandlers[mount.handler + "_" + mount.label] = mount.handle;
+                   delete mount.handle;
+               }
+            });
+        }
+
         me.storeSetting("settings",settings,true);
+        if (Object.keys(fileHandlers).length){
+            me.storeSetting("fileHandlers",fileHandlers,false);
+        }
     }
 
     me.getTheme = async function(){

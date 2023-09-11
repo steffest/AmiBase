@@ -4,6 +4,8 @@ import amiObject from "./object.js";
 import http from "./filesystems/http.js";
 import ram from "./filesystems/ram.js";
 import desktop from "../ui/desktop.js";
+import user from "../user.js";
+import {uuid} from "../util/dom.js";
 
 let FileSystem = function(){
    var me = {};
@@ -42,6 +44,7 @@ let FileSystem = function(){
             drive.path = volume + ":";
 
             if (drive.handler && typeof drive.handler === "string"){
+                if (drive.handler === "local") drive.handler = "localFileSystemAccess";
                 if (!fileSystems[drive.handler]) await system.loadLibrary(drive.handler);
                 mounts[volume].mounted = true;
                 mounts[volume].handler = fileSystems[drive.handler];
@@ -51,6 +54,43 @@ let FileSystem = function(){
             }
         });
     };
+
+    me.unmount = async function(drive){
+        let settings = await user.getAmiSettings();
+        settings.mounts = settings.mounts || [];
+        let index = settings.mounts.findIndex(mount=>mount.id === drive.id);
+        console.error(index,drive.id);
+        if (index>=0){
+            settings.mounts.splice(index,1);
+            user.setAmiSettings(settings);
+        }
+    };
+
+    me.mountLocalDrive = async function(){
+        if (!window.showDirectoryPicker){
+            desktop.showError("showDirectoryPicker not supported");
+            return;
+        }
+        const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        console.error(dirHandle);
+        console.error(dirHandle.values());
+        let settings = await user.getAmiSettings();
+        console.error(settings);
+        settings.mounts = settings.mounts || [];
+        let mount = {
+            type: "drive",
+            label: dirHandle.name,
+            handler: "local",
+            volume: "LOCAL",
+            handle: dirHandle,
+            id: uuid()
+        };
+        desktop.addObject(mount);
+        desktop.cleanUp();
+        settings.mounts.push(mount);
+        user.setAmiSettings(settings);
+
+    }
 
     me.isReadOnly = function(file){
         let mount = me.getMount(file);

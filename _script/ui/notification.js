@@ -38,9 +38,19 @@ let Notification = function(){
             notification.label = $("label",config.label || ""),
             notification.text=$(".text",config.text || ""));
 
+        let delay = 0;
+
+        // use a delay to prevent UI flickering when e.g. file operations are very fast
+        if (config.type === "progress") delay = 100;
+        if (config.type === "error") notification.element.classList.add("error");
+
+        if (typeof config.autoHide !== "undefined"){
+            notification.label.appendChild($(".button.close",{onClick:()=>me.hide(notification.id)},"x"));
+        }
+
         notification.timeout = setTimeout(()=>{
             container.classList.add("active");
-        },100);
+        },delay);
 
         notifications[notification.id] = notification;
         return notification.id;
