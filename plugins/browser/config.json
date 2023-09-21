@@ -1,5 +1,5 @@
 {
-  "scripts": ["main.js"],
+  "module": ["main.js"],
   "styles": ["main.css"],
   "index": "index.html"
 }

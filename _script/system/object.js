@@ -28,6 +28,7 @@ let AmiObject = function(config){
     }
 
     me.icon = config.image;
+    me.iconActive = config.image2;
     me.name = me.name || me.label;
 
     return me;

@@ -2,6 +2,7 @@ import ui from "./ui/ui.js";
 var Input = function(){
     var me = {};
     let keyBoardRelayTarget;
+    let keyHandlers = {};
 
     me.init = function(){
         document.body.addEventListener("keydown",function(e){
@@ -30,6 +31,10 @@ var Input = function(){
                     keyCode: e.keyCode,
                 },"*");
             }
+
+           for (let handler in keyHandlers){
+                keyHandlers[handler](e,true);
+           }
         });
 
         document.body.addEventListener("keyup",function(e){
@@ -44,11 +49,23 @@ var Input = function(){
                     keyCode: e.keyCode,
                 },"*");
             }
+
+            for (let handler in keyHandlers){
+                keyHandlers[handler](e,false);
+            }
         });
     };
 
     me.setKeyBoardRelayTarget = function(target){
         keyBoardRelayTarget = target;
+    }
+
+    me.registerKeyHandler = function(windowId,handler){
+        keyHandlers[windowId] = handler;
+    }
+
+    me.releaseKeyHandler = function(windowId){
+        delete keyHandlers[windowId];
     }
 
     function setMetaKeys(e){

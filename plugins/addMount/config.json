@@ -1,0 +1,4 @@
+{
+  "module": ["addMount.js"],
+  "styles": ["addmount.css"]
+}

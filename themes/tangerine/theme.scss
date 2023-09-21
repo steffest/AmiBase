@@ -9,7 +9,8 @@ body.theme_tangerine{
     background-position: bottom left;
 
     .window{
-      background: url("Patterns/bluegray_stripe_light.png");
+      background: url("Patterns/fade.jpg");
+      background-size: 100% 100%;
 
       &.borderless{
         background: none;
@@ -117,6 +118,33 @@ body.theme_tangerine{
 
       .label{
         text-shadow: 0 0 2px yellow;
+      }
+    }
+  }
+
+  .window{
+    .icon{
+      .label{
+        text-shadow: 0 0 2px white;
+        color: #1c2735;
+      }
+
+      &.active{
+        filter: brightness(1.2);
+        .label{
+          color: #000;
+          text-shadow: 0 0 6px white, 0 0 2px white;
+        }
+      }
+    }
+  }
+
+  .content{
+    .button{
+      &.transparent{
+        &:hover{
+          filter: brightness(1.2) saturate(1.1) contrast(1.2);
+        }
       }
     }
   }

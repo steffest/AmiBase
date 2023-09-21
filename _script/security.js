@@ -75,7 +75,6 @@ var Security = function(){
         if (typeof text === "object") text = "json:" + JSON.stringify(text);
 
         let iv = window.crypto.getRandomValues(new Uint8Array(16));
-        console.error(iv,iv.length);
         let encrypted = await window.crypto.subtle.encrypt(
             {
                 name: "AES-CBC",
@@ -127,6 +126,19 @@ var Security = function(){
         generateKey(pass).then(function(){
             console.log("user key ready");
         });
+    }
+
+    me.sha256 = async function(text){
+        let buffer = new TextEncoder("utf-8").encode(text);
+        let hash = await window.crypto.subtle.digest("SHA-256", buffer);
+
+        // Convert ArrayBuffer to hex string
+        let result = '';
+        let view = new DataView(hash);
+        for (let i = 0; i < hash.byteLength; i += 4) {
+            result += ('00000000' + view.getUint32(i).toString(16)).slice(-8);
+        }
+        return result;
     }
 
     async function generateKey(pass){

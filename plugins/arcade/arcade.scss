@@ -1,5 +1,7 @@
 .arcade{
 
+  transition: opacity 0.3s ease-in-out;
+
   .slice{
     position: absolute;
     &.topleft{
@@ -11,6 +13,16 @@
       right: 145px;
       height: 169px;
       background-size: 100% 100%;
+
+      .flynn{
+        position: absolute;
+        width: 113px;
+        height: 46px;
+        top: 45px;
+        left: 50%;
+        margin-left: -56px;
+        background-size: 100% 100%;
+      }
     }
     &.topright{
       width: 145px;
@@ -65,19 +77,30 @@
     height: 60px;
     background-size: contain;
     background-position: center center;
-    position: relative;
-    margin: 8px;
-    display: inline-block;
-    opacity: 0.8;
+    opacity: 0.7;
     border-radius: 4px;
+    position: absolute;
+    left: 8px;
+    transform-origin: center left;
+    transition: all 0.3s ease-in-out;
+    image-rendering: smooth;
 
     &:hover{
       background-color: #985f3c;
       cursor: pointer;
       border-color: #8b896f;
       filter: contrast(1.2) brightness(1.2);
-      opacity: 0.8;
+      opacity:1;
       box-shadow: 0 0 6px 0px #5498a3;
+    }
+
+    &.selected{
+        background-color: #985f3c;
+        border-color: #8b896f;
+        filter: contrast(1.2) brightness(1.2);
+        opacity: 1;
+        box-shadow: 0 0 6px 2px #71b9c4;
+        transform: scale(1.2);
     }
 
     label{
@@ -101,7 +124,8 @@
     width: 45px;
     background-size: 95px 40px;
     background-position: -5px 0px;
-    top: 80px;
+    top: 90px;
+    left: -15px;
 
     &:hover{
         filter: brightness(1.2);
@@ -110,6 +134,22 @@
 
     &.down{
       background-position: -50px 0px;
+    }
+
+    &.button2{
+      left: 55px;
+      filter: hue-rotate(147deg) brightness(1.2);
+    }
+
+    &.button3{
+      left: 20px;
+      top: 55px;
+    }
+
+    &.button4{
+      left: 90px;
+      top: 55px;
+      filter: hue-rotate(147deg) brightness(1.2);
     }
   }
 
@@ -140,5 +180,92 @@
     &.active{
       transition: none;
     }
+  }
+
+  .squarebutton{
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 60px;
+    right: 116px;
+    background-size: 20px 20px;
+    background-position: center center;
+    background-repeat: no-repeat;
+    z-index: 3;
+    transition: filter 0.2s ease-in-out;
+
+    &.max{
+      right: 136px;
+    }
+    &.fullscreen{
+      right: 156px;
+    }
+
+    &:hover{
+        filter: brightness(1.2);
+        cursor: pointer;
+    }
+  }
+
+  .gamelist{
+    overflow: hidden;
+
+    .list{
+      scroll-behavior: smooth;
+      position: absolute;
+      left: 0;
+        top: 0;
+        bottom: 0;
+      width: 140px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      background-image: url("plugins/arcade/_img/slices/arcade_01.png");
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+
+    .mainimage{
+      background-size: contain;
+      background-position: top right;
+      background-repeat: no-repeat;
+      opacity: 0.6;
+      filter: sepia(0.3);
+      transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+
+      &.loading{
+        opacity: 0;
+        transform: translate(0, 10px);
+        transition: none;
+      }
+    }
+
+    .overlay{
+      background-color: #27647c6e;
+      mix-blend-mode: color;
+    }
+
+    .title,.description{
+      color: white;
+      position: absolute;
+      font-size: 18px;
+      text-shadow: 0 0 4px black, 1px 1px 2px black;
+      padding: 10px 0 0 0;
+      z-index: 2;
+      bottom: 30px;
+      left: 140px;
+    }
+
+    .description{
+      font-size: 14px;
+      bottom: 10px;
+    }
+  }
+
+  .screenoverlay{
+    background-size: 100% 100%;
+    pointer-events: none;
   }
 }

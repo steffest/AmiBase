@@ -26,12 +26,11 @@ let AmiWindow = function(config){
     var menu;
     var selectBox;
 
-    // TODO: at creation time, we don't know yet of it's a borderless window
-    var borderLess = (typeof config.border === "boolean" && !config.border);
+    var borderLess = config.hasCustomUI;
 
     // TODO: move Icon stuff to explorer plugin
 
-    var gridWidth= 70;
+    var gridWidth= 80;
     var gridHeight= 70;
     var view = "icon";
 
@@ -116,6 +115,7 @@ let AmiWindow = function(config){
     me.getInner = function(){
         return inner;
     };
+
 
     me.clear = function(){
         inner.innerHTML = "";

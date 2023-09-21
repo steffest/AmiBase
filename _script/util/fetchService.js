@@ -7,7 +7,7 @@ var FetchService = function() {
 	var defaultAjaxTimeout = 30000;
 
 	me.get = function(url,_next){
-		return new Promise((resolve,reject) => {
+		return new Promise((resolve) => {
 			var next = _next || resolve;
 			me.ajax({
 				url : url,
@@ -17,25 +17,30 @@ var FetchService = function() {
 		});
 	};
 
-	me.post = function(url,data,next){
-		var sData = data;
-		if (typeof data === "object"){
-			sData = "";
-			for (var key in data){
-				if (data.hasOwnProperty(key)){
-					sData += "&" + key + "=" + encodeURIComponent(data[key]);
+	me.post = function(url,data,_next){
+		return new Promise(resolve=>{
+			let next = _next || resolve;
+
+			var sData = data;
+			if (typeof data === "object"){
+				sData = "";
+				for (var key in data){
+					if (data.hasOwnProperty(key)){
+						sData += "&" + key + "=" + encodeURIComponent(data[key]);
+					}
 				}
+				if (sData.length) sData = sData.substr(1);
 			}
-			if (sData.length) sData = sData.substr(1);
-		}
-		me.ajax({
-			method: "POST",
-			url : url,
-			data: sData,
-			datatype: "form",
-			success: function(data){next(data)},
-			error: function(xhr){next(undefined,xhr)}
-		})
+			me.ajax({
+				method: "POST",
+				url : url,
+				data: sData,
+				datatype: "form",
+				success: function(data){next(data)},
+				error: function(xhr){next(undefined,xhr)}
+			})
+
+		});
 	};
 
 	me.sendBinary = function(url,data,onProgress){
@@ -131,7 +136,7 @@ var FetchService = function() {
 						result = xhr.responseText;
 
 						if (config.datatype === "json") {
-							result = JSON.parse(result);
+							try {result = JSON.parse(result)} catch (e){}
 						}
 
 						if (config.datatype === "html"){

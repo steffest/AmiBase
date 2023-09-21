@@ -75,6 +75,70 @@
       background-color: $button-background-highlight;
       cursor: pointer;
     }
+
+    &.transparent{
+      background-color: transparent;
+      border: none;
+
+      &:hover{
+        background-color: $button-background-highlight-transparent;
+      }
+    }
+
+    &.square{
+      width: 64px;
+      height: 64px;
+      padding: 0;
+      border-radius: 0;
+      position: relative;
+      vertical-align: middle;
+      display:inline-block;
+
+      .icon{
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position: center;
+        width: 50px;
+        height: 50px;
+        left: 7px;
+      }
+
+      label{
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        font-size: 12px;
+        text-shadow: 0 0 2px black,0 0 2px black;
+        color: #b3bac4;
+      }
+
+      &:hover{
+        label{
+          color: #fff;
+        }
+      }
+
+      &.big{
+        width: 80px;
+        height: 80px;
+        padding: 0;
+        border-radius: 0;
+        position: relative;
+
+        .icon{
+          width: 60px;
+          height: 60px;
+          left: 10px;
+        }
+
+        label{
+          bottom: 6px;
+        }
+      }
+    }
+
+
   }
 
   .content{
@@ -169,6 +233,14 @@
 
 .relative{
   position: relative;
+}
+
+.flex{
+    display: flex;
+}
+
+.centered{
+  text-align: center;
 }
 
 .toolbar{

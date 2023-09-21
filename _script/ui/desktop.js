@@ -389,44 +389,21 @@ let Desktop = function(){
             system.openFile(object,appName);
         }
 
-        let programList = [
-            {name: "Notepad",icon: "notepad",plugin: "notepad"},
-            {name: "Hex Editor",icon: "hex",plugin: "hex"},
-            {name: "Monaco Editor",icon: "vs",plugin: "monaco"},
-            {name: "Image Viewer",icon: "imageviewer",plugin: "imageviewer"},
-            {name: "Media Player",icon: "mediaplayer",plugin: "mediaplayer"},
-            {name: "Video Player",icon: "videoplayer",plugin: "videoplayer"},
-            {name: "Bassoon Tracker",icon: "mediaplayer",plugin: "bassoon"},
-            {name: "Dpaint",icon: "iconeditor",plugin: "dpaint"},
-            {name: "Frame",icon: "frame",plugin: "iframe"},
-        ]
+        let programList = system.getRegisteredApplications();
 
-        let list = $(".content.full");
+        let list = $(".content.full.centered",{style:{padding: "10px 20px"}});
         programList.forEach(program=>{
-            list.appendChild($(".button." + program.icon,{onClick:()=>{open(program.plugin)}},program.name));
+            list.appendChild($(".button.square.transparent",{onClick:()=>{open(program.plugin)}},
+                $(".icon",{style:{backgroundImage: "url('plugins/" + program.plugin + "/icon.png')"}}),
+                $("label", program.name)));
         });
 
         w.setContent(list);
     }
 
     me.mountWithDialog = function(object){
-        let w = me.createWindow({
-            caption: "Add Mount",
-            width: 400,
-            height: 300,
-        });
-
-
-        let mountList = [
-            {name: "Local Folder",icon: "notepad",action: fileSystem.mountLocalDrive,disabled: !window.showDirectoryPicker},
-        ]
-
-        let list = $(".content.full");
-        mountList.forEach(program=>{
-            list.appendChild($(".button." + program.icon,{onClick:()=>{w.close();program.action()}},program.name));
-        });
-
-        w.setContent(list);
+        console.error(object);
+        system.launchProgram("addMount");
     }
 
     me.getScreen = function(){

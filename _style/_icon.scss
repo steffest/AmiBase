@@ -74,11 +74,16 @@
         left: 50%;
         user-select: none;
         -webkit-user-select: none;
-        
+
         span{
             display: block;
             position: relative;
             left: -50%;
+            max-height: 1.8em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80px;
+            line-height: 0.9em;
         }
 
         .modal{

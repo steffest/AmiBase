@@ -5,6 +5,7 @@ body.theme_tangerine {
   --button-background: #ECECEC;
   --button-text-color: #1f3853;
   --button-background-highlight: #cfd5da;
+  --button-background-highlight-transparent: rgba(255, 255, 255, 0.3);
   --panel-border-dark: rgba(0, 0, 0, 0.5);
   --panel-border-light: rgba(255, 255, 255, 0.2);
   --input-background: #e0e4e5;
@@ -19,7 +20,8 @@ body.theme_tangerine #desktop {
   background-position: bottom left;
 }
 body.theme_tangerine #desktop .window {
-  background: url("Patterns/bluegray_stripe_light.png");
+  background: url("Patterns/fade.jpg");
+  background-size: 100% 100%;
 }
 body.theme_tangerine #desktop .window.borderless {
   background: none;
@@ -142,6 +144,20 @@ body.theme_tangerine .icon.active .glyph.canvasicon.dual {
 }
 body.theme_tangerine .icon.active .label {
   text-shadow: 0 0 2px yellow;
+}
+body.theme_tangerine .window .icon .label {
+  text-shadow: 0 0 2px white;
+  color: #1c2735;
+}
+body.theme_tangerine .window .icon.active {
+  filter: brightness(1.2);
+}
+body.theme_tangerine .window .icon.active .label {
+  color: #000;
+  text-shadow: 0 0 6px white, 0 0 2px white;
+}
+body.theme_tangerine .content .button.transparent:hover {
+  filter: brightness(1.2) saturate(1.1) contrast(1.2);
 }
 
 /*# sourceMappingURL=theme.css.map */

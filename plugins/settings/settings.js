@@ -4,6 +4,7 @@ let Settings = ()=>{
     let amiBase;
     let panel;
     let settings = {};
+    let currentWindow;
 
     me.init = (amiWindow,host)=>{
         console.log("init settings",amiWindow,host);
@@ -15,6 +16,7 @@ let Settings = ()=>{
             }
 
             amiWindow.setContent(createUI());
+            currentWindow = amiWindow;
 
             var menu = [
                 {label: "Settings",items:[
@@ -54,7 +56,23 @@ let Settings = ()=>{
 
     async function save(){
         console.log("save",settings);
+
+        if (settings.mounts){
+
+            for (let i=0;i<settings.mounts.length;i++){
+                let mount = settings.mounts[i];
+                if (mount.handler==="friend"){
+                    let pass = mount.pass;
+                    if (pass && pass.indexOf("HASHED")!==0){
+                        let hash = await amiBase.util.sha256(pass);
+                        mount.pass = "HASHED" + hash;
+                    }
+                }
+            }
+        }
+
         amiBase.user.setAmiSettings(settings);
+        currentWindow.close();
     }
 
     function showSetting(setting,values){
@@ -77,7 +95,7 @@ let Settings = ()=>{
                         }},"X")),
                         renderProperty("Label","label",mount,onUpdate),
                         renderProperty("Volume","volume",mount,onUpdate),
-                        renderProperty("Handler","handler",mount,onUpdate,["laozi","s3","dropbox","local","other"]),
+                        renderProperty("Handler","handler",mount,onUpdate,["laozi","s3","dropbox","friend","local","other"]),
                         renderProperty("URL","url",mount,onUpdate),
                         renderProperty("login","login",mount,onUpdate),
                         renderProperty("pass","pass",mount,onUpdate),

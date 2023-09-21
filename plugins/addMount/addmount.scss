@@ -1,0 +1,43 @@
+.addmount{
+
+  .icon{
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+
+  .form{
+    position: absolute;
+    left: 70px;
+    top: 13px;
+    right: 10px;
+    bottom: 60px;
+
+    label{
+      color: var(--panel-text-color);
+      font-size: 13px;
+      display: block;
+      margin: 4px 0;
+    }
+
+    input[type="text"],
+    input[type="password"]{
+      width: 100%;
+    }
+
+    p{
+        color: var(--panel-text-color);
+        font-size: 12px;
+        margin: 10px 0;
+    }
+  }
+
+  .buttons{
+      position: absolute;
+      bottom: 0;
+      height: 60px;
+   }
+}
+

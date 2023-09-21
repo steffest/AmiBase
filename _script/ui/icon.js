@@ -169,10 +169,16 @@ let AmiIcon = function(object){
             desktop.setFocusElement(me);
         }
         icon.classList.add("active");
+        if (object.iconActive){
+            img.style.backgroundImage = "url('" + object.iconActive + "')";
+        }
     };
 
     me.deActivate = function(soft){
         icon.classList.remove("active");
+        if (object.iconActive && object.icon){
+            img.style.backgroundImage = "url('" + object.icon + "')";
+        }
     };
 
     me.isActive = function(){

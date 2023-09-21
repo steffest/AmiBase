@@ -15,6 +15,19 @@ let System = function(){
     let plugins = {};
     let saveAs;
 
+    let knownApplications = [
+        {name: "Notepad",plugin: "notepad"},
+        {name: "Hex Editor",icon: "hex",plugin: "hex"},
+        {name: "Monaco",icon: "vs",plugin: "monaco"},
+        {name: "Image Viewer",icon: "imageviewer",plugin: "imageviewer"},
+        {name: "Media Player",icon: "mediaplayer",plugin: "mediaplayer",hasCustomUI: true},
+        {name: "Video Player",icon: "videoplayer",plugin: "videoplayer"},
+        {name: "Bassoon Tracker",icon: "mediaplayer",plugin: "bassoon"},
+        {name: "Dpaint",icon: "iconeditor",plugin: "dpaint"},
+        {name: "Frame",icon: "frame",plugin: "iframe"},
+        {name: "Arcade",icon: "arcade",plugin: "arcade",hasCustomUI: true},
+    ]
+
     me.loadEnvironment = function(){
         return new Promise(function(next){
             let env = document.location.search;
@@ -155,6 +168,10 @@ let System = function(){
             next();
         }
     });
+
+    me.getRegisteredApplications = function(){
+        return knownApplications;
+    }
 
 
     // detects type from binary structure
@@ -319,11 +336,16 @@ let System = function(){
             }
         }
         //var window = windows.find(function(w){return w.id === config.id});
-        var label = config.label || config.url.split(":")[1];
+        let plugin = config.url.split(":")[1];
+        var label = config.label || plugin;
+
+        let application = knownApplications.find(a=>a.plugin === plugin);
+
         var windowConfig = {
             caption: label,
             width: config.width,
-            height: config.height
+            height: config.height,
+            hasCustomUI: application && application.hasCustomUI,
         };
 
         return new Promise(function(next){
@@ -347,9 +369,6 @@ let System = function(){
             document.body.appendChild(script);
         });
     }
-
-
-
 
     me.requestFileOpen = async function(path){
         let fileRequester = await me.loadLibrary("filerequester");

@@ -38,7 +38,7 @@ let Applications = function(){
         console.log("loading " + url + " into window" + appWindow.getCaption());
 
         return new Promise(async function(next){
-            appWindow.setContent("loading");
+            appWindow.setContent("");
 
             if (url.indexOf(":")>0){
                 var pluginType = url.split(":")[0];
@@ -253,7 +253,6 @@ let Applications = function(){
                         break;
                     case "relay":
                         // The window has opened other frames and wants to relay messages to them
-                        console.error(appWindow);
                         appWindow.sendMessage("relay",message);
 
                 }
@@ -291,7 +290,11 @@ let Applications = function(){
             getObjectInfo: system.getObjectInfo,
             detectFileType: system.detectFileType,
             loadScript: system.loadScript,
-            user: user
+            user: user,
+            desktop: desktop,
+            util:{
+                sha256: security.sha256,
+            }
         }
     }
 
