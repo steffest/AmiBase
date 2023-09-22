@@ -4,6 +4,7 @@ import input from "./input.js";
 import ui from "./ui/ui.js";
 import settings from "./settings.js";
 import user from "./user.js";
+import network from "./system/network.js";
 
 var Main=function(){
     var me = {};
@@ -21,6 +22,7 @@ var Main=function(){
 
             await user.init();
             console.log("user",user);
+            network.init();
 
             desktop.loadContent(settings.initialContent,settings.mounts);
 

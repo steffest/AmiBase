@@ -1,0 +1,4 @@
+{
+  "module": "chat.js",
+  "styles": ["chat.css"]
+}

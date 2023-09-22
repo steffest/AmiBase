@@ -27,9 +27,13 @@
 
 <script>
 
+    /*
+        This file is used in the implicit grant oAuth flow as redirect page to collect the access token.
+    */
+
     let hash = window.location.hash;
+    let out = document.getElementById("out");
     if (hash){
-        let out = document.getElementById("out");
         // find access_token
        let index = hash.indexOf("access_token=");
        if (index>=0){
@@ -55,8 +59,16 @@
                setTimeout(function(){
                    window.close();
                },2000);
+           }else{
+               noAction();
            }
        }
+    }else{
+        noAction();
+    }
+
+    function noAction(){
+        out.innerHTML = "You seem to have arrived here by accident.<br>Close this window and try again.";
     }
 
 </script>
