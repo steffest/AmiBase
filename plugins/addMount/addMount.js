@@ -5,6 +5,7 @@ import desktop from "../../_script/ui/desktop.js";
 let AddMount = ()=>{
     let me = {};
     let amiBase;
+    let poller;
 
     me.init = (containerWindow,context)=>{
         amiBase = context;
@@ -14,7 +15,7 @@ let AddMount = ()=>{
 
         let mountList = [
             {name: "Local Folder",icon: "hdd.svg",action: fileSystem.mountLocalDrive,disabled: !window.showDirectoryPicker},
-            {name: "Dropbox",icon: "dropboxb.svg",type:"dropbox",disabled: true},
+            {name: "Dropbox",icon: "dropboxb.svg",type:"dropbox",action:connectDropBox},
             {name: "Amazon S3",icon: "amazon-s3.svg",type:"s3",fields:[{label:"S3 Bucket name",name:"url",placeholder: "e.g. my-bucket"}],usePass: true},
             {name: "Laozi",icon: "laozi.svg",type:"loazi",usePass: true,fields:[{label:"Laozi API endpoint",name:"url",placeholder: "e.g. https://my.server.com/api/"}]},
             {name: "Friend OS",icon: "friendos.svg",type:"friend",volume:"FRIEND",fields:[{label:"Friend Server url",name:"url",placeholder: "e.g. https://me.friendsky.cloud"}],usePass:true,info:"Your password is not stored, we only store the encrypted hash needed to collect a Friend Access Token."},
@@ -120,6 +121,55 @@ let AddMount = ()=>{
         });
 
         w.setContent(list);
+    }
+
+    function connectDropBox(){
+        let client_id = "ttx9sdz1rbzocgs";
+        let redirectUri = "https://www.amibase.com/token/";
+        if (window.location.href.indexOf("://localhost")>=0){
+            redirectUri = "http://localhost:63342/AmiBase/token/index.html";
+        }
+        let url = "https://www.dropbox.com/oauth2/authorize?client_id=" + client_id + "&response_type=token&redirect_uri=" + redirectUri;
+
+        localStorage.removeItem("exchange");
+
+        let popup = window.open(url,"auth","popup,width=500,height=600");
+
+        clearInterval(poller);
+        poller = setInterval(()=>{
+            console.log("polling");
+            let token = localStorage.getItem("exchange");
+            if (token){
+                clearInterval(poller);
+                localStorage.removeItem("exchange");
+                if (token.indexOf("error")>=0){
+
+                }else{
+                    addMount(token);
+                }
+
+            }
+        },500);
+
+        async function addMount(token){
+            let mount = {
+                label: "Dropbox",
+                handler: "dropbox",
+                type: "drive",
+                volume: "DH",
+                pass: token
+            }
+
+            let settings = await amiBase.user.getAmiSettings();
+            settings.mounts = settings.mounts || [];
+            settings.mounts.push(mount);
+            await amiBase.user.setAmiSettings(settings);
+            amiBase.desktop.addObject(mount);
+            amiBase.desktop.cleanUp();
+
+            popup.close();
+        }
+
     }
 
     return me;

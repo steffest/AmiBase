@@ -1,0 +1,65 @@
+<html>
+<head>
+    <style>
+        body{
+            text-align: center;
+        }
+        #out{
+            padding: 20px;
+            font-family: sans-serif;
+            border: 2px solid #0161FE;
+            width: 300px;
+            margin: 30px auto;
+            text-align: center;
+        }
+
+        button{
+            background-color: #0161FE;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+        }
+    </style>
+</head>
+<body>
+<div id="out">Loading</div>
+<button onclick="window.close()">Close</button>
+
+<script>
+
+    let hash = window.location.hash;
+    if (hash){
+        let out = document.getElementById("out");
+        // find access_token
+       let index = hash.indexOf("access_token=");
+       if (index>=0){
+           let token = hash.substring(index+13);
+           token = token.split("&")[0];
+
+                out.innerHTML += token;
+
+                out.innerHTML += "<br>";
+                out.innerHTML += +window.opener?window.opener.location:"no opener";
+
+                localStorage.setItem("exchange",token);
+
+                window.close();
+
+
+           //console.error("window.opener: "+window.opener);
+       }else{
+           if (hash.indexOf("error=access_denied")>=0){
+               out.innerHTML = "You declined access<br>to your dropbox account.";
+               localStorage.setItem("exchange","error:declined");
+
+               setTimeout(function(){
+                   window.close();
+               },2000);
+           }
+       }
+    }
+
+</script>
+
+</body>
+</html>
