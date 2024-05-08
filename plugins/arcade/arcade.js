@@ -2,6 +2,7 @@ import $ from "../../_script/util/dom.js";
 import system from "../../_script/system/system.js";
 import Security from "../../_script/security.js";
 import Input from "../../_script/input.js";
+import Network from "../../_script/system/network.js";
 let Arcade = ()=>{
     let me = {
         name:"arcade",
@@ -66,6 +67,29 @@ let Arcade = ()=>{
             Input.registerKeyHandler(amiWindow.id,keyHandler);
             amiWindow.onClose = me.onClose;
             next();
+
+            Network.register("key",(message)=>{
+                let key = message.key;
+                let down = message.down;
+                let action = down?sendKeyDown:sendKeyUp;
+                if (key === "left") {
+                    key="ArrowLeft";
+                    action(KEY.LEFT);
+                }
+                if (key === "right"){
+                    key="ArrowRight";
+                    action(KEY.RIGHT);
+                }
+                if (key === "up"){
+                    key="ArrowUp";
+                    action(KEY.UP);
+                }
+                if (key === "down"){
+                    key="ArrowDown";
+                    action(KEY.DOWN);
+                }
+                keyHandler({key:key},down);
+            })
         });
     }
 
