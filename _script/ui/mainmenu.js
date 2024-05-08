@@ -62,8 +62,23 @@ let MainMenu = function(){
                 {
                     label:"New Drawer",
                     action: function(){
-                        desktop.createIcon(amiObject({label: "My Content", type: "folder", items: []}));
-                        desktop.cleanUp();
+                        let newName = "My Content";
+                        let path = "desktop:" + newName;
+                        fileSystem.createDirectory("desktop:",newName).then(result=>{
+                            desktop.createIcon(amiObject({label: result.name, path:path, type: "folder", items: result.items || []}));
+                            desktop.cleanUp();
+                        })
+                    }
+                },
+                {
+                    label:"New File",
+                    action: ()=>{
+                        let newName = "My File.txt";
+                        let path = "desktop:" + newName;
+                        fileSystem.writeFile(path,"").then(result=>{
+                            desktop.createIcon(amiObject({label: result.name, path: path,type: "file"}));
+                            desktop.cleanUp();
+                        })
                     }
                 },
                 {
@@ -162,7 +177,7 @@ let MainMenu = function(){
 
         windowMenu = windowMenu.concat(mainMenu);
         iconMenu = iconMenu.concat(mainMenu);
-        
+
         me.setMenu(mainMenu);
 
         eventBus.on(EVENT.ACTIVATE_DESKTOP_ELEMENT,function(){
@@ -209,6 +224,7 @@ let MainMenu = function(){
     };
 
     me.getMenu = function(type){
+        if (type === "desktop") return mainMenu[0].items;
         if (type === "window") return windowMenu[0].items;
         if (type === "icon") return iconMenu[0].items;
         return mainMenu;

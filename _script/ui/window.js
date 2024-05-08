@@ -6,6 +6,7 @@ import mainMenu from "./mainmenu.js";
 import settings from "../settings.js";
 import fileSystem from "../system/filesystem.js";
 import popupMenu from "./popupMenu.js";
+import amiObject from "../system/object.js";
 
 let AmiWindow = function(config){
     if (typeof config === "string") config={
@@ -21,7 +22,7 @@ let AmiWindow = function(config){
     };
 
     config.caption = config.caption||config.label||config.name;
-    
+
     var icons = [];
     var menu;
     var selectBox;
@@ -74,14 +75,8 @@ let AmiWindow = function(config){
     var inner = $(".inner.innerwindow",{
         onContext: (event)=>{
             if (config.type === "desktop"){
-                let items = [
-                    {
-                        label:"Mount Drive",
-                        action: ()=>{
-                            desktop.mountWithDialog();
-                        }
-                    },
-                ];
+
+                let items = mainMenu.getMenu("desktop");
                 if (settings.mainMenu && settings.mainMenu.length) items = items.concat(settings.mainMenu[0].items);
 
                 popupMenu.show({

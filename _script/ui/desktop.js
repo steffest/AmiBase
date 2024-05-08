@@ -12,6 +12,7 @@ import fileSystem from "../system/filesystem.js";
 import system from "../system/system.js";
 import amiObject from "../system/object.js";
 import Notification from "./notification.js";
+import filesystem from "../system/filesystem.js";
 
 let Desktop = function(){
     let me = amiWindow({
@@ -79,9 +80,9 @@ let Desktop = function(){
         });
     };
 
-    
+
     me.getWindows = function(){
-      return windows;  
+      return windows;
     };
 
     me.launchUrl = function(config){
@@ -108,7 +109,7 @@ let Desktop = function(){
             windows.splice(index,1);
         }
         window.element.remove();
-        
+
         // TODO move focus to previous window?
         me.setFocusElement(me);
     };
@@ -164,7 +165,7 @@ let Desktop = function(){
     me.getFocusElement = function(){
         return focusElement;
     };
-    
+
     me.uploadFile = function(target){
         let inputElm = document.createElement('input');
         inputElm.type = 'file';
@@ -243,7 +244,7 @@ let Desktop = function(){
     };
 
 
-    me.loadContent = function(data,mounts){
+    me.loadContent = function(data,mounts,path){
         if (!data || typeof data === "string"){
             data = data||"content/default.json";
             fetchService.json(data,function(_data){
@@ -263,6 +264,15 @@ let Desktop = function(){
                 });
             }
             me.cleanUp();
+        }
+
+        if (path){
+            filesystem.getDirectory(path).then(data=>{
+                data.forEach(file=>{
+                    me.addObject(file);
+                });
+                me.cleanUp();
+            })
         }
     };
 

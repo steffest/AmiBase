@@ -3,6 +3,7 @@ import system from "./system.js";
 import amiObject from "./object.js";
 import http from "./filesystems/http.js";
 import ram from "./filesystems/ram.js";
+import rad from "./filesystems/rad.js";
 import desktop from "../ui/desktop.js";
 import user from "../user.js";
 import {uuid} from "../util/dom.js";
@@ -16,10 +17,17 @@ let FileSystem = function(){
             filesystem: "ram",
             readOnly: false,
             handler: ram
+        },
+        desktop:{
+            name: "DESKTOP",
+            filesystem: "rad",
+            readOnly: false,
+            handler: rad
         }
     };
     var fileSystems = {
-        ram: ram
+        ram: ram,
+        desktop: rad,
     };
 
     me.register=function(name,handler){
@@ -139,7 +147,7 @@ let FileSystem = function(){
         let path = typeof folder === "string" ? folder : folder.path;
         var mount = me.getMount(path);
         let fs = mount.handler;
-        
+
         if (fs){
             console.log("mount",mount);
             var data = await fs.getDirectory(path,mount);
@@ -240,7 +248,7 @@ let FileSystem = function(){
             }
         });
     }
-    
+
     me.getDownloadUrl = function(path){
         var volume = me.getVolume(path);
         if (volume === "http" || volume === "https"){
@@ -344,7 +352,7 @@ let FileSystem = function(){
             let mount = me.getMount(folder.path);
             let fs = mount.handler;
             if (fs){
-                var result = await fs.deleteFolder(folder.path,mount);
+                var result = await fs.deleteDirectory(folder.path,mount);
                 next(result);
             }else{
                 console.warn("can't delete folder - no handler");
