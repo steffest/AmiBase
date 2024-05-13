@@ -222,9 +222,7 @@ let System = function(){
      
      // execute an action on a file
      me.openFile = async function(file,plugin,action){
-         
          console.log("openFile",file,plugin,action);
-
          if (plugin){
              if (plugin === "iframe"){
                  desktop.launchUrl(file);

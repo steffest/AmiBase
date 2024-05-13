@@ -4,7 +4,8 @@ import $ from "../../_script/util/dom.js";
 import filesystem from "../../_script/system/filesystem.js";
 let Inspector = function(){
     var me = {};
-    
+
+
     me.inspect = async function(target){
         var w = desktop.createWindow({
             label:"info"
@@ -54,49 +55,86 @@ let Inspector = function(){
 
         let panel;
         let element = $(".content",panel = $(".panel.full"));
+        let canEdit = !filesystem.isReadOnly(target);
 
-        function renderProperty(name,value){
-            $(".property.panel.light",{parent:panel},$(".label.cel",name),$(".value.cel.capitalize",value));
+        function renderProperty(name,value,key){
+            if (!value) return;
+
+            let editBox = $(".value.cel",value);
+            let label = $(".label.cel.relative",name);
+            if (key && canEdit){
+                $(".iconbutton.left.edit",{parent:label,onClick:()=>{
+                    let input = $("input",{value:value});
+                    let newValue = value;
+                    input.oninput = (e)=>{
+                        newValue = e.target.value;
+                    }
+                    input.onkeydown = (e)=>{
+                        if (e.key === "Enter"){
+                            target[key] = newValue;
+                            editBox.innerText = newValue;
+                            filesystem.writeMeta(target).then(result=>{
+                                console.error("writeMeta",result);
+                            })
+                        }
+                        if (e.key === "Escape"){
+                            editBox.innerHTML = "";
+                            editBox.innerText = value;
+                        }
+                    }
+                    editBox.innerHTML = "";
+                    editBox.appendChild(input);
+                    setTimeout(()=>{
+                        input.focus();
+                        },50);
+                    }});
+            }
+
+            $(".property.panel.light",{parent:panel},
+                label,
+                editBox,
+            );
         }
+
 
         renderProperty("Name",target.name || target.label);
+        if (target.name && target.label) renderProperty("Label",target.label);
         renderProperty("Type",target.type);
-        renderProperty("Icon",target.icon || "default");
-
-
-        if (target.icon2){
-            renderProperty("Icon Active",target.icon2);
-        }
+        renderProperty("Icon",target.icon || "default","icon");
+        renderProperty("Icon Active",target.icon2 || target.iconActive);
+        renderProperty("Path",target.path);
+        renderProperty("URL",target.url);
 
         var actions;
 
-        if (target.type === "file"){
+        if (target.type === "file" || target.type === "link"){
             let mount = filesystem.getMount(target);
             let filetype = target.filetype || await system.detectFileType(target);
 
-            renderProperty("Path",target.path);
-            renderProperty("ReadOnly","" + filesystem.isReadOnly(target));
+            renderProperty("ReadOnly","" + (!canEdit));
             if (target.mimeType) renderProperty("MimeType",target.mimeType);
             renderProperty("Mount",mount.name);
             renderProperty("FileSystem",mount.filesystem);
             renderProperty("Filetype",filetype.name);
             if (target.binary) renderProperty("Binary",target.binary.length + " bytes");
 
-            actions = await getFileActions(filetype);
+            if (target.type === "file"){
+                actions = await getFileActions(filetype);
+                console.error(actions);
+            }else{
+                actions = [
+                    {
+                        label:"Edit",
+                        plugin:"linkeditor"
+                    }
+                ];
+            }
 
         }
 
-        if (target.type === "folder"){
-            renderProperty("Path",target.path);
-        }
 
-        if (target.type === "drive"){
-            renderProperty("Path",target.path);
-        }
 
-        if (target.handler){
-            renderProperty("Handler",target.handler);
-        }
+        renderProperty("Handler",target.handler || "default","handler");
 
 
         if (actions){

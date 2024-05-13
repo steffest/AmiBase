@@ -1,5 +1,6 @@
 import desktop from "../ui/desktop.js";
 import system from "./system.js";
+import fileSystem from "./filesystem.js";
 
 let amiLink = function(){
     let me = {
@@ -16,6 +17,20 @@ let amiLink = function(){
                 desktop.launchUrl(me);
             }
         }
+    }
+
+    me.getActions = function(icon){
+        let actions = [
+            {label:"Open", action: function(){me.open()}},
+            {label:"Edit", action: function(){
+                    system.openFile(me,"linkeditor");
+            }},
+            {label:"Delete", action: function(){
+                fileSystem.deleteFile(me);
+                icon.parent.removeIcon(icon)}
+            },
+        ];
+        return actions;
 
     }
     return me;

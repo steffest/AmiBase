@@ -27,8 +27,8 @@ let AmiObject = function(config){
         me[key] = config[key];
     }
 
-    me.icon = config.image;
-    me.iconActive = config.image2;
+    me.icon = config.image || config.icon;
+    me.iconActive = config.image2 || config.iconActive;
     me.name = me.name || me.label;
 
     return me;

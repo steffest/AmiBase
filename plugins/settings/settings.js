@@ -38,12 +38,20 @@ let Settings = ()=>{
     let createUI = function(){
 
 
-        let container = $(".settingseditor.content.full",$(".panel.full",{style:{width:"200px", right: "unset"}},
-            $(".button.big",{onClick:()=>{showSetting("mounts")}},"Mounts"),
-            $(".button.big",{onClick:()=>{showSetting("other")}},"Other"),
-            ),$(".panel.full",{style:{left:"200px"}},panel=$(".panel.full.transparent.overflow.borderbottom",{style:{bottom:"35px"}}),
-            $(".panel.buttons.bottom",$(".button.inline",{onClick:save}, "Save"))
-            ))
+        let container = $(".settingseditor.content.full",
+            $(".panel.full",
+                {style:{width:"200px", right: "unset"}},
+                $(".button.big",{onClick:()=>{showSetting("mounts")}},"Mounts"),
+                $(".button.big",{onClick:()=>{showSetting("other")}},"Other"),
+            ),
+            $(".panel.full",
+                {style:{left:"200px"}},
+                panel=$(".panel.full.transparent.overflow.borderbottom",{style:{bottom:"35px"}}),
+                $(".panel.buttons.bottom",
+                    $(".button.inline",{onClick:save}, "Save")
+                )
+            )
+        )
 
         showSetting("mounts");
 

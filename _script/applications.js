@@ -267,9 +267,11 @@ let Applications = function(){
             readFile: fileSystem.readFile,
             writeFile: fileSystem.writeFile,
             copyFile: fileSystem.copyFile,
+            moveFile: fileSystem.moveFile,
             uploadFile: desktop.uploadFile,
             getDirectory: fileSystem.getDirectory,
             createDirectory: fileSystem.createDirectory,
+            getUniqueName: fileSystem.getUniqueName,
             getUrl: (file)=>{
                 return new Promise(next=>{
                     let mount = fileSystem.getMount(file);

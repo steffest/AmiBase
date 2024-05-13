@@ -95,7 +95,8 @@ let AmiWindow = function(config){
                     });
                 }
             }
-        }
+        },
+        onDrop: handleDrop
     });
     var sizer = $div("sizer");
 
@@ -313,6 +314,7 @@ let AmiWindow = function(config){
                         var itemConfig = item.parent.getConfig?item.parent.getConfig():{};
                         var itemPath = itemConfig.path;
                         if (!itemPath) itemPath=item.getConfig?item.getConfig().path:"";
+                        if (item.object.path) itemPath = item.object.path;
 
                         if (item.type === "icon"){
                             var oldPos = item.element.getBoundingClientRect();

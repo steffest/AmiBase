@@ -35,17 +35,24 @@ let FileManager = function(){
                         })
                     }},
                     {label: "New File",action:()=>{
-                        let newName = "new.txt";
-                        amiBase.writeFile(currentFolder.path + "/" + newName,"").then(result=>{
-                            me.refresh();
-                        });
+                        amiBase.getUniqueName(currentFolder.path,"new.txt").then(name=>{
+                            amiBase.writeFile(currentFolder.path + "/" + name,"").then(result=>{
+                                me.refresh();
+                            });
+                        })
                     }},
+                    {label: "New Link",action:()=>{
+                            amiBase.getUniqueName(currentFolder.path,"new.link").then(name=>{
+                                amiBase.writeFile(currentFolder.path + "/" + name,"").then(result=>{
+                                    me.refresh();
+                                });
+                            })
+
+                        }},
                     {label: "Close",id:"fm-close",action:()=>amiWindow.close()}
                 ]}
         ];
         containerWindow.setMenu(menu,true);
-
-
 
         let toolBar = $(".panel.toolbar",
             toolButton("file","Show as preview",()=>{
@@ -307,8 +314,8 @@ let FileManager = function(){
 
         if (file.object && file.object.isAmiObject){
 
-            if (file.object.type === "file"){
-                amiBase.copyFile(file.object,currentFolder.path).then(result=>{
+            if (file.object.type === "file" || file.object.type === "link"){
+                amiBase.moveFile(file.object,file.object.path,currentFolder.path).then(result=>{
                     if (result) me.refresh();
                 })
             }

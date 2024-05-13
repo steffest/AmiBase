@@ -16,7 +16,8 @@ import filesystem from "../system/filesystem.js";
 
 let Desktop = function(){
     let me = amiWindow({
-        type: 'desktop'
+        type: 'desktop',
+        path: "desktop:",
     });
 
     me.left = 0;
@@ -267,10 +268,9 @@ let Desktop = function(){
         }
 
         if (path){
-            filesystem.getDirectory(path).then(data=>{
-                data.forEach(file=>{
-                    me.addObject(file);
-                });
+            filesystem.getDirectory(path).then(list=>{
+                console.error(list);
+                list.forEach(me.addObject);
                 me.cleanUp();
             })
         }

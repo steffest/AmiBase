@@ -338,6 +338,7 @@ let UI = function(){
         resizeItems.forEach(function(item){
             item.activate(true);
         });
+
         dragItems.forEach(function(item){
             if (item.onStopDrag) item.onStopDrag();
         });

@@ -141,6 +141,39 @@
 
   }
 
+  .iconbutton{
+    width: 16px;
+    height: 16px;
+    background-color: red;
+
+    &.right{
+      position: absolute;
+      right: 4px;
+      top: 4px;
+    }
+
+    &.left{
+      position: absolute;
+      left: 4px;
+      top: 0;
+    }
+
+    &.edit{
+      background-color: transparent;
+        background-image: url("../../_img/icons/line/edit.svg");
+        background-repeat: no-repeat;
+        background-position: center center;
+        background-size: 16px 16px;
+        opacity: 0.5;
+    }
+
+    &:hover{
+        opacity: 1;
+        cursor: pointer;
+    }
+
+  }
+
   .content{
       &.withbuttons{
         bottom: 35px;

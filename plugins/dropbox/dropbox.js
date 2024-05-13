@@ -96,6 +96,34 @@ let Dropbox = function(){
         });
     }
 
+    me.getUniqueName = async function(path,name,config){
+        await loadSDK(config);
+        path = getPath(path);
+        if (path) path = "/" + path;
+
+        return new Promise((next)=>{
+            sdk.filesListFolder({path: path})
+                .then(function(response) {
+                    let result = response.result;
+                    console.error(result);
+                    let names = result.entries.map(entry=>entry.name);
+                    let uniqueName = name;
+                    let ext = name.split(".").pop();
+                    let base = name.substr(0,name.length-ext.length-1);
+                    let i = 2;
+                    while (names.indexOf(uniqueName)>=0){
+                        uniqueName = base  + i + "." + ext;
+                        i++;
+                    }
+                    next(uniqueName);
+                })
+                .catch(function(error) {
+                    console.error(error);
+                    next(name);
+                });
+        });
+    }
+
     me.getUrl = async function(path,config){
         await loadSDK(config);
         path = getPath(path);

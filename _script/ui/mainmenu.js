@@ -82,6 +82,18 @@ let MainMenu = function(){
                     }
                 },
                 {
+                    label:"New Link",
+                    action: ()=>{
+                        fileSystem.getUniqueName("desktop:","new.link").then(name=>{
+                            let path = "desktop:" + name;
+                            fileSystem.writeFile(path,"").then(result=>{
+                                desktop.createIcon(amiObject({label: result.name, path: path,type: "link"}));
+                                desktop.cleanUp();
+                            })
+                        });
+                    }
+                },
+                {
                     label:"Settings",
                     action: function(){
                         system.launchProgram({

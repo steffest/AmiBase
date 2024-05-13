@@ -15,7 +15,13 @@ let RAD = ()=>{
                 storage.getObject(item.id).then(file=>{
                     if (file){
                         if (binary){
-                            next(binaryStream(file.binary,true));
+                            console.error("binary",typeof file.content);
+                            let data = file.content;
+                            if (typeof data === "string"){
+                                data = new TextEncoder().encode(file.content);
+                                data = data.buffer;
+                            }
+                            next(binaryStream(data,true));
                         }else{
                             next(file.content);
                         }
@@ -25,30 +31,54 @@ let RAD = ()=>{
         });
     }
 
-    me.writeFile = async function(path,content,binary){
+    me.writeFile = async function(path,content,binary,mount,progress,object){
+        console.error(object);
         path = getFilePath(path);
         let filename = path.split("/").pop();
         path = getParentPath(path);
 
+        let type = "file";
+        let ext = filename.split(".").pop();
+        if (ext === "link" || ext === "url") type = "link";
+
         let item = items.find(item=>item.path === path && item.name === filename);
+
         if (!item){
             item = {
                 name:filename,
                 path:path,
-                type:"file",
+                type:type,
                 id:uuid()
             }
             items.push(item);
             storage.setObject("rad",items);
         }
+        if (type === "link" && object){
+            console.error("link",object);
+            item.label = object.label;
+            item.url = object.url;
+            item.handler = object.handler;
+            item.icon = object.icon;
+            item.iconActive = object.iconActive;
 
-        console.error("writeFile",content)
-        let file ={
-            id:uuid(),
-            binary:binary,
-            content:content,
+            if (item.label){
+                let name = item.label.split("/").pop() + ".link";
+                console.error("name",name);
+                item.name = await me.getUniqueName(path,name);
+            }
+
+            storage.setObject("rad",items);
         }
-        storage.setObject(item.id,file);
+
+        if (content){
+            if (content.buffer) content = content.buffer;
+            let file ={
+                id:uuid(),
+                binary:binary,
+                content:content,
+            }
+            storage.setObject(item.id,file);
+        }
 
         return item;
     }
@@ -64,6 +94,23 @@ let RAD = ()=>{
             items.splice(itemIndex,1);
             storage.setObject("rad",items);
             if (id) storage.removeObject(id);
+        }
+    }
+
+    me.moveFile = function(fromPath,toPath){
+        fromPath = getFilePath(fromPath);
+        toPath = getFilePath(toPath);
+        let filename = fromPath.split("/").pop();
+        fromPath = getParentPath(fromPath);
+        let itemIndex = items.findIndex(item=>item.path === fromPath && item.name === filename);
+
+        if (itemIndex >= 0){
+            let item = items[itemIndex];
+            console.log("moving RAD item",item);
+            item.path = toPath;
+            storage.setObject("rad",items);
+        }else{
+            console.error("file not found",fromPath,filename);
         }
     }
 
@@ -99,10 +146,10 @@ let RAD = ()=>{
 
     me.getDirectory = async function(folder){
         let path = getFilePath(folder.path || folder || "");
-        console.log("getDirectory",path,folder);
         return new Promise((next) => {
             storage.getObject("rad").then(data=>{
-                items = data;
+                items = data || [];
+                console.log("getDirectory",path,items);
                 let directories = [];
                 let files = [];
                 if (data){
@@ -111,6 +158,7 @@ let RAD = ()=>{
                             if (item.type === "folder"){
                                 directories.push(item);
                             }else{
+                                console.error("file",item);
                                 files.push(item);
                             }
                         }
@@ -129,11 +177,34 @@ let RAD = ()=>{
         let filename = path.split("/").pop();
         path = getParentPath(path);
         let item = items.find(item=>item.path === path && item.name === filename);
-        console.error("rename",item,path,filename,items)
-        if (item){
-            item.name = newName;
+
+        if (item && item.name !== newName){
+            item.name = me.getUniqueName(path,newName);
             storage.setObject("rad",items);
         }
+    }
+
+    me.getUniqueName = function(path,name){
+        return new Promise((next) => {
+            let item = getItemFromPath(path + "/" + name);
+            if (item){
+                let parts = name.split(".");
+                let ext = "";
+                if (parts.length>1){
+                    ext = "." + parts.pop();
+                }
+                let base = parts.join(".");
+                let i = 2;
+                while (item){
+                    name = base + " " + i + ext;
+                    item = getItemFromPath(path + "/" + name);
+                    i++;
+                }
+                next(name);
+            }else{
+                next(name);
+            }
+        });
     }
 
     me.isReadOnly = (file)=>{
@@ -149,6 +220,13 @@ let RAD = ()=>{
         path = path.split("//").join("/");
         if (path.endsWith("/")) path = path.substr(0,path.length-1);
         return path;
+    }
+
+    function getItemFromPath(path){
+        path = getFilePath(path);
+        let filename = path.split("/").pop();
+        path = getParentPath(path);
+        return items.find(item=>item.path === path && item.name === filename);
     }
 
 

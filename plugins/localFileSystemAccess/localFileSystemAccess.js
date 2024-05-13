@@ -1,5 +1,4 @@
 import fileSystem from "../../../_script/system/filesystem.js";
-import fetchService from "../../../_script/util/fetchService.js";
 import BinaryStream from "../../binaryStream/binaryStream.js";
 
 var LocalFileSystemAccess = async function() {
@@ -11,7 +10,7 @@ var LocalFileSystemAccess = async function() {
 
 
     me.getDirectory = async function(path,config){
-        console.error("getDirectory",path,config);
+        console.log("getDirectory",path,config);
         path = getFilePath(path);
         let result = {
             directories: [],
@@ -23,14 +22,34 @@ var LocalFileSystemAccess = async function() {
         let permission = await checkPermission(handle);
         if (!permission) return result;
 
-        for await (const entry of handle.values()) {
-            if (entry.kind === 'file') result.files.push({name:entry.name});
+        let list = await handle.values();
+        let meta = {};
+        for await (const entry of list) {
+            if (entry.kind === 'file' && entry.name.endsWith(".aminfo")){
+                let content = await entry.getFile();
+                let text = await content.text();
+                let filename = entry.name.substr(0,entry.name.length-7);
+                try{meta[filename] = JSON.parse(text)}catch(e){}
+            }
+        }
+        console.error("meta",meta);
+        list = await handle.values();
+
+        for await (const entry of list) {
+            let object;
+            if (entry.kind === 'file' && !entry.name.endsWith(".aminfo")){
+                object = {name:entry.name};
+                let metaInfo = meta[entry.name];
+                if (metaInfo){
+                    fileSystem.parseMeta(metaInfo,object);
+                }
+                result.files.push(object);
+            }
             if (entry.kind === 'directory') result.directories.push({name:entry.name});
             fileEntries[path + entry.name + (entry.kind==='directory'?"/":"")] = entry;
         }
         return result;
     };
-
 
     me.readFile = async function(path,binary,config){
         console.log("readFile",path,binary);
@@ -69,6 +88,11 @@ var LocalFileSystemAccess = async function() {
         if (!entry) return;
         console.error("renameFile",entry);
         await entry.move(newName);
+
+        let metaFile = fileEntries[path + ".aminfo"];
+        if (metaFile){
+            await metaFile.move(newName + ".aminfo");
+        }
     };
 
     me.deleteFile = async function(path,config){
@@ -77,6 +101,11 @@ var LocalFileSystemAccess = async function() {
         let entry = fileEntries[path];
         if (!entry) return;
         await entry.remove();
+
+        let metaFile = fileEntries[path + ".aminfo"];
+        if (metaFile){
+           await metaFile.remove();
+        }
     };
 
     me.deleteFolder = async function(path,config){
@@ -121,6 +150,20 @@ var LocalFileSystemAccess = async function() {
         return true;
 
     };
+
+    me.getUniqueName = async function(path,name,config){
+        let files = (await me.getDirectory(path, config)).files;
+        let item = files.find(item=>item.name === name);
+        if (item){
+            let ext = name.split(".").pop();
+            let base = name.substr(0,name.length-ext.length-1);
+            let i = 2;
+            while (files.find(item=>item.name === base + i + "." + ext)){i++;}
+            return base + i + "." + ext;
+        }else{
+            return name;
+        }
+    }
 
     me.getInfo = async function(path,config){
         console.log("getInfo",path);

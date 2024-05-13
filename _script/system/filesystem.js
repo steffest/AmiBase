@@ -167,9 +167,10 @@ let FileSystem = function(){
                     result.push(file);
                     continue;
                 }
+                let type = file.type || "file";
 
                 var fileConfig = {
-                    type: "file",
+                    type: type,
                     name: file.name,
                     path: path + file.name,
                     head:file.head
@@ -179,6 +180,13 @@ let FileSystem = function(){
                 // This is used to enable "load content by url" over HTTP
                 // e.g. for videoplayers to avoid loading the whole file into memory
                 if (fs.getFileUrl) fileConfig.url = fs.getFileUrl(path + file.name,mount);
+
+                if (file.url) fileConfig.url = file.url;
+                if (file.handler) fileConfig.handler = file.handler;
+                if (file.label) fileConfig.label = file.label;
+                if (file.icon) fileConfig.icon = file.icon;
+                if (file.iconActive) fileConfig.iconActive = file.iconActive;
+
 
                 result.push(amiObject(fileConfig));
 
@@ -218,6 +226,19 @@ let FileSystem = function(){
         });
     };
 
+    me.readJson = async function(file){
+        let content = await me.readFile(file);
+        let result = {};
+        if (content){
+            try{
+                result = JSON.parse(content);
+            }catch(e){
+               result = {};
+            }
+        }
+        return result;
+    }
+
 
     me.writeFile = function(file,content,binary,onProgress){
         file = normalize(file);
@@ -227,7 +248,7 @@ let FileSystem = function(){
             if (fs){
                 let response = await fs.writeFile(file.path,content,binary,mount,progress=>{
                     if (onProgress) onProgress(progress);
-                });
+                },file);
                 next(response);
             }else{
                 console.error("no handler");
@@ -306,11 +327,12 @@ let FileSystem = function(){
             let fs = mount.handler;
             let targetMount = me.getMount(toPath);
             let targetFs = targetMount.handler;
-            fromPath = fromPath + '/' + file.name;
+            //fromPath = fromPath + '/' + file.name;
 
             if (fs){
                 if (mount.path === targetMount.path){
                     // move inside same volume
+                    console.log("move into same volume");
                     var result = await fs.moveFile(fromPath,toPath,mount);
                     next(result);
                 }else{
@@ -375,6 +397,20 @@ let FileSystem = function(){
         });
     };
 
+    me.getUniqueName = function(path,name){
+        return new Promise(async next => {
+            var mount = me.getMount(path);
+            let fs = mount.handler;
+            if (fs){
+                var result = await fs.getUniqueName(path,name,mount);
+                next(result);
+            }else{
+                // can't get file - no handler
+                console.warn("can't get unique name - no handler");
+            }
+        });
+    }
+
     me.wrap = function(list){
         return list.map(item=>amiObject(item));
     }
@@ -391,6 +427,31 @@ let FileSystem = function(){
         if (volume) path = volume + ":" + path;
         return path;
     }
+
+     me.parseMeta = function(meta,object){
+        if (!meta) return;
+        if (typeof meta === "string") meta = JSON.parse(meta);
+
+        for (var key in meta){
+            object[key] = meta[key];
+        }
+     }
+
+     me.writeMeta = async function(object){
+        let meta = {};
+        let metaKeys = ["handler","icon"];
+        for (var key in object){
+            if (metaKeys.indexOf(key)>=0){
+                meta[key] = object[key];
+            }
+        }
+        let metaPath = object.path + ".aminfo";
+        let currentMeta = await me.readJson(metaPath);
+        for (let key in meta){
+            currentMeta[key] = meta[key];
+        }
+        return await me.writeFile(metaPath,JSON.stringify(currentMeta,null,2));
+     }
 
     function getVolumeIndex(volume){
         var result = 0;

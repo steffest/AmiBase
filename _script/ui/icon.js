@@ -36,6 +36,7 @@ let AmiIcon = function(object){
                 switch (object.type){
                     case "file":
                     case "drive":
+                    case "link":
                         items=object.getActions(me);
                         break;
                     case "folder":
@@ -55,6 +56,7 @@ let AmiIcon = function(object){
                             }
                         ]
                         break;
+
                     default:
 
                 }
@@ -98,7 +100,7 @@ let AmiIcon = function(object){
             }
         });
     var img = $div("glyph " + " " + object.type);
-    var label = $div("label","","<span>" + object.name + "</span>");
+    var label = $div("label","","<span>" + (object.label || object.name) + "</span>");
 
     if (object.icon){
         img.style.backgroundImage = "url('" + object.icon + "')";

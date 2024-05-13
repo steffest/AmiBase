@@ -593,7 +593,12 @@ let MediaPlayer = function(){
             }
             player = await getPlayer();
             setTitle(file.name);
-            player.setSrc(file.binary.buffer.slice(0),file.name);
+            //player.setSrc(file.binary.buffer.slice(0),file.name);
+
+            const blob = new Blob([file.binary.buffer]);
+            player.setSrc(window.URL.createObjectURL(blob),file.name);
+
+
             me.play();
         };
 
