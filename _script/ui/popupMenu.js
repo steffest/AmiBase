@@ -7,6 +7,7 @@ let PopupMenu = function(){
 
     var me = {};
     var popupMenu,popupMenuActive;
+    var submenuHideDelay = 80;
 
     me.show = function(config){
         if (config.items && config.items.length){
@@ -39,6 +40,8 @@ let PopupMenu = function(){
     };
 
     function createMenuItem(struct,config){
+        var submenu;
+        var hideSubmenuTimer;
         var elm = $div("menuitem");
         if (struct.label === "-"){
             elm.classList.add("divider");
@@ -50,26 +53,34 @@ let PopupMenu = function(){
 
         elm.innerHTML = "<label>" + struct.label + "</label>";
         elm.onclick = function(){
-            handleMenuClick(struct,config);
+            handleMenuClick(struct,config,submenu);
         };
 
         if (struct.items){
-            var submenu = $div("submenu");
+            submenu = $div("submenu");
             struct.items.forEach(function(item){
                 if (item){
                     submenu.appendChild(createMenuItem(item));
                 }
             });
             elm.appendChild(submenu);
-            struct.submenu = submenu;
             elm.classList.add("hassubmenu");
         }
 
         elm.onmouseover = function(){
-            if (submenu && menuActive){
-                var items = elm.parentElement.querySelectorAll(".hassubmenu");
+            if (submenu && popupMenuActive){
+                clearTimeout(hideSubmenuTimer);
+                var items = elm.parentElement.children;
                 for (var i = 0, max = items.length; i<max;i++){
-                    var otherSubMenu = items[i].querySelector(".submenu");
+                    var item = items[i];
+                    if (item === elm || !item.classList || !item.classList.contains("hassubmenu")) continue;
+                    var otherSubMenu;
+                    for (var j = 0, jMax = item.children.length; j<jMax; j++){
+                        if (item.children[j].classList.contains("submenu")){
+                            otherSubMenu = item.children[j];
+                            break;
+                        }
+                    }
                     if (otherSubMenu) otherSubMenu.classList.remove("active");
                 }
 
@@ -77,13 +88,26 @@ let PopupMenu = function(){
             }
         };
 
+        elm.onmouseleave = function(){
+            if (submenu){
+                clearTimeout(hideSubmenuTimer);
+                hideSubmenuTimer = setTimeout(function(){
+                    submenu.classList.remove("active");
+                    var activeChildren = submenu.querySelectorAll(".submenu.active");
+                    for (var i = 0, max = activeChildren.length; i<max; i++){
+                        activeChildren[i].classList.remove("active");
+                    }
+                },submenuHideDelay);
+            }
+        };
+
         return elm;
     }
 
-    function handleMenuClick(item,config){
-        if (item.submenu){
-            item.submenu.classList.toggle("active");
-            popupMenuActive = item.submenu.classList.contains("active");
+    function handleMenuClick(item,config,submenu){
+        if (submenu){
+            submenu.classList.toggle("active");
+            popupMenuActive = submenu.classList.contains("active");
         }else{
             me.hide();
             setTimeout(function(){

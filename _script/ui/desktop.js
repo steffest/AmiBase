@@ -1,5 +1,5 @@
 import amiWindow from "./window.js";
-import $,{loadCss} from "../util/dom.js";
+import $ from "../util/dom.js";
 import user from "../user.js";
 import SelectBox from "./selectBox.js";
 import fetchService from "../util/fetchService.js";
@@ -13,6 +13,7 @@ import system from "../system/system.js";
 import amiObject from "../system/object.js";
 import Notification from "./notification.js";
 import filesystem from "../system/filesystem.js";
+import settings from "../settings.js";
 
 let Desktop = function(){
     let me = amiWindow({
@@ -28,6 +29,7 @@ let Desktop = function(){
     var windows=[];
     var focusElement={};
     var loadTimer;
+    var themeStylesheetId = "amibase-theme";
 
     me.init = function(){
         container = me.getInner();
@@ -232,7 +234,8 @@ let Desktop = function(){
                         name: file.name,
                         volume: file.filetype.mountFileSystem.volume,
                         handler: file.filetype.mountFileSystem.plugin,
-                        binary:file.binary
+                        binary: file.binary,
+                        url: file.path || file.url
                     }
                     fileSystem.mount(drive);
                 }else{
@@ -264,6 +267,7 @@ let Desktop = function(){
                     me.addObject(item);
                 });
             }
+            syncRamDriveDisplay();
             me.cleanUp();
         }
 
@@ -276,16 +280,60 @@ let Desktop = function(){
         }
     };
 
+    function isRamDriveIcon(icon){
+        let object = icon && icon.object ? icon.object : {};
+        if (object.type !== "drive") return false;
+        let volume = typeof object.volume === "string" ? object.volume.toUpperCase() : "";
+        let label = typeof (object.label || object.name) === "string" ? (object.label || object.name).toUpperCase() : "";
+        let handlerName = typeof object.handler === "string" ? object.handler : object.filesystemName;
+        let handler = typeof handlerName === "string" ? handlerName.toLowerCase() : "";
+        return volume === "RAM" || label === "RAM" || handler === "ram";
+    }
+
+    function syncRamDriveDisplay(forceState){
+        let showRamDrive = typeof forceState === "boolean" ? forceState : settings.displayRamDrive !== false;
+        let ramIcons = me.getIcons().filter(isRamDriveIcon);
+
+        if (showRamDrive && !ramIcons.length){
+            me.addObject({
+                type: "drive",
+                label: "RAM",
+                volume: "RAM",
+                handler: "ram"
+            });
+            return;
+        }
+
+        if (!showRamDrive && ramIcons.length){
+            ramIcons.forEach(function(icon){
+                me.removeIcon(icon);
+            });
+        }
+    }
+
+    me.refreshRamDriveDisplay = function(showRamDrive){
+        syncRamDriveDisplay(showRamDrive);
+        me.cleanUp();
+    }
+
     me.addObject = function(item){
         let object = amiObject(item);
-        me.createIcon(object);
+        let icon = me.createIcon(object);
+        if (icon && icon.element) icon.element.classList.add("desktopicon");
         if (object.type === "drive"){
             fileSystem.mount(object);
         }
+        return icon;
     }
 
     me.loadTheme = function(name){
         console.log("load theme " + name);
+
+        settings.UIConcept = name === "ink" ? "plain" : "desktop";
+        if (settings.UIConcept === "plain"){
+            me.setGridSize(200,30);
+        }
+
         return new Promise(function (resolve,reject) {
             var url = "themes/" + name + "/theme.css";
             var loaded = false;
@@ -308,11 +356,36 @@ let Desktop = function(){
                 resolve();
             }
 
-            loadCss(url,function(){
+            var link = document.getElementById(themeStylesheetId);
+            if (!link){
+                link = document.createElement("link");
+                link.id = themeStylesheetId;
+                link.rel = "stylesheet";
+                link.type = "text/css";
+                document.head.appendChild(link);
+            }
+
+            if (link.getAttribute("data-theme") === name){
                 clearTimeout(loadTimer);
-                loaded=true;
+                loaded = true;
                 apply();
-            });
+                return;
+            }
+
+            link.onload = function(){
+                clearTimeout(loadTimer);
+                loaded = true;
+                apply();
+            };
+
+            link.onerror = function(){
+                clearTimeout(loadTimer);
+                console.warn("Theme stylesheet failed to load: " + url);
+                apply();
+            };
+
+            link.setAttribute("data-theme",name);
+            link.href = url;
         });
     };
     
@@ -399,7 +472,7 @@ let Desktop = function(){
             system.openFile(object,appName);
         }
 
-        let programList = system.getRegisteredApplications();
+        let programList = system.getRegisteredApplications().filter(item=>item.openWith);
 
         let list = $(".content.full.centered",{style:{padding: "10px 20px"}});
         programList.forEach(program=>{
@@ -441,8 +514,20 @@ let Desktop = function(){
                     top+=grid.height;
                     left = 30;
                 }
+                if (top>h){
+                    left += grid.width;
+                    top = 50;
+                }
             }
         })
+    }
+
+    me.reset = ()=>{
+        me.getWindows().slice().forEach(function(windowHandle){
+            if (windowHandle && windowHandle.close) windowHandle.close();
+        });
+        me.clear();
+        me.setBackground("reset");
     }
     
 

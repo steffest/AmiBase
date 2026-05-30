@@ -15,15 +15,21 @@ let AmiIcon = function(object){
         zIndex: 0
     };
 
+    let singleClick = settings.UIConcept === "plain";
+
     let icon = $(".icon" + (settings.useDelayedDrag?".delayed":"") + "." + object.type,
         {
-            onDragStart: (e)=>{
+            onDragStart: ()=>{
+                if (singleClick){
+                    object.open();
+                    return;
+                }
                 me.activate();
                 return me.parent.getSelectedIcons();
             },
-            globalDrag:true,
+            globalDrag:!singleClick,
             onDoubleClick: (e)=>{
-                console.log("doubleClick",object);
+                if (singleClick) return;
                 object.open();
             },
             onContext: (e)=>{
@@ -50,8 +56,7 @@ let AmiIcon = function(object){
                             {
                                 label:"Delete",
                                 action: function(){
-                                    fileSystem.deleteDirectory(object);
-                                    me.parent.removeIcon(me);
+                                    fileSystem.deleteIcon(me);
                                 }
                             }
                         ]

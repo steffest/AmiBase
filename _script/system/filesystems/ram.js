@@ -60,6 +60,7 @@ let RAM = ()=>{
     me.addFile = function(file){
         // add to the root when files are dropped on the desktop
         console.error("adding file",file.binary);
+        file.folderPath = getParentPath(file.path);
         items.push(file);
     }
 
@@ -98,8 +99,42 @@ let RAM = ()=>{
         });
     }
 
+    me.deleteFile = function(path){
+        return new Promise((next) => {
+            path = getFilePath(path);
+            // Normalise both sides so items added via addFile (non-normalised path) are matched too
+            let index = items.findIndex(a => getFilePath(a.path) === path);
+            if (index >= 0){
+                items.splice(index, 1);
+                next(true);
+            } else {
+                console.error("file not found",path);
+                next(false);
+            }
+        });
+    }
+
     me.isReadOnly = (file)=>{
         return false;
+    }
+
+    me.reset = function(){
+        items = [];
+        folders = [];
+    }
+
+    me.getInfo = async function(path){
+        path = getFilePath(path);
+        let file = items.find(a=>a.path === path);
+        if (!file) file = items.find(a=>a.path === "ram:" + path);
+        if (file && file.binary){
+            return {
+                file: {
+                    size: file.binary.length
+                }
+            };
+        }
+        return {};
     }
 
     function getFilePath(path){

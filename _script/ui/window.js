@@ -289,7 +289,7 @@ let AmiWindow = function(config){
         return max;
     };
 
-    function handleDrop(droppedItems,deltaX,deltaY){
+    function handleDrop(droppedItems,deltaX,deltaY,isCopy){
         console.log("dropping item on window",droppedItems);
         droppedItems.forEach(function(item){
             var left = item.left + deltaX;
@@ -305,6 +305,7 @@ let AmiWindow = function(config){
                 console.log("dropped into other window",me.application);
                 if (me.application){
                     console.log("sending drop message",item.object);
+                    item.isCopy = isCopy;
                     me.sendMessage("dropFile",item);
                 }else{
                     console.log("moving item to new parent");
@@ -317,22 +318,47 @@ let AmiWindow = function(config){
                         if (item.object.path) itemPath = item.object.path;
 
                         if (item.type === "icon"){
-                            var oldPos = item.element.getBoundingClientRect();
                             if (config.path && itemPath){
-                                fileSystem.moveFile(item.object,itemPath,config.path)
+                                if (isCopy) {
+                                    fileSystem.copyFile(item.object,config.path).then(newFile=>{
+                                        if (newFile) {
+                                            let copiedObject = Object.assign({}, item.object);
+                                            let toPath = config.path;
+                                            if (toPath.endsWith(":") || toPath.endsWith("/")) {
+                                                copiedObject.path = toPath + item.object.name;
+                                            } else {
+                                                copiedObject.path = toPath + "/" + item.object.name;
+                                            }
+                                            let newIcon = me.createIcon(copiedObject);
+                                            
+                                            // calculate correct drop position in new parent:
+                                            var oldPos = item.element.getBoundingClientRect();
+                                            var newPos = newIcon.element.getBoundingClientRect();
+                                            var cX = newPos.left-oldPos.left;
+                                            var cY = newPos.top-oldPos.top;
+                                            var targetLeft = left - cX;
+                                            var targetTop = top - cY;
+                                            if (targetLeft<0) targetLeft=0;
+                                            if (targetTop<0) targetTop=0;
+                                            newIcon.setPosition(targetLeft,targetTop);
+                                        }
+                                    });
+                                } else {
+                                    fileSystem.moveFile(item.object,itemPath,config.path);
+                                    var oldPos = item.element.getBoundingClientRect();
+                                    item.parent.removeIcon(item);
+                                    me.addIcon(item);
+                                    var newPos = item.element.getBoundingClientRect();
+
+                                    // get new coordinates offset relative to new parent;
+                                    var cX = newPos.left-oldPos.left;
+                                    var cY = newPos.top-oldPos.top;
+                                    left -= cX;
+                                    top -= cY;
+
+                                    doMove = true;
+                                }
                             }
-
-                            item.parent.removeIcon(item);
-                            me.addIcon(item);
-                            var newPos = item.element.getBoundingClientRect();
-
-                            // get new coordinates offset relative to new parent;
-                            var cX = newPos.left-oldPos.left;
-                            var cY = newPos.top-oldPos.top;
-                            left -= cX;
-                            top -= cY;
-
-                            doMove = true;
                         }
 
                         if (item.type === "dragitem"){
@@ -391,12 +417,23 @@ let AmiWindow = function(config){
         };
 
         me.setPosition = function(left,top,zIndex){
+            if (settings.UIConcept === "plain"){
+                left = 200;
+                top = 20;
+            }
+
             me.left = left;
             me.top = top;
             amiWindow.style.transform = "translate(" + left + "px," + top + "px)";
         };
 
         me.setSize = function(width,height,fitOnScreen){
+
+            if (settings.UIConcept === "plain"){
+                width = desktop.width - 200;
+                height = desktop.height - 20;
+            }
+
             console.log("setSize",width,height);
             if (width<me.minWidth) width=me.minWidth;
             if (height<me.minHeight) height=me.minHeight;

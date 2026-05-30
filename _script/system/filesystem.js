@@ -7,6 +7,7 @@ import rad from "./filesystems/rad.js";
 import desktop from "../ui/desktop.js";
 import user from "../user.js";
 import {uuid} from "../util/dom.js";
+import notification from "../ui/notification.js";
 
 let FileSystem = function(){
    var me = {};
@@ -28,6 +29,7 @@ let FileSystem = function(){
     var fileSystems = {
         ram: ram,
         desktop: rad,
+        rad: rad,
     };
 
     me.register=function(name,handler){
@@ -42,6 +44,18 @@ let FileSystem = function(){
 
     me.mount = function(drive){
         return new Promise(async function(next){
+            const mountSource = drive.url || drive.path;
+            const existingMount = me.getMountByUrl(mountSource);
+            if (existingMount){
+                // Keep caller object aligned so follow-up openFolder(drive) still works.
+                drive.volume = existingMount.volume;
+                drive.path = existingMount.path;
+                drive.handler = existingMount.handler;
+                drive.mounted = true;
+                next(existingMount);
+                return;
+            }
+
             let volume = drive.volume.toLowerCase()
             if (volume !== "ram"){
                 var c = getVolumeIndex(volume);
@@ -52,25 +66,35 @@ let FileSystem = function(){
             drive.path = volume + ":";
 
             if (drive.handler && typeof drive.handler === "string"){
+                drive.filesystemName = drive.handler;
                 if (drive.handler === "local") drive.handler = "localFileSystemAccess";
                 if (!fileSystems[drive.handler]) await system.loadLibrary(drive.handler);
                 mounts[volume].mounted = true;
                 mounts[volume].handler = fileSystems[drive.handler];
-                next();
+                next(drive);
             }else{
-                next();
+                next(drive);
             }
         });
     };
 
-    me.unmount = async function(drive){
-        let settings = await user.getAmiSettings();
-        settings.mounts = settings.mounts || [];
-        let index = settings.mounts.findIndex(mount=>mount.id === drive.id);
-        console.error(index,drive.id);
-        if (index>=0){
-            settings.mounts.splice(index,1);
-            user.setAmiSettings(settings);
+    me.unmount = async function(drive,persistSettings){
+        if (!drive) return;
+        if (typeof persistSettings === "undefined") persistSettings = true;
+
+        let volumeKey = String(drive.volume || me.getVolume(drive.path || "") || "").toLowerCase();
+        if (persistSettings){
+            let settings = await user.getAmiSettings();
+            settings.mounts = settings.mounts || [];
+            let index = settings.mounts.findIndex(mount=>mount.id === drive.id);
+            if (index>=0){
+                settings.mounts.splice(index,1);
+                user.setAmiSettings(settings);
+            }
+        }
+
+        if (volumeKey && volumeKey !== "ram" && volumeKey !== "desktop"){
+            delete mounts[volumeKey];
         }
     };
 
@@ -98,6 +122,21 @@ let FileSystem = function(){
         settings.mounts.push(mount);
         user.setAmiSettings(settings);
 
+    }
+
+    me.reset = async ()=>{
+        let currentMounts = me.getMounts();
+        for (const key of Object.keys(currentMounts)){
+            let mount = currentMounts[key];
+            let volume = String((mount && mount.volume) || key || "").toLowerCase();
+            if (volume === "ram" || volume === "desktop"){
+                if (mount && mount.handler && typeof mount.handler.reset === "function"){
+                    mount.handler.reset();
+                }
+            }else{
+                await me.unmount(mount,false);
+            }
+        }
     }
 
     me.isReadOnly = function(file){
@@ -135,6 +174,19 @@ let FileSystem = function(){
 
     me.getMounts = function(){
         return mounts;
+    };
+
+    // Find an existing mount that was created from a given source file path/url.
+    // Used to prevent mounting the same .zip/.adf file multiple times.
+    me.getMountByUrl = function(url){
+        if (!url) return null;
+        const normalizedUrl = normalizeMountSource(url);
+        for (const key of Object.keys(mounts)){
+            const m = mounts[key];
+            const mountSource = m.url || m.path;
+            if (mountSource && normalizeMountSource(mountSource) === normalizedUrl) return m;
+        }
+        return null;
     };
 
 
@@ -241,6 +293,7 @@ let FileSystem = function(){
 
 
     me.writeFile = function(file,content,binary,onProgress){
+        notification.toast("waiting");
         file = normalize(file);
         return new Promise(async next => {
             var mount = me.getMount(file.path);
@@ -249,8 +302,10 @@ let FileSystem = function(){
                 let response = await fs.writeFile(file.path,content,binary,mount,progress=>{
                     if (onProgress) onProgress(progress);
                 },file);
+                notification.toast({type:"success",timeout:10});
                 next(response);
             }else{
+                notification.toast({type:"success",timeout:30});
                 console.error("no handler");
                 next();
             }
@@ -397,6 +452,41 @@ let FileSystem = function(){
         });
     };
 
+    me.deleteStorage = function(drive){
+        var mount = me.getMount(drive.path || (drive.volume + ":"));
+        let fs = mount.handler;
+        if (fs && typeof fs.deleteStorage === "function"){
+            return fs.deleteStorage(mount);
+        }
+    };
+
+    me.deleteIcon = function(icon){
+        return new Promise(async next => {
+            let parent = icon.parent;
+            let selectedIcons = parent ? parent.getSelectedIcons() : [];
+            let targetIcons = selectedIcons.includes(icon) ? selectedIcons : [icon];
+
+            for (let targetIcon of targetIcons) {
+                let obj = targetIcon.object;
+                if (obj) {
+                    if (obj.type === "folder") {
+                        await me.deleteDirectory(obj);
+                    } else {
+                        await me.deleteFile(obj);
+                    }
+                    if (parent && parent.removeIcon) {
+                        parent.removeIcon(targetIcon);
+                    }
+                }
+            }
+
+            if (parent && parent.sendMessage) {
+                parent.sendMessage("refresh");
+            }
+            next(true);
+        });
+    };
+
     me.getUniqueName = function(path,name){
         return new Promise(async next => {
             var mount = me.getMount(path);
@@ -438,6 +528,7 @@ let FileSystem = function(){
      }
 
      me.writeMeta = async function(object){
+        console.error("writeMeta",object);
         let meta = {};
         let metaKeys = ["handler","icon"];
         for (var key in object){
@@ -447,9 +538,11 @@ let FileSystem = function(){
         }
         let metaPath = object.path + ".aminfo";
         let currentMeta = await me.readJson(metaPath);
+        console.error("currentMeta",currentMeta);
         for (let key in meta){
             currentMeta[key] = meta[key];
         }
+        console.error(metaPath,currentMeta);
         return await me.writeFile(metaPath,JSON.stringify(currentMeta,null,2));
      }
 
@@ -473,6 +566,21 @@ let FileSystem = function(){
             file=amiObject(file);
         }
         return file;
+    }
+
+    function normalizeMountSource(source){
+        if (!source || typeof source !== "string") return "";
+        let normalized = source.trim();
+        if (normalized.indexOf("://")<0){
+            const index = normalized.indexOf(":");
+            if (index>0){
+                const volume = normalized.substring(0,index).toLowerCase();
+                let path = normalized.substring(index+1);
+                if (path.startsWith("/")) path = path.substring(1);
+                normalized = volume + ":" + path;
+            }
+        }
+        return normalized;
     }
 
     function formatSize(byte){

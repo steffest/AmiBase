@@ -70,6 +70,12 @@ var Icon = function(){
 		var icon = {};
 		icon.info = {};
 
+		// Guard: need at least 78 bytes for the Amiga icon header
+		if (!file || !file.length || file.length < 78) {
+			if (next) next(null);
+			return;
+		}
+
 		var magicBytes = file.readDWord(0);
 		var PNGID = 2303741511;
 		if (magicBytes === PNGID){
@@ -343,6 +349,7 @@ var Icon = function(){
 	me.getIcon = function(file){
 		return new Promise((next)=>{
 			me.parse(file,function(icon){
+				if (!icon) { next(null); return; }
 				let image = me.getImage(icon);
 				next(image);
 			});

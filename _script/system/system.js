@@ -8,57 +8,137 @@ import fetchService from "../util/fetchService.js";
 import desktop from "../ui/desktop.js";
 import applications from "../applications.js";
 import filesystem from "./filesystem.js";
+import storage from "../storage.js";
+import user from "../user.js";
+import input from "../input.js";
+import ui from "../ui/ui.js";
+import network from "./network.js";
+import mainMenu from "../ui/mainmenu.js";
+
+const PLUGIN_API_VERSION = 1;
+const LEGACY_CAPABILITIES = ["*"];
+
+const KNOWN_PLUGIN_CAPABILITIES = [
+    "net.fetch",
+    "fs.read",
+    "fs.write",
+    "fs.dialog",
+    "system.inspect",
+    "system.loadScript",
+    "system.user",
+    "system.settings",
+    "ui.desktop",
+    "crypto.sha256",
+];
 
 let System = function(){
     var me = {};
     var libraries = {};
     let plugins = {};
     let saveAs;
+    let knownApplications = [];
+    let knownApplicationsLoaded = false;
 
-    let knownApplications = [
-        {name: "Notepad",plugin: "notepad"},
-        {name: "Hex Editor",icon: "hex",plugin: "hex"},
-        {name: "Monaco",icon: "vs",plugin: "monaco"},
-        {name: "Image Viewer",icon: "imageviewer",plugin: "imageviewer"},
-        {name: "Media Player",icon: "mediaplayer",plugin: "mediaplayer",hasCustomUI: true},
-        {name: "Video Player",icon: "videoplayer",plugin: "videoplayer"},
-        {name: "Bassoon Tracker",icon: "mediaplayer",plugin: "bassoon"},
-        {name: "Dpaint",icon: "iconeditor",plugin: "dpaint"},
-        {name: "Frame",icon: "frame",plugin: "iframe"},
-        {name: "Arcade",icon: "arcade",plugin: "arcade",hasCustomUI: true},
-    ]
+    function normalizePluginConfig(pluginName, rawConfig){
+        let config = rawConfig || {};
+        let normalized = {
+            ...config,
+            pluginName,
+            apiVersion: Number.isInteger(config.apiVersion) ? config.apiVersion : PLUGIN_API_VERSION,
+        };
 
-    me.loadEnvironment = function(){
+        if (!Array.isArray(config.capabilities) || !config.capabilities.length){
+            // Backwards compatibility: legacy plugins keep full bridge access.
+            normalized.capabilities = LEGACY_CAPABILITIES.slice();
+        }else{
+            normalized.capabilities = [...new Set(config.capabilities.filter(item=>typeof item === "string" && !!item.trim()))];
+            if (!normalized.capabilities.length) normalized.capabilities = LEGACY_CAPABILITIES.slice();
+        }
+
+        if (normalized.apiVersion > PLUGIN_API_VERSION){
+            console.warn(`Plugin ${pluginName} uses unsupported apiVersion ${normalized.apiVersion}; expected <= ${PLUGIN_API_VERSION}`);
+        }
+
+        return normalized;
+    }
+
+    function hasPluginCapability(pluginConfig, capability){
+        if (!capability) return true;
+        let capabilities = (pluginConfig && pluginConfig.capabilities) || LEGACY_CAPABILITIES;
+        return capabilities.includes("*") || capabilities.includes(capability);
+    }
+
+    async function loadKnownApplications(){
+        if (knownApplicationsLoaded) return knownApplications;
+        knownApplicationsLoaded = true;
+
+        let config = await fetchService.json("content/system/knownApplications.json");
+        if (!Array.isArray(config)){
+            console.warn("Could not load known applications list from content/system/knownApplications.json");
+            knownApplications = [];
+            return knownApplications;
+        }
+
+        knownApplications = config.filter(item=>item && typeof item.name === "string");
+        return knownApplications;
+    }
+
+    me.loadEnvironment = function(_env){
         return new Promise(function(next){
-            let env = document.location.search;
+            loadKnownApplications().then(()=>{
+                let env = _env || document.location.search;
 
-            if (env){
-                env = env.substring(1);
-                if (env.indexOf("=")) env=env.split("=")[0];
-                settings.tenant = env;
+                if (env){
+                    env = env.substring(1).split(/[=&]/)[0];
+                    settings.tenant = env;
 
-                function setEnv(tenantSettings){
-                    console.log("Setting environment to " + env);
-                    if (tenantSettings){
-                        for (var key in tenantSettings){
-                            settings[key] = tenantSettings[key];
+                    function setEnv(tenantSettings){
+                        console.log("Setting environment to " + env);
+                        if (tenantSettings){
+                            for (var key in tenantSettings){
+                                settings[key] = tenantSettings[key];
+                            }
                         }
+                        next(true);
                     }
-                    next();
+
+                    import("../../config/" + env + ".js").then(module=>{
+                        if (module.default && module.default.initialContent){
+                            setEnv(module.default);
+                        }else{
+                            console.log("Invalid config file for " + env);
+                            next(false);
+                        }
+                    }).catch(e=>{
+                        console.log("No config file found for " + env);
+                        next(false);
+                    });
+
+                }else{
+                    next(false);
                 }
-
-                import("../../config/" + env + ".js").then(module=>{
-                    setEnv(module.default);
-                }).catch(e=>{
-                    console.log("No config file found for " + env);
-                    next();
-                });
-
-            }else{
-                next();
-            }
+            });
         });
     };
+
+    me.reset = async ()=>{
+        desktop.reset();
+        await filesystem.reset();
+        await storage.clear();
+    }
+
+    me.connectEnv = async (token,env)=>{
+        let hasEnvironment = await me.loadEnvironment(env || token);
+        if (hasEnvironment){
+            await me.reset();
+            await desktop.loadTheme(await user.getTheme());
+            await user.init();
+            mainMenu.rebuildMenu();
+            desktop.loadContent(settings.initialContent,settings.mounts,"desktop:");
+            desktop.cleanUp();
+        }
+        return hasEnvironment;
+    }
 
     me.loadLibrary = function(libraryName,callback){
         return new Promise(function(resolve,reject){
@@ -84,10 +164,10 @@ let System = function(){
                 }else{
                     fetchService.json(pluginPath + "config.json").then(function(config){
                         if (config){
-                            plugin.config=config;
+                            plugin.config = normalizePluginConfig(libraryName,config);
 
                             function loadPluginScripts(){
-                                import("../../" + pluginPath + "/" + config.module).then(module=>{
+                                import("../../" + pluginPath + config.module).then(module=>{
                                     console.log(libraryName + " loaded");
                                     plugin = module.default;
                                     plugin.loaded = true;
@@ -141,7 +221,9 @@ let System = function(){
         plugin={};
         let config = await fetchService.json(pluginPath + "config.json");
         if (config){
-            plugin.config=config;
+            plugin.name = pluginName;
+            plugin.config = normalizePluginConfig(pluginName,config);
+            config = plugin.config;
 
             // preload code
             if (config.module){
@@ -171,6 +253,23 @@ let System = function(){
 
     me.getRegisteredApplications = function(){
         return knownApplications;
+    }
+
+    me.getPluginConfig = function(pluginName){
+        let plugin = plugins[pluginName];
+        return plugin && plugin.config ? plugin.config : null;
+    }
+
+    me.getPluginApiVersion = function(){
+        return PLUGIN_API_VERSION;
+    }
+
+    me.getKnownPluginCapabilities = function(){
+        return KNOWN_PLUGIN_CAPABILITIES.slice();
+    }
+
+    me.pluginHasCapability = function(pluginName, capability){
+        return hasPluginCapability(me.getPluginConfig(pluginName), capability);
     }
 
 
@@ -216,6 +315,7 @@ let System = function(){
          let fileType = file.filetype;
          if (fileType && fileType.handler && fileType.handler.getIcon){
              let content = await filesystem.readFile(file,true);
+             if (!content || !content.buffer || content.buffer.byteLength === 0) return null;
              return fileType.handler.getIcon(content);
          }
      }

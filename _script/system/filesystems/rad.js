@@ -3,36 +3,61 @@ import {uuid} from "../../util/dom.js";
 import storage from "../../storage.js";
 let RAD = ()=>{
     let me = {}
-    let items = [];
 
-    me.readFile = async function(path,binary){
+    function getStorageKey(mount){
+        if (mount && mount.volume){
+            let vol = mount.volume.toLowerCase();
+            if (vol === "desktop"){
+                return "rad";
+            }
+            return "rad_" + vol;
+        }
+        return "rad";
+    }
+
+    me.readFile = async function(path,binary,mount){
+        let key = getStorageKey(mount);
         return new Promise((next) => {
             path = getFilePath(path);
             let filename = path.split("/").pop();
             path = getParentPath(path);
-            let item = items.find(item=>item.path === path && item.name === filename);
-            if (item){
-                storage.getObject(item.id).then(file=>{
-                    if (file){
-                        if (binary){
-                            console.error("binary",typeof file.content);
-                            let data = file.content;
-                            if (typeof data === "string"){
-                                data = new TextEncoder().encode(file.content);
-                                data = data.buffer;
+            storage.getObject(key).then(data=>{
+                let currentItems = data || [];
+                let item = currentItems.find(item=>item.path === path && item.name === filename);
+                if (item){
+                    storage.getObject(item.id).then(file=>{
+                        if (file){
+                            if (binary){
+                                console.error("binary",typeof file.content);
+                                let data = file.content;
+                                if (typeof data === "string"){
+                                    data = new TextEncoder().encode(file.content);
+                                    data = data.buffer;
+                                }
+                                next(binaryStream(data,true));
+                            }else{
+                                let data = file.content;
+                                if (data instanceof ArrayBuffer){
+                                    data = new TextDecoder("utf-8").decode(data);
+                                } else if (data && data.buffer instanceof ArrayBuffer) {
+                                    data = new TextDecoder("utf-8").decode(data.buffer);
+                                }
+                                next(data);
                             }
-                            next(binaryStream(data,true));
-                        }else{
-                            next(file.content);
+                        } else {
+                            next();
                         }
-                    }
-                });
-            }
+                    });
+                }else{
+                    next();
+                }
+            });
         });
     }
 
     me.writeFile = async function(path,content,binary,mount,progress,object){
         console.error(object);
+        let key = getStorageKey(mount);
         path = getFilePath(path);
         let filename = path.split("/").pop();
         path = getParentPath(path);
@@ -41,7 +66,9 @@ let RAD = ()=>{
         let ext = filename.split(".").pop();
         if (ext === "link" || ext === "url") type = "link";
 
-        let item = items.find(item=>item.path === path && item.name === filename);
+        let data = await storage.getObject(key);
+        let currentItems = data || [];
+        let item = currentItems.find(item=>item.path === path && item.name === filename);
 
         if (!item){
             item = {
@@ -50,8 +77,8 @@ let RAD = ()=>{
                 type:type,
                 id:uuid()
             }
-            items.push(item);
-            storage.setObject("rad",items);
+            currentItems.push(item);
+            storage.setObject(key,currentItems);
         }
         if (type === "link" && object){
             console.error("link",object);
@@ -64,10 +91,10 @@ let RAD = ()=>{
             if (item.label){
                 let name = item.label.split("/").pop() + ".link";
                 console.error("name",name);
-                item.name = await me.getUniqueName(path,name);
+                item.name = await me.getUniqueName(path,name,mount);
             }
 
-            storage.setObject("rad",items);
+            storage.setObject(key,currentItems);
         }
 
         if (content){
@@ -83,73 +110,89 @@ let RAD = ()=>{
         return item;
     }
 
-    me.deleteFile = function(path){
+    me.deleteFile = function(path,mount){
+        let key = getStorageKey(mount);
         path = getFilePath(path);
         let filename = path.split("/").pop();
         path = getParentPath(path);
-        let itemIndex = items.findIndex(item=>item.path === path && item.name === filename);
-        if (itemIndex >= 0){
-            let item = items[itemIndex];
-            let id = item.id;
-            items.splice(itemIndex,1);
-            storage.setObject("rad",items);
-            if (id) storage.removeObject(id);
-        }
+        storage.getObject(key).then(data=>{
+            let currentItems = data || [];
+            let itemIndex = currentItems.findIndex(item=>item.path === path && item.name === filename);
+            if (itemIndex >= 0){
+                let item = currentItems[itemIndex];
+                let id = item.id;
+                currentItems.splice(itemIndex,1);
+                storage.setObject(key,currentItems);
+                if (id) storage.removeObject(id);
+            }
+        });
     }
 
-    me.moveFile = function(fromPath,toPath){
+    me.moveFile = function(fromPath,toPath,mount){
+        let key = getStorageKey(mount);
         fromPath = getFilePath(fromPath);
         toPath = getFilePath(toPath);
         let filename = fromPath.split("/").pop();
         fromPath = getParentPath(fromPath);
-        let itemIndex = items.findIndex(item=>item.path === fromPath && item.name === filename);
+        storage.getObject(key).then(data=>{
+            let currentItems = data || [];
+            let itemIndex = currentItems.findIndex(item=>item.path === fromPath && item.name === filename);
 
-        if (itemIndex >= 0){
-            let item = items[itemIndex];
-            console.log("moving RAD item",item);
-            item.path = toPath;
-            storage.setObject("rad",items);
-        }else{
-            console.error("file not found",fromPath,filename);
-        }
+            if (itemIndex >= 0){
+                let item = currentItems[itemIndex];
+                console.log("moving RAD item",item);
+                item.path = toPath;
+                storage.setObject(key,currentItems);
+            }else{
+                console.error("file not found",fromPath,filename);
+            }
+        });
     }
 
-    me.createDirectory = function(path,name){
+    me.createDirectory = function(path,name,mount){
+        let key = getStorageKey(mount);
         path = getFilePath(path);
         console.error(path,name);
         return new Promise((next) => {
-            let folder = {
-                name:name,
-                path:path,
-                type:"folder",
-                id:uuid()
-            };
-            items.push(folder);
-            storage.setObject("rad",items);
-            next(folder);
+            storage.getObject(key).then(data=>{
+                let currentItems = data || [];
+                let folder = {
+                    name:name,
+                    path:path,
+                    type:"folder",
+                    id:uuid()
+                };
+                currentItems.push(folder);
+                storage.setObject(key,currentItems);
+                next(folder);
+            });
         });
     };
 
-    me.deleteDirectory = function(path){
+    me.deleteDirectory = function(path,mount){
+        let key = getStorageKey(mount);
         path = getFilePath(path);
         let foldername = path.split("/").pop();
         path = getParentPath(path);
-        let itemIndex = items.findIndex(item=>item.path === path && item.name === foldername);
-        if (itemIndex >= 0){
-            let item = items[itemIndex];
-            items.splice(itemIndex,1);
-            storage.setObject("rad",items);
-            // TODO: delete all files in folder
-        }
+        storage.getObject(key).then(data=>{
+            let currentItems = data || [];
+            let itemIndex = currentItems.findIndex(item=>item.path === path && item.name === foldername);
+            if (itemIndex >= 0){
+                let item = currentItems[itemIndex];
+                currentItems.splice(itemIndex,1);
+                storage.setObject(key,currentItems);
+                // TODO: delete all files in folder
+            }
+        });
     }
 
-
-    me.getDirectory = async function(folder){
+    me.getDirectory = async function(folder,mount){
+        let key = getStorageKey(mount);
         let path = getFilePath(folder.path || folder || "");
         return new Promise((next) => {
-            storage.getObject("rad").then(data=>{
-                items = data || [];
-                console.log("getDirectory",path,items);
+            storage.getObject(key).then(data=>{
+                let currentItems = data || [];
+                console.log("getDirectory",path,currentItems);
                 let directories = [];
                 let files = [];
                 if (data){
@@ -172,43 +215,94 @@ let RAD = ()=>{
         });
     };
 
-    me.renameFile = function(path,newName){
+    me.renameFile = function(path,newName,mount){
+        let key = getStorageKey(mount);
         path = getFilePath(path);
         let filename = path.split("/").pop();
         path = getParentPath(path);
-        let item = items.find(item=>item.path === path && item.name === filename);
+        storage.getObject(key).then(async data=>{
+            let currentItems = data || [];
+            let item = currentItems.find(item=>item.path === path && item.name === filename);
 
-        if (item && item.name !== newName){
-            item.name = me.getUniqueName(path,newName);
-            storage.setObject("rad",items);
-        }
+            if (item && item.name !== newName){
+                item.name = await me.getUniqueName(path,newName,mount);
+                storage.setObject(key,currentItems);
+            }
+        });
     }
 
-    me.getUniqueName = function(path,name){
+    me.getUniqueName = function(path,name,mount){
+        let key = getStorageKey(mount);
         return new Promise((next) => {
-            let item = getItemFromPath(path + "/" + name);
-            if (item){
-                let parts = name.split(".");
-                let ext = "";
-                if (parts.length>1){
-                    ext = "." + parts.pop();
+            storage.getObject(key).then(data=>{
+                let currentItems = data || [];
+                let item = getItemFromPath(path + "/" + name,currentItems);
+                if (item){
+                    let parts = name.split(".");
+                    let ext = "";
+                    if (parts.length>1){
+                        ext = "." + parts.pop();
+                    }
+                    let base = parts.join(".");
+                    let i = 2;
+                    while (item){
+                        name = base + " " + i + ext;
+                        item = getItemFromPath(path + "/" + name,currentItems);
+                        i++;
+                    }
+                    next(name);
+                }else{
+                    next(name);
                 }
-                let base = parts.join(".");
-                let i = 2;
-                while (item){
-                    name = base + " " + i + ext;
-                    item = getItemFromPath(path + "/" + name);
-                    i++;
-                }
-                next(name);
-            }else{
-                next(name);
-            }
+            });
         });
     }
 
     me.isReadOnly = (file)=>{
         return false;
+    }
+
+    me.deleteStorage = function(mount){
+        let key = getStorageKey(mount);
+        storage.getObject(key).then(data=>{
+            let currentItems = data || [];
+            currentItems.forEach(item=>{
+                if (item.id) storage.removeObject(item.id);
+            });
+            storage.removeObject(key);
+        });
+    }
+
+    me.getInfo = async function(path,mount){
+        let key = getStorageKey(mount);
+        return new Promise((next) => {
+            path = getFilePath(path);
+            let filename = path.split("/").pop();
+            path = getParentPath(path);
+            storage.getObject(key).then(data=>{
+                let currentItems = data || [];
+                let item = currentItems.find(item=>item.path === path && item.name === filename);
+                if (item){
+                    storage.getObject(item.id).then(file=>{
+                        if (file && file.content){
+                            let size = 0;
+                            if (file.content.byteLength) size = file.content.byteLength;
+                            else if (typeof file.content === "string") size = file.content.length;
+                            else if (file.content.length) size = file.content.length;
+                            next({
+                                file: {
+                                    size: size
+                                }
+                            });
+                        } else {
+                            next({});
+                        }
+                    });
+                } else {
+                    next({});
+                }
+            });
+        });
     }
 
     function getFilePath(path){
@@ -222,13 +316,12 @@ let RAD = ()=>{
         return path;
     }
 
-    function getItemFromPath(path){
+    function getItemFromPath(path,currentItems){
         path = getFilePath(path);
         let filename = path.split("/").pop();
         path = getParentPath(path);
-        return items.find(item=>item.path === path && item.name === filename);
+        return currentItems.find(item=>item.path === path && item.name === filename);
     }
-
 
     function getParentPath(path){
         path = getFilePath(path);

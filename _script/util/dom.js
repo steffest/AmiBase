@@ -131,11 +131,11 @@ export function loadImage(src){
 
 
 let append = (parent, child) => {
-    if (child) {
+    if (child || child === 0 || child === false) {
         if (Array.isArray(child)) {
             child.map(sub => append(parent, sub));
         } else {
-            if (typeof child === "string") child = document.createTextNode(child);
+            if (!(child instanceof Node)) child = document.createTextNode("" + child);
             parent.appendChild(child);
         }
     }

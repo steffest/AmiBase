@@ -1,6 +1,6 @@
 .loader{
   position: absolute;
-  box-shadow: 0 0 0 8px rgba(238, 238, 238, 0.4) inset;
+  box-shadow: 0 0 0 8px var(--loader-track) inset;
   width: 40px;
   height: 40px;
   margin: 10px;
@@ -22,7 +22,7 @@
   &:before,
   &:after{
     position: absolute;
-    background: #fff;
+    background: var(--loader-dot-light);
     content: "";
     width: 8px;
     height: 8px;
@@ -32,7 +32,7 @@
   }
 
   &:after{
-    background: #000;
+    background: var(--loader-dot-dark);
     animation-delay: -1s;
   }
 

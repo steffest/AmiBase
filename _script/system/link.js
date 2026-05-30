@@ -23,12 +23,12 @@ let amiLink = function(){
         let actions = [
             {label:"Open", action: function(){me.open()}},
             {label:"Edit", action: function(){
+                    me._icon = icon;
                     system.openFile(me,"linkeditor");
             }},
             {label:"Delete", action: function(){
-                fileSystem.deleteFile(me);
-                icon.parent.removeIcon(icon)}
-            },
+                fileSystem.deleteIcon(icon);
+            }},
         ];
         return actions;
 

@@ -13,7 +13,7 @@ body{
     overflow: hidden;
     touch-action: none;
     font-family: sans-serif;
-    background-color: black;
+    background-color: var(--main-background);
 }
 
 body.custompointer{

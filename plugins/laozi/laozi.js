@@ -1,6 +1,6 @@
-import fileSystem from "../../../_script/system/filesystem.js";
-import fetchService from "../../../_script/util/fetchService.js";
-import BinaryStream from "../../binaryStream/binaryStream.js";
+import fileSystem from "../../_script/system/filesystem.js";
+import fetchService from "../../_script/util/fetchService.js";
+import BinaryStream from "../binaryStream/binaryStream.js";
 
 var Laozi = async function() {
     var me = {};

@@ -1,6 +1,6 @@
-import fileSystem from "../../../_script/system/filesystem.js";
-import BinaryStream from "../../binaryStream/binaryStream.js";
-import fetchService from "../../../_script/util/fetchService.js";
+import fileSystem from "../../_script/system/filesystem.js";
+import BinaryStream from "../binaryStream/binaryStream.js";
+import fetchService from "../../_script/util/fetchService.js";
 
 let Friend = function(){
     let me = {};

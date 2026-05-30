@@ -45,8 +45,7 @@ var AmiFolder = function(config){
             {
                 label:"Delete",
                 action: function(){
-                    fileSystem.deleteDirectory(object);
-                    icon.parent.removeIcon(icon);
+                    fileSystem.deleteIcon(icon);
                 }
             }
         ]

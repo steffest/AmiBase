@@ -1,0 +1,13 @@
+.linkeditor{
+    .property{
+        padding: 4px;
+
+        .label{
+            text-transform: capitalize;
+        }
+
+        input[type=text]{
+            width: 100%;
+        }
+    }
+}

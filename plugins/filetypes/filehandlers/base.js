@@ -25,9 +25,14 @@ var BaseFileExtensions = function(){
             },
             HDF: {
                 name: "Amiga Harddisk File",
-                actions:[{label: "run", plugin:"uae"}],
+                actions:[
+                    {label: "run", plugin:"uae"},
+                    {label: "mount disk", plugin:"filemanager"},
+                ],
                 classType:"disk",
-                className:"hdf"
+                className:"hdf",
+                fileExtensions:["hdf"],
+                mountFileSystem:{plugin:"AmigaFileSystem",volume:"HDF"}
             },
             PNG: {name: "PNG image", actions:[
                     {label: "View", plugin:"imageviewer"},
@@ -58,15 +63,30 @@ var BaseFileExtensions = function(){
                 classType:"image",
                 className:"gif",
                 fileExtensions:["gif"]},
+            PSD: {name: "Photoshop image", actions:[
+                    {label: "Edit", plugin:"dpaint"}
+                ],
+                classType:"image",
+                className:"psd",
+                fileExtensions:["psd"]},
             MP3: {name: "MP3 audio", actions:[
-                    {label: "play", plugin:"mediaplayer"}
+                    {label: "Play", plugin:"mediaplayer"},
+                    {label: "Edit", plugin:"audiomass"}
                 ],
                 classType:"audio",
                 className:"mp3",
                 fileExtensions:["mp3"]
             },
+            M4A: {name: "MP4 audio", actions:[
+                    {label: "Play", plugin:"mediaplayer"},
+                    {label: "Edit", plugin:"audiomass"}
+                ],
+                classType:"audio",
+                className:"m4a",
+                fileExtensions:["m4a"]
+            },
             MP4: {name: "MP4 video", actions:[
-                    {label: "play", plugin:"videoplayer"}
+                    {label: "Play", plugin:"videoplayer"}
                 ],
                 classType:"video",
                 className:"mp4",
@@ -78,6 +98,21 @@ var BaseFileExtensions = function(){
                 classType:"audio",
                 className:"pls",
                 fileExtensions:["pls"]},
+            DOCX: {name: "Word Document", actions:[
+                    {label: "Edit", plugin:"document"}
+                ],
+                className:"txt",
+                fileExtensions:["docx", "doc", "odt"]},
+            XLSX: {name: "Excel Spreadsheet", actions:[
+                    {label: "Edit", plugin:"document"}
+                ],
+                className:"txt",
+                fileExtensions:["xlsx", "xls", "ods", "csv"]},
+            PPTX: {name: "PowerPoint Presentation", actions:[
+                    {label: "Edit", plugin:"document"}
+                ],
+                className:"txt",
+                fileExtensions:["pptx", "ppt", "odp"]},
             TXT: {name: "Text File", actions:[
                     {label: "edit", plugin:"notepad"}
                 ], className:"txt",
@@ -89,11 +124,11 @@ var BaseFileExtensions = function(){
                 className:"txt",
                 fileExtensions:["js"]},
             JSON: {name: "JSON File", actions:[
-                    {label: "edit", plugin:"notepad"}
+                    {label: "Edit", plugin:"notepad"}
                 ],  classType:"code",className:"txt",
                 fileExtensions:["json"]},
             HTML: {name: "HTML File", actions:[
-                    {label: "edit", plugin:"monaco"}
+                    {label: "Edit", plugin:"monaco"}
                 ], className:"txt",
                 fileExtensions:["htm","html"]},
             CODE: {name: "CODE File", actions:[
@@ -104,13 +139,32 @@ var BaseFileExtensions = function(){
                     {label: "edit", plugin:"monaco"}
                 ],  classType:"code",className:"txt",
                 fileExtensions:["md"]},
+            LHA:{
+                name: "LHA Archive",
+                actions:[{label: "Extract",plugin:"filemanager"}],
+                classType:"archive",
+                className:"lha",
+                fileExtensions:["lha"],
+                mountFileSystem:{plugin:"Archiver",volume:"ARCHIVE"}
+            },
+            RAR:{
+                name: "RAR Archive",
+                actions:[{label: "Extract",plugin:"filemanager"}],
+                classType:"archive",
+                className:"rar",
+                fileExtensions:["rar"],
+                mountFileSystem:{plugin:"Archiver",volume:"ARCHIVE"}
+            },
             ZIP:{
                 name: "ZIP Archive",
-                actions:[{label: "Extract",plugin:"filemanager"}],
+                actions:[
+                    {label: "mount", plugin:"filemanager"},
+                    {label: "Extract", plugin:"filemanager"}
+                ],
                 classType:"archive",
                 className:"zip",
                 fileExtensions:["zip"],
-                mountFileSystem:{plugin:"Archiver",volume:"ARCHIVE"}
+                mountFileSystem:{plugin:"ZipFileSystem",volume:"ZIP"}
             }
         }
     };

@@ -1,5 +1,5 @@
-import fileSystem from "../../../_script/system/filesystem.js";
-import BinaryStream from "../../binaryStream/binaryStream.js";
+import fileSystem from "../../_script/system/filesystem.js";
+import BinaryStream from "../binaryStream/binaryStream.js";
 
 import Auth from "./auth.js";
 let S3 = function(){

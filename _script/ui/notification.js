@@ -3,6 +3,7 @@ import desktop from "./desktop.js";
 let Notification = function(){
  let me = {};
  let container;
+ let toastContainer;
  let notifications = {};
 
     me.init=function(){
@@ -68,6 +69,26 @@ let Notification = function(){
      if (Object.keys(notifications).length === 0){
          container.classList.remove("active");
      }
+ }
+
+ me.toast=function(config){
+        if (typeof config === "string") config = {type:config};
+        config = config || {};
+        if (!toastContainer){
+          toastContainer = $("div");
+          desktop.getScreen().appendChild(toastContainer);
+      }
+
+     config.type = config.type || "error";
+     toastContainer.className = "toast";
+     toastContainer.classList.add(config.type,"active");
+
+     if (config.timeout){
+         setTimeout(() => {
+             toastContainer.classList.remove("active");
+         }, config.timeout * 1000);
+     }
+
  }
 
  function createUi(){

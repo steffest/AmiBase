@@ -116,7 +116,25 @@ let Inspector = function(){
             renderProperty("Mount",mount.name);
             renderProperty("FileSystem",mount.filesystem);
             renderProperty("Filetype",filetype.name);
-            if (target.binary) renderProperty("Binary",target.binary.length + " bytes");
+            if (target.binary) {
+                renderProperty("Size", formatSize(target.binary.length));
+            } else {
+                let fileInfo = await filesystem.getFileProperties(target);
+                if (fileInfo && fileInfo.file) {
+                    if (typeof fileInfo.file.size !== "undefined" && fileInfo.file.size !== null) {
+                        renderProperty("Size", formatSize(fileInfo.file.size));
+                    }
+                    if (fileInfo.file.modified) {
+                        let mod = fileInfo.file.modified;
+                        if (typeof mod === "number") {
+                            // If UNIX timestamp in seconds, convert to milliseconds
+                            if (mod < 10000000000) mod = mod * 1000;
+                            mod = new Date(mod).toLocaleString();
+                        }
+                        renderProperty("Modified", mod);
+                    }
+                }
+            }
 
             if (target.type === "file"){
                 actions = await getFileActions(filetype);
@@ -161,6 +179,13 @@ let Inspector = function(){
         }
     }
 
+    function formatSize(byte){
+        if (typeof byte !== "number") return byte;
+        if (byte<1024) return byte + " bytes";
+        if (byte<1024*1024) return Math.round(byte/1024) + " KB";
+        if (byte<1024*1024*1024) return Math.round(byte/1024/1024) + " MB";
+        return Math.round(byte/1024/1024/1024) + " GB";
+    }
 
     return me;
 };

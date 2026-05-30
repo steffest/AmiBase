@@ -1,0 +1,310 @@
+.topbar .network-dot {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  border: 1px solid var(--network-dot-border);
+  cursor: pointer;
+}
+.topbar .network-dot.connected {
+  background-color: var(--color-success);
+}
+.topbar .network-dot.partial {
+  background-color: var(--color-warning);
+}
+.topbar .network-dot.disconnected {
+  background-color: var(--color-error);
+}
+
+
+
+
+.network-manager {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 10px;
+  font-size: 12px;
+}
+.nm-layout {
+  display: flex;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  padding: 0;
+}
+.nm-sidebar {
+  width: 120px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--network-sidebar-border);
+  padding: 4px 0;
+  gap: 1px;
+}
+.nm-tab {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
+  border: none;
+  border-left: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+}
+.nm-tab:hover {
+  background: var(--network-tab-hover);
+}
+.nm-tab.active {
+  border-left-color: currentColor;
+  font-weight: bold;
+}
+.nm-tab:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.nm-main {
+  flex: 1;
+  overflow: auto;
+  padding: 10px;
+}
+.nm-panel.hidden {
+  display: none;
+}
+.nm-settings-group.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.nm-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+.nm-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.nm-toggle-slider {
+  width: 38px;
+  height: 22px;
+  border-radius: 12px;
+  position: relative;
+  background: var(--network-toggle-track);
+  transition: background-color 140ms ease;
+  flex-shrink: 0;
+}
+.nm-toggle-slider::before {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 3px;
+  top: 3px;
+  border-radius: 50%;
+  background: var(--network-toggle-knob);
+  transition: transform 140ms ease;
+  box-shadow: var(--network-toggle-knob-shadow);
+}
+.nm-toggle input:checked + .nm-toggle-slider {
+  background: var(--color-success);
+}
+.nm-toggle input:checked + .nm-toggle-slider::before {
+  transform: translateX(16px);
+}
+.nm-toggle input:focus-visible + .nm-toggle-slider {
+  box-shadow: 0 0 0 2px var(--network-toggle-focus);
+}
+.nm-toggle-sm .nm-toggle-slider {
+  width: 28px;
+  height: 16px;
+  border-radius: 9px;
+}
+.nm-toggle-sm .nm-toggle-slider::before {
+  width: 12px;
+  height: 12px;
+  left: 2px;
+  top: 2px;
+}
+.nm-toggle-sm input:checked + .nm-toggle-slider::before {
+  transform: translateX(12px);
+}
+.nm-drive-access-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 4px;
+  font-size: 11px;
+  font-weight: bold;
+  opacity: 0.8;
+}
+.network-manager h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+.network-manager textarea {
+  width: 100%;
+  resize: vertical;
+  margin: 0;
+  box-sizing: border-box;
+  padding: 2px 4px;
+  border: 1px solid var(--input-border);
+  background: var(--input-background, #fff);
+  color: var(--input-text-color);
+  font: inherit;
+}
+.network-section {
+  margin-bottom: 10px;
+  border: 1px solid var(--network-section-border);
+  padding: 8px;
+  background: var(--network-section-background);
+}
+.network-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.nm-form-row {
+  align-items: center;
+}
+.nm-form-row-top {
+  align-items: flex-start;
+}
+.nm-form-label {
+  width: 96px;
+  min-width: 96px;
+}
+.nm-form-field-stack {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.nm-form-field-stack input[type=text],
+.nm-form-field-stack input[type=password] {
+  width: 100%;
+  box-sizing: border-box;
+}
+.network-row code {
+  word-break: break-all;
+}
+.network-row input[type=text] {
+  flex: 1;
+}
+.network-row input[type=password] {
+  flex: 1;
+}
+.nm-token-feedback {
+  min-height: 14px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+.nm-token-feedback.pending,
+.nm-token-feedback.neutral {
+  color: inherit;
+}
+.nm-token-feedback.success {
+  color: var(--color-success);
+}
+.nm-token-feedback.error {
+  color: var(--color-error);
+}
+#nm-token-feedback-trusted {
+  order: -1;
+  z-index: 1;
+  text-align: right;
+  position: absolute;
+  right: 24px;
+  margin-top: 4px;
+}
+.network-status {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--network-status-default);
+}
+.network-status.connected {
+  background: var(--network-status-connected);
+}
+.network-status.connecting {
+  background: var(--network-status-connecting);
+}
+.network-status.disconnected,
+.network-status.unsupported {
+  background: var(--network-status-disconnected);
+}
+.network-peer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--network-peer-border);
+  padding: 5px 0;
+}
+.network-peer-row:last-child {
+  border-bottom: none;
+}
+.network-peer-title {
+  font-weight: bold;
+}
+.network-peer-subtitle {
+  opacity: 0.7;
+  font-size: 11px;
+}
+.network-peer-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.network-state {
+  font-size: 10px;
+  text-transform: lowercase;
+  padding: 1px 6px;
+  border-radius: 9px;
+}
+.network-state.ok {
+  background: var(--network-state-ok);
+}
+.network-state.warn {
+  background: var(--network-state-warn);
+}
+.network-empty {
+  opacity: 0.75;
+  padding: 4px 0;
+}
+.network-invite-panel.hidden {
+  display: none;
+}
+.network-invite-code {
+  font-size: 22px;
+  letter-spacing: 2px;
+}
+.network-invite-countdown {
+  min-width: 54px;
+  font-weight: bold;
+}
+.network-invite-qr {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  background: var(--network-invite-qr-background);
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.network-invite-url {
+  cursor: pointer;
+}
+.network-copy-invite-url-btn {
+  min-width: 28px;
+  padding-left: 6px;
+  padding-right: 6px;
+}

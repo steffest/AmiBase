@@ -1,6 +1,6 @@
-import desktop from "../../../_script/ui/desktop.js";
-import fileSystem from "../../../_script/system/filesystem.js";
-import $ from "../../../_script/util/dom.js";
+import desktop from "../../_script/ui/desktop.js";
+import fileSystem from "../../_script/system/filesystem.js";
+import $ from "../../_script/util/dom.js";
 
 let FileRequester = function(){
     let me = {};

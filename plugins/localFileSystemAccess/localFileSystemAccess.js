@@ -1,13 +1,11 @@
-import fileSystem from "../../../_script/system/filesystem.js";
-import BinaryStream from "../../binaryStream/binaryStream.js";
+import fileSystem from "../../_script/system/filesystem.js";
+import BinaryStream from "../binaryStream/binaryStream.js";
 
 var LocalFileSystemAccess = async function() {
     var me = {};
 
     let fileEntries = {}
     // ref: https://developer.chrome.com/articles/file-system-access/
-
-
 
     me.getDirectory = async function(path,config){
         console.log("getDirectory",path,config);
@@ -32,7 +30,7 @@ var LocalFileSystemAccess = async function() {
                 try{meta[filename] = JSON.parse(text)}catch(e){}
             }
         }
-        console.error("meta",meta);
+
         list = await handle.values();
 
         for await (const entry of list) {
@@ -67,7 +65,6 @@ var LocalFileSystemAccess = async function() {
         return false;
     }
 
-
     me.createDirectory = async function(path,name,config){
         console.log("createDirectory",path,name);
         path = getFilePath(path);
@@ -87,11 +84,46 @@ var LocalFileSystemAccess = async function() {
         let entry = fileEntries[path];
         if (!entry) return;
         console.error("renameFile",entry);
-        await entry.move(newName);
+
+        try{
+            await entry.move(newName);
+        }catch(e){
+            // Some user agents block handle.move() outside direct user gestures.
+            // Fallback: create target file, copy bytes, then delete original.
+            let oldName = path.split("/").pop();
+            let parentPath = path.split("/").slice(0,-1).join("/");
+            if (parentPath && !parentPath.endsWith("/")) parentPath += "/";
+            let parentEntry = parentPath ? fileEntries[parentPath] : config.handle;
+            if (!parentEntry || entry.kind !== "file") throw e;
+
+            let sourceFile = await entry.getFile();
+            let target = await parentEntry.getFileHandle(newName,{create:true});
+            const writable = await target.createWritable();
+            await writable.write(await sourceFile.arrayBuffer());
+            await writable.close();
+            await entry.remove();
+            fileEntries[(parentPath || "") + newName] = target;
+            delete fileEntries[path];
+        }
 
         let metaFile = fileEntries[path + ".aminfo"];
         if (metaFile){
-            await metaFile.move(newName + ".aminfo");
+            try{
+                await metaFile.move(newName + ".aminfo");
+            }catch(e){
+                let parentPath = path.split("/").slice(0,-1).join("/");
+                if (parentPath && !parentPath.endsWith("/")) parentPath += "/";
+                let parentEntry = parentPath ? fileEntries[parentPath] : config.handle;
+                if (!parentEntry) throw e;
+                let sourceFile = await metaFile.getFile();
+                let target = await parentEntry.getFileHandle(newName + ".aminfo",{create:true});
+                const writable = await target.createWritable();
+                await writable.write(await sourceFile.arrayBuffer());
+                await writable.close();
+                await metaFile.remove();
+                fileEntries[(parentPath || "") + newName + ".aminfo"] = target;
+                delete fileEntries[path + ".aminfo"];
+            }
         }
     };
 
@@ -167,6 +199,23 @@ var LocalFileSystemAccess = async function() {
 
     me.getInfo = async function(path,config){
         console.log("getInfo",path);
+        path = getFilePath(path);
+        let entry = fileEntries[path];
+        if (!entry) return {};
+        if (entry.kind === 'file') {
+            try {
+                let file = await entry.getFile();
+                return {
+                    file: {
+                        size: file.size,
+                        modified: new Date(file.lastModified).toLocaleString()
+                    }
+                };
+            } catch(e) {
+                console.error("Failed to get file properties", e);
+            }
+        }
+        return {};
     }
 
     async function checkPermission(handle){
@@ -175,7 +224,6 @@ var LocalFileSystemAccess = async function() {
         if (permission !== 'granted') permission = await handle.requestPermission({mode: 'readwrite'});
         return permission === 'granted';
     }
-
 
     function setConfig(config){
         if (config){
@@ -191,7 +239,6 @@ var LocalFileSystemAccess = async function() {
     }
 
     fileSystem.register("localFileSystemAccess",me);
-
     return me;
 
 };

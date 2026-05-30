@@ -12,7 +12,6 @@ let Settings = ()=>{
             if (host){
                 amiBase = host;
                 settings = await amiBase.user.getAmiSettings();
-                console.error("settings",settings)
             }
 
             amiWindow.setContent(createUI());
@@ -30,6 +29,10 @@ let Settings = ()=>{
 
             amiWindow.setSize(584,400);
 
+            //plugin:wallpaper
+
+            console.error(amiBase);
+
             next();
         })
 
@@ -39,12 +42,14 @@ let Settings = ()=>{
 
 
         let container = $(".settingseditor.content.full",
-            $(".panel.full",
+            $(".panel.tabs.transparent.full",
                 {style:{width:"200px", right: "unset"}},
-                $(".button.big",{onClick:()=>{showSetting("mounts")}},"Mounts"),
-                $(".button.big",{onClick:()=>{showSetting("other")}},"Other"),
+                $(".button.active",{onClick:()=>{showSetting("mounts")}},"Mounts"),
+                $(".button",{onClick:()=>{showSetting("UI")}},"Desktop"),
+                $(".button",{onClick:()=>{amiBase.launchProgram("plugin:wallpaper")}},"Wallpaper"),
+                $(".button",{onClick:()=>{showSetting("other")}},"Other"),
             ),
-            $(".panel.full",
+            $(".panel.transparent.full",
                 {style:{left:"200px"}},
                 panel=$(".panel.full.transparent.overflow.borderbottom",{style:{bottom:"35px"}}),
                 $(".panel.buttons.bottom",
@@ -83,6 +88,16 @@ let Settings = ()=>{
         currentWindow.close();
     }
 
+    function persistUiSettings(){
+        amiBase.user.setAmiSettings(settings);
+    }
+
+    function setRamDriveVisibility(showRamDrive){
+        if (amiBase && amiBase.desktop && amiBase.desktop.refreshRamDriveDisplay){
+            amiBase.desktop.refreshRamDriveDisplay(showRamDrive);
+        }
+    }
+
     function showSetting(setting,values){
         panel.innerHTML = "";
         values = values || settings[setting] || [];
@@ -103,7 +118,7 @@ let Settings = ()=>{
                         }},"X")),
                         renderProperty("Label","label",mount,onUpdate),
                         renderProperty("Volume","volume",mount,onUpdate),
-                        renderProperty("Handler","handler",mount,onUpdate,["laozi","s3","dropbox","friend","local","other"]),
+                        renderProperty("Handler","handler",mount,onUpdate,["laozi","s3","dropbox","friend","local","rad","other"]),
                         renderProperty("URL","url",mount,onUpdate),
                         renderProperty("login","login",mount,onUpdate),
                         renderProperty("pass","pass",mount,onUpdate),
@@ -112,6 +127,23 @@ let Settings = ()=>{
                 });
 
                 $(".button.inline",{parent:panel,onClick:()=>{values.push({id:uuid()});showSetting(setting,values)}},"Add Mount");
+                break;
+
+            case "UI":
+                panel.appendChild($("h3","Desktop"));
+                let showRamDrive = settings.displayRamDrive !== false;
+                let ramDriveToggle = $("input",{type:"checkbox"});
+                ramDriveToggle.checked = showRamDrive;
+                ramDriveToggle.onchange = function(e){
+                    settings.displayRamDrive = !!e.target.checked;
+                    persistUiSettings();
+                    setRamDriveVisibility(settings.displayRamDrive);
+                }
+
+                panel.appendChild($(".property.panel",
+                    $(".label","Display RAM Drive"),
+                    ramDriveToggle
+                ));
                 break;
         }
     }

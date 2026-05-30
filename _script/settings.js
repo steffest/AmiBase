@@ -6,7 +6,8 @@ var Settings = {
     dragOnGrid: true,
     themes: [
         {label:"Light", name: "tangerine"},
-        {label:"Dark", name: "dark"}
+        {label:"Dark", name: "dark"},
+        {label:"E-ink", name: "ink"}
     ],
     defaultTheme: "tangerine"
 };

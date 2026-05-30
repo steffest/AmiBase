@@ -1,0 +1,56 @@
+.toolbar{
+  position: absolute;
+  height: 40px;
+  left: 0;
+  right: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+
+  .button.tool{
+    position: absolute;
+    top: 1px;
+    width: 22px;
+    height: 22px;
+    background-color: transparent;
+    border-color: transparent;
+
+    .icon{
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-size: 16px 16px;
+      border-radius: 0;
+      opacity: 0.5;
+      filter: var(--icon-white-filter);
+
+    }
+
+    &:hover{
+      background-color: var(--toolbar-button-hover);
+      cursor: pointer;
+
+      .icon{
+        opacity: 1;
+      }
+    }
+  }
+
+  input[type="text"]{
+    border: 1px solid color-mix(in srgb, var(--input-border) 50%, transparent);
+    border-radius: 20px;
+    background-color: transparent;
+    color: var(--input-color);
+    margin-left: 6px;
+
+    &:focus{
+      outline: none;
+      border-color: var(--input-border);
+      box-shadow: 0 0 0 2px var(--toolbar-input-focus-shadow);
+    }
+  }
+}

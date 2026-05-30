@@ -16,6 +16,11 @@ let User = function(){
         }
     }
 
+    let test=[];
+    let test2={
+        hello:"here"
+    };
+
     me.storeSetting = function(key,value,encrypted){
         if (encrypted){
             Security.encrypt(value).then(function(data){

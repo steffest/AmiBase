@@ -10,7 +10,10 @@ var IFF = function(){
 		version: "0.0.1",
 		fileTypes:{
 			IFF: {name: "IFF file"},
-			ILBM: {name: "ILBM Image", actions:[{label: "show", plugin:"imageviewer"}], inspect: true},
+			ILBM: {name: "ILBM Image", actions:[
+					{label: "show", plugin:"imageviewer"},
+					{label: "edit", plugin:"dpaint"}
+				], inspect: true},
 			ANIM: {name: "IFF ILBM Animation"}
 		}
 	};

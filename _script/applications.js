@@ -6,6 +6,7 @@ import fileSystem from "./system/filesystem.js";
 import user from "./user.js";
 import amiIcon from "./ui/icon.js";
 import desktop from "./ui/desktop.js";
+import settings from "./settings.js";
 
 /*
 Provides a bridge for external applications and plugins
@@ -130,7 +131,7 @@ let Applications = function(){
             window.application = instance;
             console.log("setting application",instance)
             if (instance.init){
-                instance.init(window,me.amiBridge());
+                instance.init(window,me.amiBridge(plugin.name));
             }
         }
     }
@@ -222,7 +223,6 @@ let Applications = function(){
                         var data = message.data;
                         var callbackId = message.callbackId;
                         fileSystem.readFile(data.path,!!data.asBinary).then(file => {
-                            console.error(file);
                             event.source.postMessage({
                                 message: "callback",
                                 data: {
@@ -231,8 +231,32 @@ let Applications = function(){
                                     filename:  file.name
                                 }
                             }, event.origin);
-
                         });
+                        break;
+                    case "getUrl":
+                        var data = message.data;
+                        var callbackId = message.callbackId;
+                        let mount = fileSystem.getMount(data.path);
+                        let fs = fileSystem.getFileSystem(mount);
+                        if (fs && fs.getUrl){
+                            fs.getUrl(data.path,mount).then(url=>{
+                                event.source.postMessage({
+                                    message: "callback",
+                                    data: {
+                                        id: callbackId,
+                                        data: url
+                                    }
+                                }, event.origin);
+                            });
+                        } else {
+                            event.source.postMessage({
+                                message: "callback",
+                                data: {
+                                    id: callbackId,
+                                    data: false
+                                }
+                            }, event.origin);
+                        }
                         break;
                     case "writeFile":
                         var data = message.data;
@@ -251,6 +275,14 @@ let Applications = function(){
                     case "activateWindow":
                         appWindow.activate();
                         break;
+                    case "closeWindow":
+                        appWindow.close();
+                        break;
+                    case "moveWindow":
+                        if (message.data && typeof message.data.x === "number" && typeof message.data.y === "number") {
+                            appWindow.setPosition(appWindow.left + message.data.x, appWindow.top + message.data.y);
+                        }
+                        break;
                     case "relay":
                         // The window has opened other frames and wants to relay messages to them
                         appWindow.sendMessage("relay",message);
@@ -261,18 +293,33 @@ let Applications = function(){
     }
 
     // main object to pass to trusted plugins and apps
-    me.amiBridge = function(){
+    me.amiBridge = function(pluginName){
+        function isAllowed(capability){
+            if (!pluginName) return true;
+            return system.pluginHasCapability(pluginName, capability);
+        }
+
+        function guard(capability, value){
+            if (isAllowed(capability)) return value;
+            if (typeof value === "function"){
+                return function(){
+                    console.warn(`Plugin ${pluginName} is missing capability ${capability}`);
+                };
+            }
+            return undefined;
+        }
+
         return{
-            fetch: fetchService,
-            readFile: fileSystem.readFile,
-            writeFile: fileSystem.writeFile,
-            copyFile: fileSystem.copyFile,
-            moveFile: fileSystem.moveFile,
-            uploadFile: desktop.uploadFile,
-            getDirectory: fileSystem.getDirectory,
-            createDirectory: fileSystem.createDirectory,
-            getUniqueName: fileSystem.getUniqueName,
-            getUrl: (file)=>{
+            fetch: guard("net.fetch", fetchService),
+            readFile: guard("fs.read", fileSystem.readFile),
+            writeFile: guard("fs.write", fileSystem.writeFile),
+            copyFile: guard("fs.write", fileSystem.copyFile),
+            moveFile: guard("fs.write", fileSystem.moveFile),
+            uploadFile: guard("fs.write", desktop.uploadFile),
+            getDirectory: guard("fs.read", fileSystem.getDirectory),
+            createDirectory: guard("fs.write", fileSystem.createDirectory),
+            getUniqueName: guard("fs.write", fileSystem.getUniqueName),
+            getUrl: guard("fs.read", (file)=>{
                 return new Promise(next=>{
                     let mount = fileSystem.getMount(file);
                     let fs = mount.handler;
@@ -284,19 +331,21 @@ let Applications = function(){
                         next();
                     }
                 });
-            },
-            getMounts: fileSystem.getMounts,
-            requestFileOpen: system.requestFileOpen,
-            requestFileSave: system.requestFileSave,
-            isReadOnly: fileSystem.isReadOnly,
-            getObjectInfo: system.getObjectInfo,
-            detectFileType: system.detectFileType,
-            loadScript: system.loadScript,
-            user: user,
-            desktop: desktop,
+            }),
+            getMounts: guard("fs.read", fileSystem.getMounts),
+            requestFileOpen: guard("fs.dialog", system.requestFileOpen),
+            requestFileSave: guard("fs.dialog", system.requestFileSave),
+            launchProgram: guard("ui.desktop", system.launchProgram),
+            isReadOnly: guard("fs.read", fileSystem.isReadOnly),
+            getObjectInfo: guard("system.inspect", system.getObjectInfo),
+            detectFileType: guard("system.inspect", system.detectFileType),
+            loadScript: guard("system.loadScript", system.loadScript),
+            user: guard("system.user", user),
+            desktop: guard("ui.desktop", desktop),
             util:{
-                sha256: security.sha256,
-            }
+                sha256: guard("crypto.sha256", security.sha256),
+            },
+            settings: guard("system.settings", settings),
         }
     }
 

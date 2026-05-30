@@ -1,4 +1,4 @@
-import fileSystem from "../../../_script/system/filesystem.js";
+import fileSystem from "../../_script/system/filesystem.js";
 
 import base from "./filehandlers/base.js";
 import mod from "./filehandlers/mod.js";

@@ -75,8 +75,7 @@ let AmiFile = function(config){
             {
                 label:"Delete",
                 action: function(){
-                    fileSystem.deleteFile(me);
-                    icon.parent.removeIcon(icon);
+                    fileSystem.deleteIcon(icon);
                 }
             });
 

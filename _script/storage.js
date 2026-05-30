@@ -3,6 +3,7 @@
 
 let Storage = function(){
     let me = {};
+    const DB_NAME = "amibase";
 
     me.get = function(key){
         return new Promise(async (next)=>{
@@ -102,15 +103,47 @@ let Storage = function(){
         })
     }
 
+    me.clear = function(name){
+        let dbName = name || DB_NAME;
+        return new Promise((resolve)=>{
+
+            try { window.localStorage.clear(); } catch (e) { console.warn("localStorage clear failed", e); }
+            try { window.sessionStorage.clear(); } catch (e) { console.warn("sessionStorage clear failed", e); }
+
+
+            if (!window.indexedDB || !dbName){
+                resolve(false);
+                return;
+            }
+            let request;
+            try{
+                request = window.indexedDB.deleteDatabase(dbName);
+            }catch(e){
+                console.warn("IndexedDB delete failed", e);
+                resolve(false);
+                return;
+            }
+            request.onsuccess = () => resolve(true);
+            request.onerror = (event) => {
+                console.warn("IndexedDB delete failed", event && event.target ? event.target.error : event);
+                resolve(false);
+            };
+            request.onblocked = () => {
+                console.warn("IndexedDB delete blocked");
+                resolve(false);
+            };
+        });
+    }
+
     function openDb(){
         return new Promise(function(next){
-            let request = window.indexedDB.open("amibase", 1);
+            let request = window.indexedDB.open(DB_NAME, 1);
             request.onerror = function(event) {
                 console.error("Error opening db",event.target.error.name);
                 if (event.target.error.name === "VersionError"){
                     console.error("VersionError",event.target.error.name);
-                    window.indexedDB.deleteDatabase("amibase");
-                    request = window.indexedDB.open("amibase", 1);
+                    window.indexedDB.deleteDatabase(DB_NAME);
+                    request = window.indexedDB.open(DB_NAME, 1);
                 }else{
                     next(undefined);
                 }

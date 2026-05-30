@@ -36,6 +36,16 @@ let UI = function(){
         document.body.addEventListener("pointerdown",handleTouchDown);
         document.body.addEventListener("pointerup",handleTouchUp);
         document.body.addEventListener("pointermove",handleTouchMove);
+        window.addEventListener("keydown", (e) => {
+            if (isDragging && globalDragItem) {
+                updateDragBadge(e.shiftKey);
+            }
+        });
+        window.addEventListener("keyup", (e) => {
+            if (isDragging && globalDragItem) {
+                updateDragBadge(e.shiftKey);
+            }
+        });
         document.body.addEventListener("dblclick",(e)=>{
             console.error("dblclick");
             e.preventDefault();
@@ -86,7 +96,7 @@ let UI = function(){
             //if (component.deActivateContent) component.deActivateContent(); // but deactivate inner content
 
             if (component.type === "icon"){
-                dragItems = component.parent.getSelectedIcons();
+                dragItems = component.parent.getSelectedIcons() || [];
             }else{
                 dragItems.push(component);
             }
@@ -98,6 +108,20 @@ let UI = function(){
     };
 
     me.handleGlobalDrag = function(x,y,target){
+        let deltaX =  x + globalDragItem.startX;
+        let deltaY =  y + globalDragItem.startY;
+
+        globalDragItem.style.transform = "translate(" + deltaX + "px," + deltaY + "px)";
+        globalDragItem.deltaX = deltaX;
+        globalDragItem.deltaY = deltaY;
+
+        let doDrag = true;
+        if (settings.useDelayedDrag){
+            doDrag = (Math.abs(deltaX)>5 || Math.abs(deltaY)>5);
+        }
+
+        if (!doDrag) return;
+
         if (currentDropTarget && currentDropTarget.classList.contains("droptargetactive")){
             currentDropTarget.classList.remove("droptargetactive");
         }
@@ -106,15 +130,8 @@ let UI = function(){
             currentDropTarget.classList.add("droptargetactive");
         }
 
-        var deltaX =  x + globalDragItem.startX;
-        var deltaY =  y + globalDragItem.startY;
-
-        globalDragItem.style.transform = "translate(" + deltaX + "px," + deltaY + "px)";
-        globalDragItem.deltaX = deltaX;
-        globalDragItem.deltaY = deltaY;
-
         if (settings.useDelayedDrag){
-            if (!touchData.isGlobalDragging && (Math.abs(deltaX)>5 || Math.abs(deltaY)>5)){
+            if (!touchData.isGlobalDragging){
                 globalDragItem.classList.add("visible");
                 touchData.isGlobalDragging = true;
                 dragItems.forEach(function(item){
@@ -130,7 +147,7 @@ let UI = function(){
                 currentDropTarget.classList.remove("droptargetactive");
 
                 if (currentDropTarget.onDrop){
-                    currentDropTarget.onDrop(dragItems,globalDragItem.deltaX,globalDragItem.deltaY);
+                    currentDropTarget.onDrop(dragItems,globalDragItem.deltaX,globalDragItem.deltaY,input.isShiftDown);
                 }
             }
 
@@ -289,6 +306,8 @@ let UI = function(){
                     var item = dragItems[0];
                     item.parent.reOrderIcon(item,touch.clientX,touch.clientY);
                 }
+
+                updateDragBadge(event.shiftKey);
             }else{
                 dragItems.forEach(function(item){
                     var x = touch.clientX - UIData.startDragX;
@@ -339,7 +358,7 @@ let UI = function(){
             item.activate(true);
         });
 
-        dragItems.forEach(function(item){
+        if (dragItems) dragItems.forEach(function(item){
             if (item.onStopDrag) item.onStopDrag();
         });
 
@@ -400,6 +419,9 @@ let UI = function(){
             globalDragItem.startY = 0;
             globalDragItem.style.transform = "translate(0px,0px)";
 
+            let badge = $div("drag-badge");
+            badge.id = "dragBadge";
+            globalDragItem.appendChild(badge);
 
             document.body.appendChild(globalDragItem);
             currentDragItem = globalDragItem;
@@ -415,6 +437,30 @@ let UI = function(){
         UIData.startDragX = touch.clientX;
         UIData.startDragY = touch.clientY;
 
+        if (globalDragItem) {
+            updateDragBadge(input.isShiftDown);
+        }
+    }
+
+    function updateDragBadge(isCopy) {
+        if (!globalDragItem) return;
+        let badge = document.getElementById("dragBadge");
+        if (!badge) return;
+
+        badge.style.left = (UIData.startDragX + 16) + "px";
+        badge.style.top = (UIData.startDragY + 16) + "px";
+
+        if (isCopy) {
+            if (!badge.classList.contains("copy")) {
+                badge.className = "drag-badge copy";
+                badge.innerHTML = '<span class="drag-badge-icon">⊕</span><span class="drag-badge-text">Copy</span>';
+            }
+        } else {
+            if (!badge.classList.contains("move")) {
+                badge.className = "drag-badge move";
+                badge.innerHTML = '<span class="drag-badge-icon">➔</span><span class="drag-badge-text">Move</span>';
+            }
+        }
     }
 
 

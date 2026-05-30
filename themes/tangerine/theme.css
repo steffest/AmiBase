@@ -10,11 +10,12 @@ body.theme_tangerine {
   --panel-border-light: rgba(255, 255, 255, 0.2);
   --input-background: #e0e4e5;
   --input-text-color: #000000;
+  --icon-white-filter: invert(1);
 }
 
 /*grid*/
 body.theme_tangerine #desktop {
-  background: url("Wallpapers/boing_soft_1.jpg");
+  background: url("Wallpapers/boing_soft_2.jpg");
   background-repeat: no-repeat;
   background-size: cover;
   background-position: bottom left;
@@ -25,9 +26,6 @@ body.theme_tangerine #desktop .window {
 }
 body.theme_tangerine #desktop .window.borderless {
   background: none;
-}
-body.theme_tangerine .toolbar .button.tool.light {
-  filter: invert(100%);
 }
 body.theme_tangerine .topbar {
   background-color: #ECECEC;

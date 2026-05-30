@@ -1,17 +1,15 @@
-import fileSystem from "../../../_script/system/filesystem.js";
-import BinaryStream from "../../binaryStream/binaryStream.js";
+import fileSystem from "../../_script/system/filesystem.js";
+import BinaryStream from "../binaryStream/binaryStream.js";
+import user from "../../_script/user.js";
+import {getToken} from "./connect.js";
+
+
 let Dropbox = function(){
     let me = {};
     let sdk;
     let cache = [];
 
-    /*
-    to get and access token:
-    visit https://dropbox.github.io/dropbox-api-v2-explorer/#files_list_folder
-    click "get token"
-    copy the token into the "password" field of the settings of this mount
-
-     */
+    console.error("Dropbox",user);
 
     fileSystem.register("dropbox",me);
 
@@ -96,6 +94,25 @@ let Dropbox = function(){
         });
     }
 
+    me.deleteFile = async function(path,config){
+        await loadSDK(config);
+        path = getPath(path);
+        if (!path || path === "/") return false;
+        path = "/" + path;
+
+        return new Promise((next)=>{
+            sdk.filesDeleteV2({path: path})
+                .then(function(response) {
+                    console.error(response);
+                    next(true);
+                })
+                .catch(function(error) {
+                    console.error(error);
+                    next(false);
+                });
+        });
+    }
+
     me.getUniqueName = async function(path,name,config){
         await loadSDK(config);
         path = getPath(path);
@@ -150,9 +167,37 @@ let Dropbox = function(){
             }else{
                 let script = document.createElement('script');
                 script.onload = function () {
-                    console.error(window.Dropbox);
                     sdk = new window.Dropbox.Dropbox({ accessToken: config.pass });
-                    next();
+                    console.error("loaded sdk",sdk);
+                    console.error("config",config);
+
+                    // check user
+                    sdk.checkUser().then(function(response) {
+                        console.error(response);
+                        next();
+                    }).catch(function(error) {
+                        // get a new token
+                        getToken().then(token=>{
+                            user.getAmiSettings().then(settings=>{
+                                settings.mounts = settings.mounts || [];
+                                let currentMount = settings.mounts.find(mount=>mount.handler === "dropbox" && mount.pass === config.pass);
+                                if (currentMount){
+                                    currentMount.pass = token;
+
+
+                                    console.error("token",token);
+                                    console.error("current mount",currentMount);
+                                    console.error("settings",settings);
+                                    user.setAmiSettings(settings);
+                                }else{
+                                    console.error("no mount found");
+                                }
+                            });
+
+                            sdk = new window.Dropbox.Dropbox({ accessToken: token });
+                            next();
+                        });
+                    });
                 };
                 script.src = url;
                 document.head.appendChild(script);

@@ -1,0 +1,372 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1db954, #191414);
+    min-height: 100vh;
+    color: white;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #1db954;
+}
+
+.section {
+    margin-bottom: 40px;
+}
+
+.login-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 60px 40px;
+    text-align: center;
+    max-width: 500px;
+    margin: 0 auto;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.login-card h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+.login-card p {
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: #1db954;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #1ed760;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.search-container {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    max-width: 600px;
+}
+
+.search-input {
+    flex: 1;
+    padding: 15px 20px;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #1db954;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.artists-list,
+.tracks-list {
+    display: grid;
+    gap: 15px;
+}
+
+.artist-item,
+.track-item {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.artist-item:hover,
+.track-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.artist-image,
+.track-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.track-image {
+    border-radius: 8px;
+}
+
+.artist-info,
+.track-info-item {
+    flex: 1;
+}
+
+.artist-name,
+.track-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.artist-followers,
+.track-artist {
+    opacity: 0.7;
+    font-size: 0.9rem;
+}
+
+.current-track {
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    max-width: 1160px;
+    margin: 0 auto;
+}
+
+.track-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.album-art {
+    width: 80px;
+    height: 80px;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.track-details .track-name {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.track-details .artist-name {
+    opacity: 0.8;
+    font-size: 1rem;
+}
+
+.player-controls {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.control-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+}
+
+.play-btn {
+    font-size: 2rem;
+    background: #1db954;
+    width: 60px;
+    height: 60px;
+}
+
+.play-btn:hover {
+    background: #1ed760;
+}
+
+.progress-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    overflow: visible;
+    position: relative;
+    cursor: pointer;
+    padding: 10px 0; /* Add padding for easier clicking */
+}
+
+.progress {
+    height: 6px;
+    background: #1db954;
+    width: 0%;
+    transition: width 0.1s ease;
+    border-radius: 3px;
+    position: relative;
+}
+
+.progress::after {
+    content: "";
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    background: #1db954;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.progress-bar:hover .progress::after {
+    opacity: 1;
+}
+
+.progress-container:hover .progress-bar {
+    height: 8px;
+}
+
+.progress-container:hover .progress {
+    height: 8px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.visualizer-container {
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.visualizer-canvas {
+    width: 100%;
+    max-width: 600px;
+    height: 120px;
+    border-radius: 10px;
+    background: linear-gradient(45deg, rgba(29, 185, 84, 0.1), rgba(25, 20, 20, 0.3));
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    .header h1 {
+        font-size: 1.8rem;
+    }
+
+    .current-track {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        right: auto;
+        margin-top: 30px;
+    }
+
+    .search-container {
+        flex-direction: column;
+    }
+
+    .user-info {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .visualizer-canvas {
+        height: 80px;
+    }
+
+    .visualizer-container {
+        padding: 15px;
+    }
+}

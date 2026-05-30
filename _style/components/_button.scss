@@ -1,0 +1,89 @@
+button,
+.button{
+  border: 1px solid $panel-border-dark;
+  background-color: $button-background;
+  color: $button-text-color;
+  border-left-color: $panel-border-light;
+  border-top-color: $panel-border-light;
+  padding: 3px 6px;
+  text-align: center;
+  margin: 2px;
+  font-size: 13px;
+
+  &.big{
+    padding: 6px;
+  }
+
+  &.inline{
+    display: inline-block;
+  }
+
+  &:hover{
+    background-color: $button-background-highlight;
+    cursor: pointer;
+  }
+
+  &.transparent{
+    background-color: transparent;
+    border: none;
+
+    &:hover{
+      background-color: $button-background-highlight-transparent;
+    }
+  }
+
+  &.square{
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    border-radius: 0;
+    position: relative;
+    vertical-align: middle;
+    display:inline-block;
+
+    .icon{
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
+      width: 50px;
+      height: 50px;
+      left: 7px;
+    }
+
+    label{
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      font-size: 12px;
+      text-shadow: var(--button-square-label-shadow);
+      color: var(--button-square-label-color);
+    }
+
+    &:hover{
+      label{
+        color: var(--button-square-label-color-hover);
+      }
+    }
+
+    &.big{
+      width: 80px;
+      height: 80px;
+      padding: 0;
+      border-radius: 0;
+      position: relative;
+
+      .icon{
+        width: 60px;
+        height: 60px;
+        left: 10px;
+      }
+
+      label{
+        bottom: 6px;
+      }
+    }
+  }
+
+
+}

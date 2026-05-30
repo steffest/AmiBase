@@ -16,7 +16,12 @@ var Main=function(){
 
     me.init = async function(){
 
-        await system.loadEnvironment();
+        let hasEnvironment = await system.loadEnvironment();
+        if (!hasEnvironment){
+            showSplash();
+            return;
+        }
+
         await desktop.loadTheme(await user.getTheme());
         input.init();
         desktop.init();
@@ -26,12 +31,30 @@ var Main=function(){
         console.log("user",user);
         desktop.loadContent(settings.initialContent,settings.mounts,"desktop:");
         desktop.cleanUp();
-        network.init();
+        await network.init();
+        network.connectFromUrlInvite();
         initDone = true;
-
-
     };
 
+    function showSplash(){
+        document.body.innerHTML = "";
+        document.body.style.margin = "0";
+        document.body.style.background = "#fff";
+        document.body.style.height = "100vh";
+        document.body.style.display = "grid";
+        document.body.style.placeItems = "center";
+
+        let splash = document.createElement("div");
+        splash.textContent = "Amibase";
+        splash.style.color = "#d8d8d8";
+        splash.style.fontFamily = "Arial, Helvetica, sans-serif";
+        splash.style.fontSize = "72px";
+        splash.style.fontWeight = "100";
+        splash.style.lineHeight = "1";
+        document.body.appendChild(splash);
+    }
+
+    window.Main = me;
     window.addEventListener("DOMContentLoaded",me.init);
 
     return me;

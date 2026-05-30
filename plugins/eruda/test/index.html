@@ -1,0 +1,35 @@
+<html>
+<head>
+    <style>
+        #app{
+            position: absolute;
+            width: 300px;
+            height: 200px;
+            background-color: green;
+        }
+    </style>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+    import('https://cdn.jsdelivr.net/npm/eruda@3.4.1/+esm').then(module=>{
+        let eruda = module.default;
+
+        window.eruda = eruda;
+
+        let el = document.createElement('div');
+        let parent = document.getElementById('app');
+        parent.appendChild(el);
+
+        eruda.init({
+            container: el,
+            useShadowDom: true,
+            autoScale: true,
+            inline: true
+        });
+    })
+
+</script>
+</body>
+
+</html>

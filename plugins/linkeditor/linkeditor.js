@@ -16,7 +16,7 @@ let LinkEditor = ()=>{
     }
 
     let createUI = function(){
-        return $(".content.full",{},
+        return $(".content.full.linkeditor",{},
             $(".panel.full",
                 {style:{width:"100px", right: "unset"}}
             ),
@@ -48,7 +48,12 @@ let LinkEditor = ()=>{
     }
 
     async function save(){
-        if (currentFile) amiBase.writeFile(currentFile);
+        if (currentFile) {
+            amiBase.writeFile(currentFile);
+            if (currentFile._icon && typeof currentFile._icon.setLabel === "function") {
+                currentFile._icon.setLabel(currentFile.label || currentFile.name || "");
+            }
+        }
         close();
     }
     function close(){

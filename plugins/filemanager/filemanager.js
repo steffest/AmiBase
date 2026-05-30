@@ -1,5 +1,5 @@
-import $ from "../../../_script/util/dom.js";
-import SelectBox from "../../../_script/ui/selectBox.js";
+import $ from "../../_script/util/dom.js";
+import SelectBox from "../../_script/ui/selectBox.js";
 import fileSystem from "../../_script/system/filesystem.js";
 import amiIcon from "../../_script/ui/icon.js";
 import system from "../../_script/system/system.js";
@@ -18,6 +18,7 @@ let FileManager = function(){
     let viewMode = "icons";
     let currentFolder;
     let currentFile;
+    let nameFilter = "";
 
     me.init = function(containerWindow,context){
         amiWindow = containerWindow;
@@ -26,6 +27,7 @@ let FileManager = function(){
         let menu = [
             {label: "File Manager",items:[
                     {label: "Refresh",id:"fm-refresh",action:()=>me.refresh()},
+                    {label: "Select All",action:()=>selectAll()},
                     {label: "Clean Up",action:()=>amiWindow.cleanUp()},
                     {label: "Upload File",action:()=>amiBase.uploadFile(me)},
                     {label: "New Drawer",action:()=>{
@@ -55,6 +57,10 @@ let FileManager = function(){
         containerWindow.setMenu(menu,true);
 
         let toolBar = $(".panel.toolbar",
+            $("input",{type:"text",placeholder:"Search in folder ...",oninput:(e)=>{
+                nameFilter = (e.target.value || "").toLowerCase().trim();
+                applyNameFilter();
+            }}),
             toolButton("file","Show as preview",()=>{
                 currentFolder.viewMode = viewMode = "preview";
                 me.openFolder(currentFolder);
@@ -79,19 +85,33 @@ let FileManager = function(){
         );
 
 
-        sideBar=$(".panel.full",{style:{width:"200px", right: "unset"}});
+        sideBar=$(".panel.transparent.full.tabs.vertical",{style:{width:"200px", right: "unset"}});
         infoBar=$(".infobar.hidden");
-        mainPanel=$(".panel.full.transparent.list.overflow",{
+        mainPanel=$(".panel.transparent.full.transparent.list.overflow",{
             onClick:()=>{
                 containerWindow.getSelectedIcons().forEach(function(item){
                     item.deActivate();
                 });
                 amiWindow.activate();
             },
-            onDrag: (touchData)=>selectBox.update(touchData),
+            onDown:(touchData)=>{
+                touchData.startScrollTop = mainPanel.scrollTop;
+            },
+            onDrag: (touchData)=>{
+               // quick hack ...
+                // TODO: attach to proper setting
+
+                if (document.body.classList.contains("theme_ink")){
+                    if (touchData.deltaY && touchData.deltaY !== 0){
+                        mainPanel.scrollTop = (touchData.startScrollTop || 0)  - touchData.deltaY;
+                    }
+                }else{
+                    selectBox.update(touchData)
+                }
+            },
             onUp: ()=>selectBox.remove()
         });
-        container = $(".content.panel.full.filemanager",toolBar,sideBar,infoBar,mainPanel);
+        container = $(".content.panel.transparent.full.filemanager",toolBar,sideBar,infoBar,mainPanel);
 
         toolBar.style.height = '30px';
         toolBar.style.bottom = "unset";
@@ -99,6 +119,7 @@ let FileManager = function(){
         mainPanel.style.top = toolBar.style.height;
         sideBar.style.top = toolBar.style.height;
         infoBar.style.top = toolBar.style.height;
+
 
         let selectBox = SelectBox({
             parent: mainPanel,
@@ -129,6 +150,7 @@ let FileManager = function(){
             let icons = amiWindow.getIcons();
             icons.forEach(function(icon){
                 if (icon){
+                    if (icon.element && icon.element.style.display === "none") return;
                     icon.setPosition(left,top);
                     left += gridWidth;
                     if (left>w){
@@ -149,20 +171,28 @@ let FileManager = function(){
     me.openFile = async function(file){
         if (file && file.filetype && file.filetype.mountFileSystem){
 
+            // Check if this file is already mounted — reuse existing mount
+            const fileUrl = file.path || file.url;
+            const existing = fileUrl ? fileSystem.getMountByUrl(fileUrl) : null;
+            if (existing) {
+                me.openFolder(existing);
+                return;
+            }
+
             if (!file.binary){
                 file.binary = await fileSystem.readFile(file,true);
             }
-            console.error(file.binary)
 
             let drive = {
                 type: "drive",
                 name: file.name,
                 volume: file.filetype.mountFileSystem.volume,
                 handler: file.filetype.mountFileSystem.plugin,
-                binary:file.binary
+                binary: file.binary,
+                url: fileUrl
             }
-            fileSystem.mount(drive).then(()=>{
-                me.openFolder(drive);
+            fileSystem.mount(drive).then((mountedDrive)=>{
+                me.openFolder(mountedDrive || drive);
                 listMounts();
             });
         }else{
@@ -191,6 +221,7 @@ let FileManager = function(){
                 amiWindow.setGridSize(70,70);
                 itemRenderer = function(object){
                     let icon = amiIcon(object);
+                    icon.element.dataset.fmName = (object.name || "").toLowerCase();
                     icon.onDown(()=>{
                         currentFile = object;
                         displayFileInfo();
@@ -202,6 +233,7 @@ let FileManager = function(){
                 amiWindow.setGridSize(110,120);
                 itemRenderer = function(object){
                     let icon = amiIcon(object);
+                    icon.element.dataset.fmName = (object.name || "").toLowerCase();
                     icon.onDown(()=>{
                         currentFile = object;
                         displayFileInfo();
@@ -230,6 +262,14 @@ let FileManager = function(){
                             item.classList.add("selected");
                             displayFileInfo();
                             selectItem(item);
+                            if (amiBase.settings.UIConcept === "plain"){
+                                if (object.type === "folder"){
+                                    me.openFolder(object);
+                                }else{
+                                    object.open()
+                                }
+                            }
+
                         },
                         onDoubleClick:()=>{
                             if (object.type === "folder"){
@@ -292,6 +332,7 @@ let FileManager = function(){
                         },
                         globalDrag:true
                     },object.name);
+                    item.dataset.fmName = (object.name || "").toLowerCase();
                     mainPanel.appendChild(item);
                 }
         }
@@ -300,10 +341,12 @@ let FileManager = function(){
         if (viewMode === "list" && currentFolder.path.indexOf("/")>0){
            let parent = fileSystem.getParentPath(currentFolder.path);
               let item = $(".listitem.folder",{onClick:()=>me.openFolder(parent)}, "..");
+                item.dataset.filterIgnore = "1";
                 mainPanel.appendChild(item);
         }
 
         list.forEach(object => itemRenderer(object))
+        applyNameFilter();
         if (viewMode !== "list") amiWindow.cleanUp();
 
         displayFolderInfo();
@@ -315,9 +358,27 @@ let FileManager = function(){
         if (file.object && file.object.isAmiObject){
 
             if (file.object.type === "file" || file.object.type === "link"){
-                amiBase.moveFile(file.object,file.object.path,currentFolder.path).then(result=>{
-                    if (result) me.refresh();
-                })
+                if (file.isCopy) {
+                    amiBase.copyFile(file.object,currentFolder.path).then(result=>{
+                        if (result) {
+                            me.refresh();
+                        }
+                    })
+                } else {
+                    amiBase.moveFile(file.object,file.object.path,currentFolder.path).then(result=>{
+                        if (result) {
+                            me.refresh();
+                            if (file.parent) {
+                                if (file.parent.removeIcon) {
+                                    file.parent.removeIcon(file);
+                                }
+                                if (file.parent.sendMessage) {
+                                    file.parent.sendMessage("refresh");
+                                }
+                            }
+                        }
+                    })
+                }
             }
         }
     }
@@ -367,7 +428,18 @@ let FileManager = function(){
         var mounts = amiBase.getMounts();
         Object.keys(mounts).forEach(key => {
             var mount = mounts[key];
-            sideBar.appendChild($(".button",{onClick:()=>me.openFolder(key + ":")},mount.name + " (" + key + ")"));
+            sideBar.appendChild(
+                $(".button",
+                    {onClick:()=>me.openFolder(key + ":")},
+                    $(".icon",{
+                        style:{
+                            backgroundImage:"url(plugins/filemanager/icons/drive.png)"
+                        }
+                    }),
+                    mount.name,
+                    $("aside.uppercase",key)
+                )
+            );
         })
     }
 
@@ -452,6 +524,19 @@ let FileManager = function(){
         mainPanel.style.left = left + "px";
     }
 
+    function applyNameFilter(){
+        let items = mainPanel.querySelectorAll("[data-fm-name]");
+        console.error(items);
+        items.forEach(item=>{
+            item.style.display = !nameFilter || item.dataset.fmName.indexOf(nameFilter) >= 0 ? "" : "none";
+        });
+
+        let nonFilterItems = mainPanel.querySelectorAll("[data-filter-ignore]");
+        nonFilterItems.forEach(item=>item.style.display = "");
+
+        if (viewMode !== "list") amiWindow.cleanUp();
+    }
+
     function formatSize(byte){
         if (byte<1024) return byte + " bytes";
         if (byte<1024*1024) return Math.round(byte/1024) + " KB";
@@ -472,6 +557,20 @@ let FileManager = function(){
             item.classList.add("selected");
         }
     }
+
+    function selectAll(){
+        if (viewMode === "list"){
+            let items = mainPanel.querySelectorAll(".listitem:not([data-filter-ignore])");
+            items.forEach(item=>{
+                if (item.style.display !== "none") item.classList.add("selected");
+            });
+        } else {
+            amiWindow.getIcons().forEach(icon=>{
+                if (icon.element && icon.element.style.display !== "none") icon.activate(true);
+            });
+        }
+    }
+
 
     return me;
 };

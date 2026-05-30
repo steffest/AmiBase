@@ -106,6 +106,17 @@ let AmiBase = ()=>{
 
     }
 
+    me.closeWindow = function() {
+        if (isAmiBased) {
+            window.parent.postMessage({
+                command: "closeWindow",
+                windowId: windowId
+            }, "*");
+            return true;
+        }
+        return false;
+    };
+
     me.setMessageHandler = function(handler){
         messageHandler = handler;
     };

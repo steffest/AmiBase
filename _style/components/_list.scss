@@ -1,0 +1,53 @@
+.list{
+  .listitem{
+    padding: 3px 4px;
+    border-bottom: 1px solid var(--list-divider);
+    cursor: pointer;
+    color: $panel-text-color;
+    font-size: var(--listitem-font-size);
+
+    &:hover{
+      background-color: var(--list-hover-background);
+      color: $panel-text-color-highlight;
+    }
+
+    &.selected{
+      background-color: var(--list-selected-background);
+      color: $panel-text-color-highlight;
+    }
+
+    &.folder, &.file{
+      display: flex;
+      align-items: center;
+
+      &:before{
+        content: "";
+        width: 16px;
+        height: 16px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-image: url("../../_img/icons/line/file.png");
+        filter: var(--icon-white-filter);
+      }
+    }
+
+    &.folder:before{
+      background-image: url("../../_img/icons/line/folder.png");
+    }
+
+    .modal{
+      input{
+        text-align: left;
+        width: 100%;
+        font-size: 12px;
+        border: 1px solid var(--modal-input-border);
+        background-color: var(--modal-input-background);
+
+        &:focus{
+          outline: none;
+        }
+      }
+    }
+  }
+}

@@ -1,8 +1,8 @@
 Amibase
 
 Virtual Desktop 
-handling retro-files
+Handling (retro) files.
 ----
 Work in progress
 ----
-© 2021-2024 Steffest - dev@stef.be
+© 2021-2026 Steffest - dev@stef.be
