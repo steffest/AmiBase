@@ -1,4 +1,5 @@
 {
   "styles": ["hex.css"],
-  "module": "hex.js"
+  "module": "hex.js",
+  "capabilities": ["fs.dialog", "fs.read"]
 }

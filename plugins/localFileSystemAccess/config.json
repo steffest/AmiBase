@@ -1,3 +1,4 @@
 {
-  "module": "localFileSystemAccess.js"
+  "module": "localFileSystemAccess.js",
+  "capabilities": []
 }

@@ -1,5 +1,6 @@
 {
   "styles": ["main.css"],
   "index": "index.html",
-  "module": "main.js"
+  "module": "main.js",
+  "capabilities": ["fs.dialog", "fs.read", "fs.write"]
 }

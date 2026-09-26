@@ -42,6 +42,10 @@ let Desktop = function(){
         document.body.appendChild(screen);
         me.height = document.body.offsetHeight;
         me.width = document.body.offsetWidth;
+        window.addEventListener('resize', function(){
+            me.height = document.body.offsetHeight;
+            me.width = document.body.offsetWidth;
+        });
         let selectBox = SelectBox({
             parent: container,
             onSelect:(x,y,w,h)=>{
@@ -103,6 +107,43 @@ let Desktop = function(){
                 }
             }
 
+        }
+    };
+
+    // Opens a URL as a real, native browser window (a genuinely separate
+    // process, not an iframe), when running inside the Electron shell --
+    // kiosk-image's Openbox window manager gives it normal window behavior
+    // (movable, resizable, closable, Alt+Tab) with no AmiBase involvement
+    // beyond launching it. Falls back to a plain new browser tab otherwise.
+    me.openWebsite = async function(url){
+        if (window.electronBridge){
+            // --no-sandbox: matches the kiosk image's top-level Electron shell --
+            // this chroot-built image has no setuid sandbox helper configured, so
+            // Chromium (bundled inside Electron, or here spawned standalone) won't
+            // start without it. --no-first-run/--noerrdialogs/--disable-infobars/
+            // --disable-session-crashed-bubble avoid first-run or crash-restore UI.
+            let result = await window.electronBridge.launchApp(
+                "chromium --app=" + url + " --ozone-platform=x11 --no-sandbox" +
+                    " --no-first-run --noerrdialogs --disable-infobars --disable-session-crashed-bubble" +
+                    " --user-data-dir=/tmp/amibase-website-" + Date.now()
+            );
+            if (!result.ok) me.showError("Couldn't open website: " + result.reason);
+        }else{
+            window.open(url,"_blank");
+        }
+    };
+
+    // Opens a real, native terminal (xterm) the same way openWebsite opens a
+    // browser, when running inside the Electron shell. Falls back to the
+    // existing term-server-backed web terminal (plugin:terminal) otherwise,
+    // since that already works in any plain-browser context without
+    // electronBridge.
+    me.openTerminal = async function(){
+        if (window.electronBridge){
+            let result = await window.electronBridge.launchApp("xterm");
+            if (!result.ok) me.showError("Couldn't open terminal: " + result.reason);
+        }else{
+            system.launchProgram({url: "plugin:terminal"});
         }
     };
 
@@ -191,93 +232,178 @@ let Desktop = function(){
         });
     };
 
-    me.handleUpload = function(files,target){
-        console.log("file uploaded");
-        if (files.length){
-            var uploadfile = files[0];
+    // Read all entries from a DirectoryReader, handling the browser's batching
+    function readAllDirEntries(reader) {
+        return new Promise(resolve => {
+            let all = [];
+            function batch() {
+                reader.readEntries(entries => {
+                    if (!entries.length) { resolve(all); return; }
+                    all = all.concat(Array.from(entries));
+                    batch();
+                });
+            }
+            batch();
+        });
+    }
 
-            var reader = new FileReader();
-            reader.onload = async function(){
+    // Get a File object from a FileSystemFileEntry
+    function getFileFromEntry(entry) {
+        return new Promise(resolve => entry.file(resolve));
+    }
+
+    // Process a single File object and place it in RAM (and optionally on the desktop)
+    async function processSingleFile(file, target, ramFolderPath) {
+        return new Promise(resolve => {
+            let reader = new FileReader();
+            reader.onload = async function() {
+                let filePath = ramFolderPath
+                    ? "ram:" + ramFolderPath + "/" + file.name
+                    : "ram:" + file.name;
                 let fileInfo = {
                     type: "file",
-                    name: uploadfile.name,
-                    path: "ram:" + uploadfile.name,
-                    mimeType: uploadfile.type
-                }
-
+                    name: file.name,
+                    path: filePath,
+                    mimeType: file.type
+                };
                 let BinaryStream = await system.loadLibrary("binaryStream.js");
-                fileInfo.binary = new BinaryStream(reader.result,true);
-
-                // TODO: should I use the mimeType for this?
+                fileInfo.binary = new BinaryStream(reader.result, true);
                 fileInfo.filetype = await system.detectFileType(fileInfo);
-
                 console.log("uploaded file is of type " + fileInfo.filetype.name);
                 fileInfo.className = fileInfo.filetype.className;
+                let fileObj = amiObject(fileInfo);
 
-                var file = amiObject(fileInfo);
-
-                if (target){
-                    // upload to application
-                    if (target.uploadFile){
-                        target.uploadFile(file);
-                        return;
+                if (!ramFolderPath) {
+                    // Root-level file: show on desktop
+                    if (target && target.uploadFile) {
+                        target.uploadFile(fileObj);
+                        resolve(); return;
                     }
-                }
-
-                // upload to desktop/ram
-                me.createIcon(file);
-                me.cleanUp();
-
-                if (file.filetype.mountFileSystem){
-                    let drive = {
-                        type: "drive",
-                        name: file.name,
-                        volume: file.filetype.mountFileSystem.volume,
-                        handler: file.filetype.mountFileSystem.plugin,
-                        binary: file.binary,
-                        url: file.path || file.url
+                    me.createIcon(fileObj);
+                    me.cleanUp();
+                    if (fileObj.filetype.mountFileSystem) {
+                        let drive = {
+                            type: "drive",
+                            name: fileObj.name,
+                            volume: fileObj.filetype.mountFileSystem.volume,
+                            handler: fileObj.filetype.mountFileSystem.plugin,
+                            binary: fileObj.binary,
+                            url: fileObj.path || fileObj.url
+                        };
+                        fileSystem.mount(drive);
+                    } else {
+                        fileSystem.getMount("ram:").handler.addFile(fileObj);
                     }
-                    fileSystem.mount(drive);
-                }else{
-                    fileSystem.getMount("ram:").handler.addFile(file);
+                } else {
+                    // Nested file inside an uploaded folder: store in RAM only
+                    fileSystem.getMount("ram:").handler.addFile(fileObj);
                 }
-
+                resolve();
             };
-            reader.readAsArrayBuffer(uploadfile);
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    // Recursively upload a FileSystemDirectoryEntry into RAM
+    async function uploadDirEntry(entry, parentRamPath) {
+        let name = entry.name;
+        let myRamPath = parentRamPath ? parentRamPath + "/" + name : name;
+        let ramHandler = fileSystem.getMount("ram:").handler;
+        await ramHandler.createDirectory(parentRamPath || "", name);
+
+        // At root level, show a folder icon on the desktop
+        if (!parentRamPath) {
+            me.createIcon(amiObject({ type: "folder", name: name, path: "ram:" + name }));
+            me.cleanUp();
+        }
+
+        let children = await readAllDirEntries(entry.createReader());
+        for (let child of children) {
+            if (child.isDirectory) {
+                await uploadDirEntry(child, myRamPath);
+            } else {
+                let file = await getFileFromEntry(child);
+                await processSingleFile(file, null, myRamPath);
+            }
+        }
+    }
+
+    me.handleUpload = async function(files, target, items) {
+        console.log("file uploaded", files);
+
+        // Use the FileSystem Entry API when available — supports dropped folders
+        if (items && items.length && items[0] && items[0].webkitGetAsEntry) {
+            let entries = [];
+            for (let i = 0; i < items.length; i++) {
+                let entry = items[i].webkitGetAsEntry();
+                if (entry) entries.push(entry);
+            }
+            if (entries.length) {
+                for (let entry of entries) {
+                    if (entry.isDirectory) {
+                        await uploadDirEntry(entry, null);
+                    } else {
+                        let file = await getFileFromEntry(entry);
+                        await processSingleFile(file, target, null);
+                    }
+                }
+                return;
+            }
+        }
+
+        // Fallback: plain FileList (e.g. from <input type="file">)
+        if (files.length) {
+            await processSingleFile(files[0], target, null);
         }
     };
 
 
+    // Resolves once all content objects and mounts have been added and every
+    // mounted drive's handler is fully wired. Boot code awaits this before
+    // running startup-sequences, so it must not depend on fetch/mount timing.
     me.loadContent = function(data,mounts,path){
-        if (!data || typeof data === "string"){
-            data = data||"content/default.json";
-            fetchService.json(data,function(_data){
-                setContent(_data);
-            });
-        }else{
-            setContent(data);
-        }
+        return new Promise(function(resolve){
+            if (!data || typeof data === "string"){
+                data = data||"content/default.json";
+                fetchService.json(data,function(_data){
+                    setContent(_data).then(resolve);
+                });
+            }else{
+                setContent(data).then(resolve);
+            }
 
-        function setContent(content){
-            content.forEach(function(item){
-                me.addObject(item)
-            })
-            if (mounts && mounts.length){
-                mounts.forEach(function(item){
-                    me.addObject(item);
+            async function setContent(content){
+                let driveObjects = [];
+                function add(item){
+                    let icon = me.addObject(item);
+                    // icon.object is the amiObject-wrapped instance that
+                    // fileSystem.mount registered (and keyed whenReady on),
+                    // not the raw item, so collect that one.
+                    if (item && item.type === "drive" && icon && icon.object){
+                        driveObjects.push(icon.object);
+                    }
+                }
+                content.forEach(add);
+                if (mounts && mounts.length) mounts.forEach(add);
+                syncRamDriveDisplay();
+                me.cleanUp();
+                // Wait for each drive's handler to be fully wired. addObject ->
+                // fileSystem.mount registers the mount synchronously, but a
+                // string handler is loaded asynchronously; whenReady awaits that.
+                await Promise.all(driveObjects.map(function(object){
+                    return fileSystem.whenReady(object).catch(function(e){
+                        console.warn("mount failed during loadContent",object,e);
+                    });
+                }));
+            }
+
+            if (path){
+                filesystem.getDirectory(path).then(list=>{
+                    list.forEach(me.addObject);
+                    me.cleanUp();
                 });
             }
-            syncRamDriveDisplay();
-            me.cleanUp();
-        }
-
-        if (path){
-            filesystem.getDirectory(path).then(list=>{
-                console.error(list);
-                list.forEach(me.addObject);
-                me.cleanUp();
-            })
-        }
+        });
     };
 
     function isRamDriveIcon(icon){
@@ -291,7 +417,7 @@ let Desktop = function(){
     }
 
     function syncRamDriveDisplay(forceState){
-        let showRamDrive = typeof forceState === "boolean" ? forceState : settings.displayRamDrive !== false;
+        let showRamDrive = typeof forceState === "boolean" ? forceState : settings.displayRamDrive === true;
         let ramIcons = me.getIcons().filter(isRamDriveIcon);
 
         if (showRamDrive && !ramIcons.length){

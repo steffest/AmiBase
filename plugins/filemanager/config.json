@@ -1,4 +1,5 @@
 {
   "module": "filemanager.js",
-  "styles": ["filemanager.css"]
+  "styles": ["filemanager.css"],
+  "capabilities": ["fs.read", "fs.write", "system.inspect", "system.settings"]
 }

@@ -1,5 +1,6 @@
 {
   "index": "index.html",
   "width": 720,
-  "height": 568
+  "height": 568,
+  "capabilities": []
 }

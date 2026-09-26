@@ -1,3 +1,4 @@
 {
-  "module": ["amigafs.js"]
+  "module": ["amigafs.js"],
+  "capabilities": []
 }

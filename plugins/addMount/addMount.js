@@ -22,6 +22,7 @@ let AddMount = ()=>{
             {name: "Laozi",icon: "laozi.svg",type:"loazi",usePass: true,fields:[{label:"Laozi API endpoint",name:"url",placeholder: "e.g. https://my.server.com/api/"}]},
             {name: "Friend OS",icon: "friendos.svg",type:"friend",volume:"FRIEND",fields:[{label:"Friend Server url",name:"url",placeholder: "e.g. https://me.friendsky.cloud"}],usePass:true,info:"Your password is not stored, we only store the encrypted hash needed to collect a Friend Access Token."},
             {name: "RAD Drive",icon: "rad.svg",type:"rad",volume:"RAD"},
+            {name: "AmiBase Server",icon: "hdd.svg",type:"amibaseServer",volume:"AMI",usePass:true,fields:[{label:"Server URL",name:"url",placeholder: "e.g. https://host:3000"}],info:"An AmiBase server exposes a host filesystem (and, if it offers one, a shell)."},
         ]
 
         let list = $(".content.full",{
@@ -43,7 +44,7 @@ let AddMount = ()=>{
                     let inputs = [];
 
                     let panel = $(".content.full.addmount",
-                        $(".icon.mount",{style:{backgroundImage: "url(../../_img/icons/" + program.icon + ")"}}),
+                        $(".icon.mount",{style:{backgroundImage: "url(_img/icons/" + program.icon + ")"}}),
                         form = $(".form"),
                         $(".buttons.panel.bottom",
                             $(".button.inline",{onClick:async()=>{
@@ -118,7 +119,7 @@ let AddMount = ()=>{
                     w.setContent(panel);
 
                 }},
-                $(".icon",{style:{backgroundImage: "url(../../_img/icons/" + program.icon + ")"}}),
+                $(".icon",{style:{backgroundImage: "url(_img/icons/" + program.icon + ")"}}),
                 $("label",program.name)
             ));
         });
@@ -191,7 +192,7 @@ let AddMount = ()=>{
         let labelInput, clientIdInput, statusEl;
 
         let panel = $(".content.full.addmount",
-            $(".icon.mount",{style:{backgroundImage: "url(../../_img/icons/google-drive.svg)"}}),
+            $(".icon.mount",{style:{backgroundImage: "url(_img/icons/google-drive.svg)"}}),
             $(".form",
                 $(".property",
                     $("label","Mount Name"),

@@ -7,6 +7,22 @@ import fileSystem from "../system/filesystem.js";
 import ui from "./ui.js";
 import Modal from "./modal.js";
 
+// object.icon is usually already a loadable URL (external link, bundled asset).
+// When it's a path on one of our own mounts it needs resolving first - cache
+// the result on the object so repeat renders of the same icon don't re-fetch.
+function resolveIconUrl(object){
+    let icon = object.icon;
+    if (object._resolvedIcon && object._resolvedIconSource === icon) return Promise.resolve(object._resolvedIcon);
+    let mounts = fileSystem.getMounts();
+    let volume = fileSystem.getVolume(icon);
+    if (!volume || !mounts[volume]) return Promise.resolve(icon);
+    return fileSystem.getDisplayUrl(icon).then(url=>{
+        object._resolvedIconSource = icon;
+        object._resolvedIcon = url || icon;
+        return object._resolvedIcon;
+    });
+}
+
 let AmiIcon = function(object){
     var me = {
         type:"icon",
@@ -16,12 +32,13 @@ let AmiIcon = function(object){
     };
 
     let singleClick = settings.UIConcept === "plain";
+    let openAction = ()=>object.open();
 
     let icon = $(".icon" + (settings.useDelayedDrag?".delayed":"") + "." + object.type,
         {
             onDragStart: ()=>{
                 if (singleClick){
-                    object.open();
+                    openAction();
                     return;
                 }
                 me.activate();
@@ -30,7 +47,7 @@ let AmiIcon = function(object){
             globalDrag:!singleClick,
             onDoubleClick: (e)=>{
                 if (singleClick) return;
-                object.open();
+                openAction();
             },
             onContext: (e)=>{
                 let modal = ui.getModal();
@@ -69,7 +86,7 @@ let AmiIcon = function(object){
                 items.push({
                     label:"Info",
                     action: function(){
-                        system.inspectFile(object);
+                        system.inspectFile(object,me);
                     }
                 });
 
@@ -104,31 +121,49 @@ let AmiIcon = function(object){
                 }
             }
         });
-    var img = $div("glyph " + " " + object.type);
+    var img = $div("glyph " + object.type);
     var label = $div("label","","<span>" + (object.label || object.name) + "</span>");
 
-    if (object.icon){
-        img.style.backgroundImage = "url('" + object.icon + "')";
-        img.style.backgroundPosition = "center center";
-        img.classList.add("cover");
-    }else{
-        let name = object.path || object.url || object.name || object.label || "";
-        system.getFileTypeFromName(name).then(fileType=>{
-            if (fileType.className) img.classList.add(fileType.className);
-            if (fileType.classType) img.classList.add(fileType.classType);
-            img.classList.add(cleanString(object.name));
-        });
+    function renderVisual(){
+        img.className = "glyph " + object.type;
+        // clear (not "none") - iconClass/default glyphs get their background
+        // from a CSS class rule, and an inline "none" would override that
+        img.style.backgroundImage = "";
+        img.innerHTML = "";
 
-        if (object.getIcon){
-            object.getIcon().then(icon=>{
-                if (icon && icon.tagName){
-                    img.style.backgroundImage = "none";
-                    img.innerHTML = "";
-                    img.appendChild(icon);
-                }
+        if (object.icon){
+            resolveIconUrl(object).then(url=>{
+                if (!url) return;
+                img.style.backgroundImage = "url('" + url + "')";
+                img.style.backgroundPosition = "center center";
+                img.classList.add("cover");
             });
+        }else if (object.iconClass){
+            img.classList.add(object.iconClass);
+        }else{
+            let name = object.path || object.url || object.name || object.label || "";
+            system.getFileTypeFromName(name).then(fileType=>{
+                if (fileType.className) img.classList.add(fileType.className);
+                if (fileType.classType) img.classList.add(fileType.classType);
+                img.classList.add(cleanString(object.name));
+            });
+
+            if (object.getIcon){
+                object.getIcon().then(icon=>{
+                    if (icon && icon.tagName){
+                        img.style.backgroundImage = "none";
+                        img.innerHTML = "";
+                        img.appendChild(icon);
+                    }
+                });
+            }
         }
     }
+    renderVisual();
+
+    // Lets the Info window's icon picker update this exact icon in place
+    // after writeMeta, instead of requiring the parent folder to be reopened.
+    me.refreshIcon = renderVisual;
 
     icon.appendChild(img);
     icon.appendChild(label);
@@ -161,6 +196,11 @@ let AmiIcon = function(object){
 
     me.onDown = function(action){
         icon.onDown = action;
+    }
+
+    me.onOpen = function(action){
+        // override the default open behaviour (double-click / single-click open)
+        openAction = action;
     }
 
     me.moveToTop = function(){

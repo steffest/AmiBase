@@ -1,5 +1,6 @@
 var Settings = {
     tenant: "amibase",
+    name: "AmiBase",
     version: "0.0.3 alpha",
     useDelayedDrag:true,
     useCustomMousePointer:false,

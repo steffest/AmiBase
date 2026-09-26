@@ -15,6 +15,7 @@ let FileManager = function(){
     var amiWindow;
     let amiBase;
     var container;
+    var parentButton;
     let viewMode = "icons";
     let currentFolder;
     let currentFile;
@@ -81,8 +82,14 @@ let FileManager = function(){
             toolButton("sidebar","Show Navigation Panel",()=>{
                 sideBar.classList.toggle("hidden");
                 setUI();
+            }),
+            parentButton = toolButton("parent","Go to Parent Folder",()=>{
+                if (currentFolder && hasParent(currentFolder.path)){
+                    me.openFolder(fileSystem.getParentPath(currentFolder.path));
+                }
             })
         );
+        parentButton.classList.add("hidden");
 
 
         sideBar=$(".panel.transparent.full.tabs.vertical",{style:{width:"200px", right: "unset"}});
@@ -205,6 +212,8 @@ let FileManager = function(){
         if (typeof folder === "string") folder={path:folder};
         currentFolder = folder;
 
+        if (parentButton) parentButton.classList.toggle("hidden",!hasParent(currentFolder.path));
+
         mainPanel.innerHTML = "";
         let loader = $(".loader.centered.fade");
         mainPanel.appendChild(loader);
@@ -222,6 +231,9 @@ let FileManager = function(){
                 itemRenderer = function(object){
                     let icon = amiIcon(object);
                     icon.element.dataset.fmName = (object.name || "").toLowerCase();
+                    if (object.type === "folder"){
+                        icon.onOpen(()=>me.openFolder(object));
+                    }
                     icon.onDown(()=>{
                         currentFile = object;
                         displayFileInfo();
@@ -234,6 +246,9 @@ let FileManager = function(){
                 itemRenderer = function(object){
                     let icon = amiIcon(object);
                     icon.element.dataset.fmName = (object.name || "").toLowerCase();
+                    if (object.type === "folder"){
+                        icon.onOpen(()=>me.openFolder(object));
+                    }
                     icon.onDown(()=>{
                         currentFile = object;
                         displayFileInfo();
@@ -326,7 +341,12 @@ let FileManager = function(){
                                         item.classList.remove("draggable");
                                         input.focus();
                                     }
-                                    console.error("onAction",item);
+                                    if (menuItem.label === "Delete"){
+                                        // the delete action itself runs async (fileSystem.deleteIcon);
+                                        // remove the item optimistically and refresh to reconcile
+                                        item.remove();
+                                        me.refresh();
+                                    }
                                 }
                             })
                         },
@@ -493,6 +513,14 @@ let FileManager = function(){
 
     }
 
+
+    function hasParent(path){
+        if (!path) return false;
+        let parent = fileSystem.getParentPath(path);
+        if (!parent) return false;
+        let normalize = p => (p || "").toLowerCase().replace(/\/$/,"");
+        return normalize(parent) !== normalize(path);
+    }
 
     let toolRight = 1;
     function toolButton(icon,hint,onClick,offset){

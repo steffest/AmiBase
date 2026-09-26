@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Spotify Player</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+    <header class="header">
+        <h1>🎵 Custom Spotify Player</h1>
+        <div id="user-info" class="user-info hidden">
+            <img id="user-avatar" src="/placeholder.svg" alt="User Avatar" class="avatar">
+            <span id="user-name"></span>
+            <button id="logout-btn" class="btn btn-secondary">Logout</button>
+        </div>
+    </header>
+
+    <main class="main">
+        <!-- Login Section -->
+        <div id="login-section" class="section">
+            <div class="login-card">
+                <h2>Connect to Spotify</h2>
+                <p>Login with your Spotify Premium account to start playing music</p>
+                <button id="login-btn" class="btn btn-primary">Login with Spotify</button>
+            </div>
+        </div>
+
+        <!-- Player Section -->
+        <div id="player-section" class="section hidden">
+            <!-- Search -->
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="Search for an artist..." class="search-input">
+                <button id="search-btn" class="btn btn-primary">Search</button>
+            </div>
+
+            <!-- Search Results -->
+            <div id="search-results" class="search-results hidden">
+                <h3>Artists</h3>
+                <div id="artists-list" class="artists-list"></div>
+            </div>
+
+            <!-- Top Tracks -->
+            <div id="tracks-section" class="tracks-section hidden">
+                <h3 id="tracks-title">Top Tracks</h3>
+                <div id="tracks-list" class="tracks-list"></div>
+            </div>
+
+            <!-- Current Playing -->
+            <div id="current-track" class="current-track hidden">
+                <div class="track-info">
+                    <img id="current-album-art" src="/placeholder.svg" alt="Album Art" class="album-art">
+                    <div class="track-details">
+                        <div id="current-track-name" class="track-name"></div>
+                        <div id="current-artist-name" class="artist-name"></div>
+                    </div>
+                </div>
+
+                <!-- Add the visualizer here -->
+                <div class="visualizer-container">
+                    <canvas id="visualizer" class="visualizer-canvas"></canvas>
+                </div>
+
+                <div class="player-controls">
+                    <button id="prev-btn" class="control-btn">⏮️</button>
+                    <button id="play-pause-btn" class="control-btn play-btn">▶️</button>
+                    <button id="next-btn" class="control-btn">⏭️</button>
+                </div>
+                <div class="progress-container">
+                    <span id="current-time">0:00</span>
+                    <div class="progress-bar">
+                        <div id="progress" class="progress"></div>
+                    </div>
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

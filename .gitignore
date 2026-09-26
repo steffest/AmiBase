@@ -1,2 +1,4 @@
 /themes/dark/
 /config/
+.aider*
+/docs/bedrock.md

@@ -1,3 +1,4 @@
 {
-  "module": "eruda.js"
+  "module": "eruda.js",
+  "capabilities": []
 }

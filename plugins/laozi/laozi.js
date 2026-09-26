@@ -11,9 +11,16 @@ var Laozi = async function() {
         console.error("getDirectory",path);
         setConfig(config);
 
-        return new Promise((next) => {
+        return new Promise((next,fail) => {
             path = getFilePath(path);
             fetchService.json(endPoint + "file/" + path,function(data){
+                // The API always answers with HTTP 200; a missing/unreadable
+                // path is signalled via status:"nok" (with result as a plain
+                // string) rather than an actual error response.
+                if (!data || data.status !== "ok"){
+                    fail((data && data.result) || "could not read directory");
+                    return;
+                }
                 var directories = [];
                 var files = [];
                 data.result.directories.forEach(dir=>{
@@ -34,7 +41,7 @@ var Laozi = async function() {
 
     me.readFile = function(path,binary,config){
         setConfig(config);
-        return new Promise((next) => {
+        return new Promise((next,fail) => {
             var url = me.getFileUrl(path);
             console.log("Get File", url);
             if (binary){
@@ -43,11 +50,30 @@ var Laozi = async function() {
                 })
             }else{
                 fetchService.get(url).then(_file => {
+                    // A missing file still comes back as HTTP 200 with a
+                    // {status:"nok", result:"File not found..."} JSON envelope -
+                    // surface that as a rejection instead of handing back the
+                    // envelope as if it were the file's content (this corrupts
+                    // callers like filesystem.js's .aminfo meta merge).
+                    if (isErrorEnvelope(_file)){
+                        fail("file not found");
+                        return;
+                    }
                     next(_file);
                 })
             }
         });
     };
+
+    function isErrorEnvelope(text){
+        if (typeof text !== "string" || text[0] !== "{") return false;
+        try{
+            var parsed = JSON.parse(text);
+            return !!parsed && parsed.status === "nok";
+        }catch(e){
+            return false;
+        }
+    }
 
     me.isReadOnly = (file)=>{
         return false;
@@ -144,6 +170,22 @@ var Laozi = async function() {
                 });
             }
         });
+    };
+
+    me.getUniqueName = async function(path,name,config){
+        setConfig(config);
+        let dir = await me.getDirectory(path,config);
+        let names = (dir.files || []).map(f=>f.name)
+            .concat((dir.directories || []).map(d=>d.name));
+        let uniqueName = name;
+        let ext = name.split(".").pop();
+        let base = ext === name ? name : name.substr(0,name.length-ext.length-1);
+        let i = 2;
+        while (names.indexOf(uniqueName) >= 0){
+            uniqueName = ext === name ? base + i : base + i + "." + ext;
+            i++;
+        }
+        return uniqueName;
     };
 
     me.getInfo = function(path,config){

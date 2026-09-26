@@ -34,6 +34,20 @@ var BaseFileExtensions = function(){
                 fileExtensions:["hdf"],
                 mountFileSystem:{plugin:"AmigaFileSystem",volume:"HDF"}
             },
+            PRG: {name: "Commodore 64 Program", actions:[
+                    {label: "run", plugin:"c64"},
+                ],
+                classType:"executable",
+                className:"prg",
+                fileExtensions:["prg"]
+            },
+            D64: {name: "Commodore 64 Disk", actions:[
+                    {label: "run", plugin:"c64"},
+                ],
+                classType:"executable",
+                className:"d64",
+                fileExtensions:["d64"]
+            },
             PNG: {name: "PNG image", actions:[
                     {label: "View", plugin:"imageviewer"},
                     {label: "Edit", plugin:"dpaint"}
@@ -76,6 +90,20 @@ var BaseFileExtensions = function(){
                 classType:"audio",
                 className:"mp3",
                 fileExtensions:["mp3"]
+            },
+            SID: {name: "SID audio", actions:[
+                    {label: "Play", plugin:"ampotron"},
+                ],
+                classType:"audio",
+                className:"sid",
+                fileExtensions:["sid"]
+            },
+            MIDI: {name: "MIDI audio", actions:[
+                    {label: "Play", plugin:"ampotron"},
+                ],
+                classType:"audio",
+                className:"midi",
+                fileExtensions:["mid"]
             },
             M4A: {name: "MP4 audio", actions:[
                     {label: "Play", plugin:"mediaplayer"},

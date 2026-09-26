@@ -2,5 +2,6 @@
   "dependencies": ["binaryStream.js"],
   "module": "detect.js",
   "styles": [],
-  "templates" : []
+  "templates" : [],
+  "capabilities": []
 }

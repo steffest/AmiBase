@@ -5,6 +5,7 @@ import ui from "./ui/ui.js";
 import settings from "./settings.js";
 import user from "./user.js";
 import network from "./system/network.js";
+import {runStartupSequences} from "./system/boot.js";
 
 var Main=function(){
     var me = {};
@@ -29,29 +30,27 @@ var Main=function(){
 
         await user.init();
         console.log("user",user);
-        desktop.loadContent(settings.initialContent,settings.mounts,"desktop:");
+        // Await loadContent so all mounts (incl. system drives) are registered
+        // and their handlers wired before we scan for startup-sequences.
+        // Otherwise runStartupSequences could race the content/mounts fetch and
+        // intermittently find no system drive to boot.
+        await desktop.loadContent(settings.initialContent,settings.mounts,"desktop:");
         desktop.cleanUp();
         await network.init();
         network.connectFromUrlInvite();
+        await runStartupSequences();
         initDone = true;
     };
 
-    function showSplash(){
-        document.body.innerHTML = "";
-        document.body.style.margin = "0";
-        document.body.style.background = "#fff";
-        document.body.style.height = "100vh";
-        document.body.style.display = "grid";
-        document.body.style.placeItems = "center";
-
-        let splash = document.createElement("div");
-        splash.textContent = "Amibase";
-        splash.style.color = "#d8d8d8";
-        splash.style.fontFamily = "Arial, Helvetica, sans-serif";
-        splash.style.fontSize = "72px";
-        splash.style.fontWeight = "100";
-        splash.style.lineHeight = "1";
-        document.body.appendChild(splash);
+    async function showSplash(){
+        try{
+            let response = await fetch("splash/index.html");
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            document.body.innerHTML = await response.text();
+        }catch(e){
+            console.error("Could not load splash.html",e);
+            document.body.innerHTML = "Amibase";
+        }
     }
 
     window.Main = me;

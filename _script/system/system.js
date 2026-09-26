@@ -14,9 +14,12 @@ import input from "../input.js";
 import ui from "../ui/ui.js";
 import network from "./network.js";
 import mainMenu from "../ui/mainmenu.js";
+import {binaryToBase64} from "./network/shared.js";
 
 const PLUGIN_API_VERSION = 1;
-const LEGACY_CAPABILITIES = ["*"];
+// A plugin may still opt into full bridge access by declaring "*" in its
+// capabilities; the default (no/empty capabilities) is now no access.
+const WILDCARD_CAPABILITY = "*";
 
 const KNOWN_PLUGIN_CAPABILITIES = [
     "net.fetch",
@@ -33,6 +36,9 @@ const KNOWN_PLUGIN_CAPABILITIES = [
 
 let System = function(){
     var me = {};
+    // Reported by the shell's VERSION command; sourced from settings (name +
+    // release), the single source of truth for the AmiBase build.
+    me.version = settings.name + " " + settings.version;
     var libraries = {};
     let plugins = {};
     let saveAs;
@@ -47,12 +53,12 @@ let System = function(){
             apiVersion: Number.isInteger(config.apiVersion) ? config.apiVersion : PLUGIN_API_VERSION,
         };
 
-        if (!Array.isArray(config.capabilities) || !config.capabilities.length){
-            // Backwards compatibility: legacy plugins keep full bridge access.
-            normalized.capabilities = LEGACY_CAPABILITIES.slice();
+        if (!Array.isArray(config.capabilities)){
+            // Default-deny: a plugin that declares no capabilities array gets no
+            // bridge access. (Declare "*" to explicitly opt into full access.)
+            normalized.capabilities = [];
         }else{
             normalized.capabilities = [...new Set(config.capabilities.filter(item=>typeof item === "string" && !!item.trim()))];
-            if (!normalized.capabilities.length) normalized.capabilities = LEGACY_CAPABILITIES.slice();
         }
 
         if (normalized.apiVersion > PLUGIN_API_VERSION){
@@ -64,8 +70,9 @@ let System = function(){
 
     function hasPluginCapability(pluginConfig, capability){
         if (!capability) return true;
-        let capabilities = (pluginConfig && pluginConfig.capabilities) || LEGACY_CAPABILITIES;
-        return capabilities.includes("*") || capabilities.includes(capability);
+        // Default-deny: unknown plugin / no declared capabilities => no access.
+        let capabilities = (pluginConfig && pluginConfig.capabilities) || [];
+        return capabilities.includes(WILDCARD_CAPABILITY) || capabilities.includes(capability);
     }
 
     async function loadKnownApplications(){
@@ -87,6 +94,10 @@ let System = function(){
         return new Promise(function(next){
             loadKnownApplications().then(()=>{
                 let env = _env || document.location.search;
+                if (!env && document.location.hostname.includes("localhost")){
+                    env = "-demo";
+                }
+                console.error(env);
 
                 if (env){
                     env = env.substring(1).split(/[=&]/)[0];
@@ -121,10 +132,11 @@ let System = function(){
         });
     };
 
-    me.reset = async ()=>{
+    me.reset = async (full)=>{
         desktop.reset();
         await filesystem.reset();
-        await storage.clear();
+        let storageDone = await storage.clear();
+        console.log("Storage Cleared",storageDone);
     }
 
     me.connectEnv = async (token,env)=>{
@@ -217,7 +229,7 @@ let System = function(){
             return;
         }
 
-        let pluginPath = "../plugins/" + pluginName + "/";
+        let pluginPath = "plugins/" + pluginName + "/";
         plugin={};
         let config = await fetchService.json(pluginPath + "config.json");
         if (config){
@@ -227,7 +239,7 @@ let System = function(){
 
             // preload code
             if (config.module){
-                let p = await import("../" + pluginPath + config.module);
+                let p = await import("../../" + pluginPath + config.module);
                 plugin.handler = p.default;
             }
 
@@ -320,6 +332,55 @@ let System = function(){
          }
      }
      
+     // Amiga disk files (.adf/.hdf) normally open in the "uae" plugin's
+     // in-browser WASM emulator. When running inside the Electron kiosk
+     // shell (docs/bootable-kiosk-plan.md Phase 4), prefer booting them in
+     // a real native emulator (FS-UAE) instead - a genuine floating window
+     // managed by Openbox, not an iframe. Mirrors desktop.openWebsite's
+     // window.electronBridge feature-detect. Returns true if handled here
+     // (caller should stop), false to fall through to the normal plugin
+     // load (plain browser, or electronBridge missing).
+     async function tryLaunchNativeAmiga(file,pluginName){
+         if (pluginName !== "uae") return false;
+         if (!window.electronBridge) return false;
+
+         let ext = (file.name||file.url||file.path||"").split(".").pop().toLowerCase();
+         if (ext !== "adf" && ext !== "hdf") return false;
+
+         // filesystem.readFile(file,true) returns a plain ArrayBuffer for
+         // some mounts (e.g. amibaseServer's serverFs.js) and a
+         // BinaryStream-like {buffer:ArrayBuffer} for others (e.g. an
+         // already-loaded file.binary) - binaryToBase64 already handles
+         // both shapes, so only reject on genuinely empty/missing content.
+         let binary = file.binary;
+         if (!binary) binary = await filesystem.readFile(file,true);
+         let byteLength = binary instanceof ArrayBuffer ? binary.byteLength : (binary && binary.buffer && binary.buffer.byteLength);
+         if (!byteLength){
+             desktop.showError("Couldn't read " + (file.name||"disk file") + " for the Amiga emulator.");
+             return true;
+         }
+
+         let written = await window.electronBridge.writeTempFile(
+             ext === "hdf" ? "disk.hdf" : "disk.adf",
+             binaryToBase64(binary)
+         );
+         if (!written.ok){
+             desktop.showError("Couldn't prepare Amiga disk file: " + written.reason);
+             return true;
+         }
+
+         let model = ext === "hdf" ? "A1200" : "A500";
+         let rom = ext === "hdf" ? "kick31.rom" : "kick13.rom";
+         let driveFlag = ext === "hdf" ? "--hard-drive-0=" : "--floppy-drive-0=";
+         let result = await window.electronBridge.launchApp(
+             "fs-uae --amiga-model=" + model +
+             " --kickstart-file=/opt/amibase/plugins/uae/data/" + rom +
+             " " + driveFlag + written.path
+         );
+         if (!result.ok) desktop.showError("Couldn't start Amiga emulator: " + result.reason);
+         return true;
+     }
+
      // execute an action on a file
      me.openFile = async function(file,plugin,action){
          console.log("openFile",file,plugin,action);
@@ -328,6 +389,7 @@ let System = function(){
                  desktop.launchUrl(file);
                  return;
              }
+             if (await tryLaunchNativeAmiga(file,plugin)) return;
              me.launchProgram({
                  url: "plugin:" + plugin
              }).then(window=>{
@@ -365,6 +427,7 @@ let System = function(){
                              desktop.launchUrl(file);
                              return;
                          }
+                         if (await tryLaunchNativeAmiga(file,fileAction.plugin)) return;
                          me.launchProgram({
                              url: "plugin:" + fileAction.plugin,
                          }).then(window=>{
@@ -468,18 +531,18 @@ let System = function(){
         });
     }
 
-    me.requestFileOpen = async function(path){
+    me.requestFileOpen = async function(path,filter){
         let fileRequester = await me.loadLibrary("filerequester");
-        return fileRequester.open({type:"open",path:path});
+        return fileRequester.open({type:"open",path:path,filter:filter});
     }
     me.requestFileSave = async function(path){
         let fileRequester = await me.loadLibrary("filerequester");
         return fileRequester.open({type:"save",path:path});
     }
 
-    me.inspectFile = async function(file){
+    me.inspectFile = async function(file,icon){
         let inspector = await me.loadLibrary("inspector.js");
-        inspector.inspect(file);
+        inspector.inspect(file,icon);
     }
 
     me.getObjectInfo = async function(object){

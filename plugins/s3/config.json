@@ -1,3 +1,4 @@
 {
-  "module": "s3.js"
+  "module": "s3.js",
+  "capabilities": []
 }

@@ -1,4 +1,5 @@
 {
   "styles": ["settings.css"],
-  "module": "settings.js"
+  "module": "settings.js",
+  "capabilities": ["crypto.sha256", "system.user", "ui.desktop"]
 }

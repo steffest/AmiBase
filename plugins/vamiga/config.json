@@ -1,5 +1,6 @@
 {
   "index": "https://www.amibase.com/apps/vAmigaWeb/",
   "width": 720,
-  "height": 568
+  "height": 568,
+  "capabilities": []
 }

@@ -1,4 +1,5 @@
 {
   "module": "linkeditor.js",
-  "styles": ["linkeditor.css"]
+  "styles": ["linkeditor.css"],
+  "capabilities": ["fs.write"]
 }

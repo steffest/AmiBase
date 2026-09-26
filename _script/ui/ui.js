@@ -389,9 +389,7 @@ let UI = function(){
         e.preventDefault();
 
         var dt = e.dataTransfer;
-        var files = dt.files;
-
-        desktop.handleUpload(files);
+        desktop.handleUpload(dt.files, null, dt.items);
     }
 
     function initDrag(event,global){

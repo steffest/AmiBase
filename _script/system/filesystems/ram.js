@@ -16,6 +16,10 @@ let RAM = ()=>{
         if (!file) file = items.find(a=>a.path === path);
         console.log("reading file",path,file);
         console.log("items",items);
+        if (!file || !file.binary){
+            console.error("file not found",path);
+            return undefined;
+        }
         if (binary){
             return file.binary;
         }else{

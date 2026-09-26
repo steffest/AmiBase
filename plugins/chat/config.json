@@ -1,4 +1,5 @@
 {
   "module": "chat.js",
-  "styles": ["chat.css"]
+  "styles": ["chat.css"],
+  "capabilities": []
 }

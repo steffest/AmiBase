@@ -4,13 +4,16 @@ import $ from "../../_script/util/dom.js";
 
 let FileRequester = function(){
     let me = {};
-    let sideBar,mainPanel,bottomBar,okButton,cancelButton,input,parent,container,currentType,currentFile,currentFolder,next;
+    let sideBar,mainPanel,bottomBar,okButton,cancelButton,input,parent,container,currentType,currentFile,currentFolder,currentFilter,next;
+    const imageExtensions = ["png","jpg","jpeg","gif","webp","svg","bmp","ico"];
 
     me.open = function(type){
 
         currentType=type||"open";
+        currentFilter = null;
         if (typeof currentType === "object"){
             currentFile = currentType.path;
+            currentFilter = currentType.filter || null;
             currentType = currentType.type || "save";
         }
 
@@ -72,6 +75,7 @@ let FileRequester = function(){
                 }
 
                 if (object.type === "file"){
+                    if (currentFilter === "image" && !isImage(object.name)) return;
                     mainPanel.appendChild($(".listitem.file",{onClick:()=>{
                             selectFile(object)
                     }},object.name));
@@ -80,6 +84,11 @@ let FileRequester = function(){
             })
         }
 
+    }
+
+    function isImage(name){
+        let ext = (name.split(".").pop() || "").toLowerCase();
+        return imageExtensions.indexOf(ext) >= 0;
     }
 
     function selectFile(file){

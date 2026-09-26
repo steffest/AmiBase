@@ -1,5 +1,6 @@
 {
   "index": "https://www.amibase.com/apps/audiomass/src/",
   "width": 860,
-  "height": 600
+  "height": 600,
+  "capabilities": []
 }

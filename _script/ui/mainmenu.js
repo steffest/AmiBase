@@ -18,7 +18,18 @@ let MainMenu = function(){
     var currentMenuTarget;
     var messageContainer;
     var connectionDot;
+    var batteryIndicator;
+    var batteryFill;
+    var batteryPollTimer;
+    var clockIndicator;
+    var clockTimer;
     var submenuHideDelay = 80;
+
+    // Polled, not event-driven -- electronBridge has no push/subscribe
+    // mechanism for host info (see getVolume/getAudioDevice, same pattern).
+    // 30s is frequent enough that the topbar never looks stale but rare
+    // enough it's a non-issue on CPU/battery itself.
+    var BATTERY_POLL_INTERVAL = 30000;
 
     var mainMenu = [
         {
@@ -54,6 +65,18 @@ let MainMenu = function(){
                         if (file){
                             system.openFile(file)
                         }
+                    }
+                },
+                {
+                    label:"Open Website",
+                    action: function(){
+                        showOpenWebsiteDialog();
+                    }
+                },
+                {
+                    label:"Terminal",
+                    action: function(){
+                        desktop.openTerminal();
                     }
                 },
                 {
@@ -164,7 +187,7 @@ let MainMenu = function(){
                     action: async function(){
                         var icon =  desktop.getFocusElement();
                         let inspector = await system.loadLibrary("inspector.js");
-                        inspector.inspect(icon.object);
+                        inspector.inspect(icon.object,icon);
                     }
                 }
             ]
@@ -200,10 +223,25 @@ let MainMenu = function(){
         var topbar = $(".topbar",
             $(".homebutton",$("div"),(settings.name || "Amibase"),$("small","v" + settings.version)),
             messageContainer = $(".message"),
-            connectionDot = $(".network-dot.disconnected",{
-                title: "Network connections",
-                onClick: ()=>network.openManagerWindow()
-            }),
+            $(".topbar-status",
+                // Hidden by default (no "visible" class) until the first
+                // successful battery-status read confirms a battery actually
+                // exists -- most desktops/plain-browser sessions have none, and
+                // electronBridge itself is absent outside the Electron kiosk
+                // shell, so this stays invisible there too (see updateBattery).
+                batteryIndicator = $(".battery-indicator",{title:"Battery"},
+                    $(".battery-icon",
+                        batteryFill = $(".battery-fill"),
+                        $(".battery-bolt")
+                    ),
+                    $(".battery-nub")
+                ),
+                clockIndicator = $(".clock-indicator",{title:"Clock"}),
+                connectionDot = $(".network-dot.disconnected",{
+                    title: "Network connections",
+                    onClick: ()=>network.openManagerWindow()
+                })
+            ),
             root=$(".menu")
         );
 
@@ -212,6 +250,8 @@ let MainMenu = function(){
         me.rebuildMenu();
 
         network.on("connection.dot",updateConnectionDot);
+        initBatteryIndicator();
+        initClock();
         updateConnectionDot();
 
         eventBus.on(EVENT.ACTIVATE_DESKTOP_ELEMENT,function(){
@@ -284,6 +324,18 @@ let MainMenu = function(){
                         }
                     },
                     {
+                        label:"Open Website",
+                        action: function(){
+                            showOpenWebsiteDialog();
+                        }
+                    },
+                    {
+                        label:"Terminal",
+                        action: function(){
+                            desktop.openTerminal();
+                        }
+                    },
+                    {
                         label:"Upload File",
                         action: function(){
                             desktop.uploadFile();
@@ -348,6 +400,15 @@ let MainMenu = function(){
                         label:"Connect",
                         action: function(){
                             showConnectDialog();
+                        }
+                    },
+                    {
+                        label:"Reset",
+                        action: async function(){
+                            await system.reset(true);
+                            setTimeout(()=>{
+                                window.location.reload();
+                            },500);
                         }
                     }
                 ]
@@ -456,7 +517,7 @@ let MainMenu = function(){
                         action: async function(){
                             var icon =  desktop.getFocusElement();
                             let inspector = await system.loadLibrary("inspector.js");
-                            inspector.inspect(icon.object);
+                            inspector.inspect(icon.object,icon);
                         }
                     }
                 ]
@@ -505,9 +566,22 @@ let MainMenu = function(){
         }, "Connect");
 
         let form = $(".form",
-            $("label", { htmlFor: "connect-device-token" }, "Device Token"),
+            $("label", {
+                htmlFor: "connect-device-token" ,
+                style: {
+                    display: "block",
+                    fontSize: "13px"
+                }
+            }, "Device Token"),
             tokenInput,
-            $("label", { htmlFor: "connect-password" }, "Password"),
+            $("label", {
+                htmlFor: "connect-password",
+                style: {
+                    marginTop: "9px",
+                    display: "block",
+                    fontSize: "13px"
+                }
+            }, "Password"),
             passwordInput,
             $("div", {
                 style: {
@@ -530,6 +604,72 @@ let MainMenu = function(){
         tokenInput.focus();
     }
 
+    // window.prompt() isn't an option here -- Electron (used for host-app
+    // embedding, see electron-shell/HANDOVER.md) throws "prompt() is not
+    // supported" instead of showing a dialog, which a menu action has no
+    // error boundary to surface, so it just looks like nothing happened.
+    function showOpenWebsiteDialog(){
+        let dialogWindow = desktop.createWindow({
+            caption: "Open Website",
+            width: 360,
+            height: 160,
+            left: 220,
+            top: 120,
+        });
+
+        let urlInput = $("input", {
+            type: "text",
+            value: "https://",
+            style: { width: "100%" }
+        });
+
+        function submit(){
+            let url = urlInput.value.trim();
+            if (!url) return;
+            if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) url = "https://" + url;
+            dialogWindow.close();
+            desktop.openWebsite(url);
+        }
+
+        urlInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") submit();
+        });
+
+        let submitButton = $("button.button.inline", { onClick: submit }, "Open");
+        let cancelButton = $("button.button.inline", { onClick: () => dialogWindow.close() }, "Cancel");
+
+        let form = $(".form",
+            $("label", {
+                htmlFor: "open-website-url",
+                style: {
+                    display: "block",
+                    fontSize: "13px"
+                }
+            }, "Website address"),
+            urlInput,
+            $("div", {
+                style: {
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "6px",
+                    marginTop: "8px"
+                }
+            }, cancelButton, submitButton)
+        );
+
+        dialogWindow.setContent($(".panel", {
+            style: {
+                width: "100%",
+                height: "100%",
+                padding: "12px",
+                boxSizing: "border-box"
+            }
+        }, form));
+
+        urlInput.focus();
+        urlInput.select();
+    }
+
     function updateConnectionDot(state){
         if (!connectionDot) return;
         let connected = false;
@@ -548,6 +688,42 @@ let MainMenu = function(){
             connectionDot.classList.add("disconnected");
         }
         connectionDot.title = `Connections (${connected ? "connected" : signaling})`;
+    }
+
+    function initBatteryIndicator(){
+        if (!window.electronBridge || !window.electronBridge.getBatteryStatus) return;
+        updateBattery();
+        batteryPollTimer = setInterval(updateBattery,BATTERY_POLL_INTERVAL);
+    }
+
+    async function updateBattery(){
+        if (!batteryIndicator) return;
+        let result = await window.electronBridge.getBatteryStatus();
+        if (!result || !result.ok || !result.present){
+            batteryIndicator.classList.remove("visible");
+            return;
+        }
+
+        batteryIndicator.classList.add("visible");
+        batteryIndicator.classList.toggle("charging",!!result.charging);
+
+        let level = typeof result.level === "number" ? Math.max(0,Math.min(100,result.level)) : null;
+        batteryIndicator.classList.toggle("low",level !== null && level<=20 && !result.charging);
+        if (batteryFill) batteryFill.style.width = (level===null?100:level) + "%";
+
+        batteryIndicator.title = "Battery" + (level===null?"":`: ${level}%`) + (result.charging?" (charging)":"");
+    }
+
+    function initClock(){
+        updateClock();
+        clockTimer = setInterval(updateClock,1000);
+    }
+
+    function updateClock(){
+        if (!clockIndicator) return;
+        let now = new Date();
+        clockIndicator.textContent = now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+        clockIndicator.title = now.toLocaleDateString([],{weekday:"long",year:"numeric",month:"long",day:"numeric"});
     }
 
     me.setMenu = function(menu,window){
@@ -599,7 +775,7 @@ let MainMenu = function(){
         var submenu;
         var hideSubmenuTimer;
         let elm = $(".menuitem"+(config.disabled?".disabled":"")+(config.items?".hassubmenu":""),
-            {onClick:()=> {handleMenuClick(config,submenu)},
+            {onClick:()=> {handleMenuClick(config,submenu,elm)},
             id:config.id?"am_" + config.id:undefined},
             $("label",config.label)
         );
@@ -650,13 +826,46 @@ let MainMenu = function(){
         return elm;
     }
 
-    function handleMenuClick(item,submenu){
+    // Close a submenu and any of its still-open descendants.
+    function closeSubmenuTree(submenu){
+        submenu.classList.remove("active");
+        var children = submenu.querySelectorAll(".submenu.active");
+        for (var i = 0, max = children.length; i<max; i++){
+            children[i].classList.remove("active");
+        }
+    }
+
+    // Close submenus that are siblings of elm (same nesting level), leaving any
+    // open ancestors intact. This is what makes nested submenus reachable on
+    // touch devices, where there is no hover to open them.
+    function closeSiblingSubmenus(elm){
+        if (!elm || !elm.parentElement) return;
+        var items = elm.parentElement.children;
+        for (var i = 0, max = items.length; i<max; i++){
+            var item = items[i];
+            if (item === elm || !item.classList || !item.classList.contains("hassubmenu")) continue;
+            for (var j = 0, jMax = item.children.length; j<jMax; j++){
+                if (item.children[j].classList.contains("submenu")){
+                    closeSubmenuTree(item.children[j]);
+                }
+            }
+        }
+    }
+
+    function handleMenuClick(item,submenu,elm){
         if (submenu){
             var doShow = !submenu.classList.contains("active");
-            me.hideMenu();
+            // Close siblings at this level (and their descendants) but keep any
+            // open ancestor submenus, so tapping a nested category doesn't hide
+            // the parent it lives in.
+            closeSiblingSubmenus(elm);
             if (doShow){
                 submenu.classList.add("active");
-                menuActive = doShow;
+                menuActive = true;
+            }else{
+                closeSubmenuTree(submenu);
+                // Tapping an open top-level menu shut disarms the whole bar.
+                if (elm && elm.parentElement === root) menuActive = false;
             }
         }else{
             me.hideMenu();

@@ -1,3 +1,4 @@
 {
-  "module": "laozi.js"
+  "module": "laozi.js",
+  "capabilities": []
 }

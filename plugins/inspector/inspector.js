@@ -1,17 +1,21 @@
 import desktop from "../../_script/ui/desktop.js";
 import system from "../../_script/system/system.js";
-import $ from "../../_script/util/dom.js";
+import $,{$div} from "../../_script/util/dom.js";
 import filesystem from "../../_script/system/filesystem.js";
+import iconLibrary from "../../_script/ui/iconLibrary.js";
 let Inspector = function(){
     var me = {};
 
 
-    me.inspect = async function(target){
+    me.inspect = async function(target,icon){
         var w = desktop.createWindow({
             label:"info"
         });
         w.setSize(320,300);
-        w.setContent(await generateInfo(target));
+        let refresh = async function(){
+            w.setContent(await generateInfo(target,refresh,icon));
+        };
+        await refresh();
     };
 
     me.getInfo = async function(target){
@@ -50,7 +54,7 @@ let Inspector = function(){
         });
     }
 
-    async function generateInfo(target){
+    async function generateInfo(target,refresh,icon){
         console.error(target);
 
         let panel;
@@ -73,9 +77,7 @@ let Inspector = function(){
                         if (e.key === "Enter"){
                             target[key] = newValue;
                             editBox.innerText = newValue;
-                            filesystem.writeMeta(target).then(result=>{
-                                console.error("writeMeta",result);
-                            })
+                            filesystem.writeMeta(target);
                         }
                         if (e.key === "Escape"){
                             editBox.innerHTML = "";
@@ -96,11 +98,39 @@ let Inspector = function(){
             );
         }
 
+        async function renderIconProperty(target,refresh,icon){
+            let preview = $div("glyph");
+            preview.style.width = "32px";
+            preview.style.height = "32px";
+            preview.style.display = "inline-block";
+            preview.style.verticalAlign = "middle";
+            let previewWrap = $(".icon",{style:{position:"relative",display:"inline-block"}},preview);
+
+            if (target.icon){
+                let url = await resolveIconPreviewUrl(target.icon);
+                preview.style.backgroundImage = "url('" + url + "')";
+                preview.style.backgroundSize = "cover";
+                preview.style.backgroundPosition = "center center";
+            }else{
+                preview.classList.add(target.iconClass || "defaultfile");
+            }
+
+            let editBox = $(".value.cel",previewWrap);
+            if (canEdit){
+                $(".button.inline",{parent:editBox,style:{marginLeft:"8px"},onClick:()=>openIconPicker(target,refresh,icon)},"Change...");
+            }
+
+            $(".property.panel.light",{parent:panel},
+                $(".label.cel.relative","Icon"),
+                editBox,
+            );
+        }
+
 
         renderProperty("Name",target.name || target.label);
         if (target.name && target.label) renderProperty("Label",target.label);
         renderProperty("Type",target.type);
-        renderProperty("Icon",target.icon || "default","icon");
+        await renderIconProperty(target,refresh,icon);
         renderProperty("Icon Active",target.icon2 || target.iconActive);
         renderProperty("Path",target.path);
         renderProperty("URL",target.url);
@@ -169,6 +199,54 @@ let Inspector = function(){
         return element;
     }
     
+    async function resolveIconPreviewUrl(icon){
+        let mounts = filesystem.getMounts();
+        let volume = filesystem.getVolume(icon);
+        if (volume && mounts[volume]) return await filesystem.getDisplayUrl(icon);
+        return icon;
+    }
+
+    async function openIconPicker(target,refresh,icon){
+        let win = desktop.createWindow({label:"choose icon"});
+        win.setSize(360,420);
+
+        async function apply(changes){
+            target.icon = changes.icon;
+            target.iconClass = changes.iconClass;
+            await filesystem.writeMeta(target);
+            if (icon) icon.refreshIcon();
+            win.close();
+            refresh();
+        }
+
+        let searchInput = $("input",{type:"text",placeholder:"Search icons...",style:{width:"100%"}});
+        let grid = $(".panel.light.full",{style:{position:"absolute",left:"0",right:"0",top:"36px",bottom:"40px",overflow:"auto",padding:"6px"}});
+        let openImageButton = $(".button.inline",{style:{width:"120px"},onClick:async ()=>{
+            let file = await system.requestFileOpen(null,"image");
+            if (file && file.path) apply({icon:file.path,iconClass:""});
+        }},"Open image...");
+        let resetButton = $(".button.inline",{style:{width:"120px"},onClick:()=>apply({icon:"",iconClass:""})},"Reset");
+        let bottomBar = $(".panel.full",{style:{top:"unset",height:"40px",padding:"4px 8px"}},openImageButton,resetButton);
+
+        function renderGrid(filter){
+            grid.innerHTML = "";
+            iconLibrary
+                .filter(name=>!filter || name.indexOf(filter.toLowerCase())>=0)
+                .forEach(name=>{
+                    let glyph = $div("glyph " + name);
+                    let tile = $(".icon",{
+                        style:{position:"relative",display:"inline-block",width:"48px",height:"48px",margin:"4px",cursor:"pointer"},
+                        onClick:()=>apply({icon:"",iconClass:name})
+                    },glyph);
+                    grid.appendChild(tile);
+                });
+        }
+        searchInput.oninput = (e)=>renderGrid(e.target.value);
+        renderGrid("");
+
+        win.setContent($(".content.panel.full",searchInput,grid,bottomBar));
+    }
+
     async function getFileActions(info){
         if (info.actions){
             // already resolved

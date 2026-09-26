@@ -1,4 +1,5 @@
 {
   "module": "main.js",
-  "border" : false
+  "border" : false,
+  "capabilities": ["fs.read"]
 }

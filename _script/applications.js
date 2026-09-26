@@ -7,6 +7,14 @@ import user from "./user.js";
 import amiIcon from "./ui/icon.js";
 import desktop from "./ui/desktop.js";
 import settings from "./settings.js";
+import { createHostExec, listHosts } from "./system/network/hostExec.js";
+import { createHostAttach } from "./system/network/hostAttach.js";
+
+// Host command execution + interactive PTY attach for AmiBase-server mounts that
+// advertise a shell. Use the browser's fetch / WebSocket (cookies via the
+// credentialed connection), like the amibaseServer filesystem handler.
+let hostRunner = createHostExec({ fetch: function () { return globalThis.fetch.apply(globalThis, arguments); } });
+let hostAttacher = createHostAttach({ WebSocket: globalThis.WebSocket });
 
 /*
 Provides a bridge for external applications and plugins
@@ -83,6 +91,8 @@ let Applications = function(){
     function loadFrame(url,window,skipSecurity){
         console.log("loadFrame",url,window);
         var frame = document.createElement("iframe");
+        frame.setAttribute("allow","fullscreen");
+        frame.allowFullscreen = true;
         window.setContent(frame);
         window.application = window.application || true;
         window.isLoading = true;
@@ -131,7 +141,7 @@ let Applications = function(){
             window.application = instance;
             console.log("setting application",instance)
             if (instance.init){
-                instance.init(window,me.amiBridge(plugin.name));
+                instance.init(window,me.amiBridge(plugin.name),plugin.config);
             }
         }
     }
@@ -310,15 +320,26 @@ let Applications = function(){
         }
 
         return{
+            version: system.version,
             fetch: guard("net.fetch", fetchService),
             readFile: guard("fs.read", fileSystem.readFile),
             writeFile: guard("fs.write", fileSystem.writeFile),
             copyFile: guard("fs.write", fileSystem.copyFile),
             moveFile: guard("fs.write", fileSystem.moveFile),
+            deleteFile: guard("fs.write", fileSystem.deleteFile),
+            deleteDirectory: guard("fs.write", fileSystem.deleteDirectory),
+            rename: guard("fs.write", fileSystem.rename),
             uploadFile: guard("fs.write", desktop.uploadFile),
             getDirectory: guard("fs.read", fileSystem.getDirectory),
+            getFileProperties: guard("fs.read", fileSystem.getFileProperties),
+            getFileTypeFromName: guard("fs.read", system.getFileTypeFromName),
             createDirectory: guard("fs.write", fileSystem.createDirectory),
             getUniqueName: guard("fs.write", fileSystem.getUniqueName),
+            // Create/remove a system-wide ASSIGN (a named volume aliased to a path
+            // on another volume). Gated by fs.mount since it changes the mount table.
+            createAssign: guard("fs.mount", fileSystem.createAssign),
+            removeAssign: guard("fs.mount", fileSystem.removeAssign),
+            listAssigns: guard("fs.read", fileSystem.listAssigns),
             getUrl: guard("fs.read", (file)=>{
                 return new Promise(next=>{
                     let mount = fileSystem.getMount(file);
@@ -337,7 +358,24 @@ let Applications = function(){
             requestFileSave: guard("fs.dialog", system.requestFileSave),
             launchProgram: guard("ui.desktop", system.launchProgram),
             isReadOnly: guard("fs.read", fileSystem.isReadOnly),
+            // Remote shell on host mounts. Gated by host.exec so a plugin only
+            // gets it when it declares the capability (the terminal does; the
+            // agent does not, by default).
+            host: guard("host.exec", {
+                list: function () { return listHosts(fileSystem.getMounts()); },
+                exec: function (mount, cmdline, io, ctx) { return hostRunner.exec(mount, cmdline, io, ctx); },
+                attach: function (mount, init) { return hostAttacher.attach(mount, init); }
+            }),
             getObjectInfo: guard("system.inspect", system.getObjectInfo),
+            // Running programs, for the shell's STATUS command: open windows mapped
+            // to a small {id, title, type} shape (no live window handles leak out).
+            getRunningApps: guard("system.inspect", function () {
+                return (desktop.getWindows() || []).map(function (w) {
+                    let title = (typeof w.getCaption === "function" ? w.getCaption() : w.caption)
+                        || w.name || w.type || "window";
+                    return { id: w.id, title: title, type: w.type, app: !!w.application };
+                });
+            }),
             detectFileType: guard("system.inspect", system.detectFileType),
             loadScript: guard("system.loadScript", system.loadScript),
             user: guard("system.user", user),

@@ -1,11 +1,7 @@
 .topbar .network-dot {
-  position: absolute;
-  right: 8px;
-  top: 50%;
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  transform: translateY(-50%);
   border: 1px solid var(--network-dot-border);
   cursor: pointer;
 }

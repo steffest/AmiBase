@@ -1,4 +1,5 @@
 {
-	"module": "googleDrive.js"
+	"module": "googleDrive.js",
+	"capabilities": []
 }
 

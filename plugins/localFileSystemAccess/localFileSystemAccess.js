@@ -36,14 +36,23 @@ var LocalFileSystemAccess = async function() {
         for await (const entry of list) {
             let object;
             if (entry.kind === 'file' && !entry.name.endsWith(".aminfo")){
-                object = {name:entry.name};
+                let ext = entry.name.split(".").pop();
+                let type = (ext === "link" || ext === "url") ? "link" : "file";
+                object = {name:entry.name, type:type};
                 let metaInfo = meta[entry.name];
                 if (metaInfo){
                     fileSystem.parseMeta(metaInfo,object);
                 }
                 result.files.push(object);
             }
-            if (entry.kind === 'directory') result.directories.push({name:entry.name});
+            if (entry.kind === 'directory'){
+                object = {name:entry.name};
+                let metaInfo = meta[entry.name];
+                if (metaInfo){
+                    fileSystem.parseMeta(metaInfo,object);
+                }
+                result.directories.push(object);
+            }
             fileEntries[path + entry.name + (entry.kind==='directory'?"/":"")] = entry;
         }
         return result;

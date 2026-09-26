@@ -1,3 +1,4 @@
 {
-  "module": "archiver.js"
+  "module": "archiver.js",
+  "capabilities": []
 }

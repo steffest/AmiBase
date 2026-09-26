@@ -43,6 +43,89 @@
     align-items: center;
   }
 
+  // Right-aligned cluster of status widgets (battery, clock, network dot) --
+  // a flex row so a hidden battery indicator closes its own gap instead of
+  // leaving a dead space behind.
+  .topbar-status{
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .clock-indicator{
+    font-size: 11px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.85;
+    user-select: none;
+  }
+
+  // Hidden by default (mainmenu.js only adds .visible once a real battery is
+  // confirmed present via electronBridge) -- most desktops/plain-browser tabs
+  // have no battery, and electronBridge itself is absent outside the
+  // Electron kiosk shell, so nothing shows there either.
+  .battery-indicator{
+    display: none;
+    align-items: center;
+
+    &.visible{
+      display: flex;
+    }
+
+    .battery-icon{
+      position: relative;
+      width: 20px;
+      height: 10px;
+      border: 1px solid var(--network-dot-border);
+      border-radius: 2px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .battery-nub{
+      width: 2px;
+      height: 4px;
+      margin-left: 1px;
+      background-color: var(--network-dot-border);
+      border-radius: 0 1px 1px 0;
+    }
+
+    .battery-fill{
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      background-color: var(--color-success);
+    }
+
+    &.low .battery-fill{
+      background-color: var(--color-error);
+    }
+
+    &.charging .battery-fill{
+      background-color: var(--color-warning);
+    }
+
+    .battery-bolt{
+      display: none;
+      position: absolute;
+      inset: 0;
+      // Simple lightning-bolt wedge from two overlapping skewed rectangles --
+      // avoids pulling in an SVG/icon-font asset for one small glyph.
+      background: var(--menu-background);
+      clip-path: polygon(58% 0%, 20% 55%, 48% 55%, 42% 100%, 80% 45%, 52% 45%);
+    }
+
+    &.charging .battery-bolt{
+      display: block;
+    }
+  }
+
   .menu{
     position: absolute;
     top:0;

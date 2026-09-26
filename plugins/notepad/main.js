@@ -71,6 +71,7 @@ let Notepad = ()=>{
     }
 
     function save(){
+        if (!currentFile) return saveAs();
         let content = textarea.value;
         amiBase.writeFile(currentFile,content);
     }
@@ -90,6 +91,14 @@ let Notepad = ()=>{
         textarea.value = "";
         textarea.style.width = "100%";
         textarea.style.height = "100%";
+
+        // Ctrl+S / Cmd+S saves the current file instead of triggering the browser's save dialog.
+        textarea.addEventListener("keydown",(e)=>{
+            if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")){
+                e.preventDefault();
+                save();
+            }
+        });
 
         let container = amiWindow.getInner();
         container.innerHTML = "";

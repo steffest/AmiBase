@@ -1,3 +1,4 @@
 {
-    "module": "dropbox.js"
+    "module": "dropbox.js",
+    "capabilities": []
 }
