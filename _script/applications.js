@@ -376,6 +376,9 @@ let Applications = function(){
                     return { id: w.id, title: title, type: w.type, app: !!w.application };
                 });
             }),
+            getFileTypes: guard("system.settings", system.getFileTypes),
+            setFileAssociations: guard("system.settings", system.setFileAssociations),
+            getRegisteredApplications: guard("system.settings", system.getRegisteredApplications),
             detectFileType: guard("system.inspect", system.detectFileType),
             loadScript: guard("system.loadScript", system.loadScript),
             user: guard("system.user", user),

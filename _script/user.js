@@ -4,6 +4,13 @@ import Storage  from "./storage.js";
 let User = function(){
     var me = {};
 
+    function cleanLaoziMount(mount){
+        if (!mount || !["laozi","loazi"].includes(mount.handler)) return mount;
+        const saved = {...mount,handler:"laozi"};
+        for (const key of ["pass","password","login","key","accessKey","token"]) delete saved[key];
+        return saved;
+    }
+
     let userKey = "test";
     Security.setUserPass(userKey);
 
@@ -53,6 +60,7 @@ let User = function(){
         if (!fileHandlers) fileHandlers = {};
 
         if (settings.mounts){
+            settings.mounts = settings.mounts.map(cleanLaoziMount);
             settings.mounts.forEach(function(mount){
                 if (mount && mount.handler === "local"){
                     let handler = fileHandlers[mount.handler + "_" + mount.label];
@@ -66,6 +74,7 @@ let User = function(){
     }
 
     me.setAmiSettings = function(settings){
+        if (settings && settings.mounts) settings = {...settings,mounts:settings.mounts.map(cleanLaoziMount)};
         // don't encrypt file handler objects
         let fileHandlers = {};
         if (settings && settings.mounts){

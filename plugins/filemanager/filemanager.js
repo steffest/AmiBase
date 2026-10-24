@@ -315,6 +315,11 @@ let FileManager = function(){
                                 }
                             });
 
+                            const deleteAction = items.find(item=>item.label === "Delete");
+                            if (deleteAction) deleteAction.action = async()=>{
+                                if (await fileSystem.deleteIcon(null,object) !== false) me.refresh();
+                            };
+
                             popupMenu.show({
                                 items: items,
                                 target: me,
@@ -326,12 +331,16 @@ let FileManager = function(){
                                         let input = $("input",{value:object.name});
                                         let modal = Modal({
                                             content:input,
-                                            onClose:(isOk)=>{
+                                            onClose:async(isOk)=>{
                                                 let newName = isOk?input.value:object.name;
                                                 if (newName !== object.name){
-                                                    fileSystem.rename(object.path,newName);
+                                                    if (await fileSystem.rename(object.path,newName) === false) newName = object.name;
+                                                    else{
+                                                        object.path = fileSystem.getParentPath(object.path) + newName + (object.type === "folder" ? "/" : "");
+                                                        object.name = newName;
+                                                    }
                                                 }
-                                                item.innerHTML = newName;
+                                                item.textContent = newName;
                                                 item.classList.add("draggable");
                                             },
                                             autoCloseOnBlur:true
@@ -340,12 +349,6 @@ let FileManager = function(){
                                         item.appendChild(modal);
                                         item.classList.remove("draggable");
                                         input.focus();
-                                    }
-                                    if (menuItem.label === "Delete"){
-                                        // the delete action itself runs async (fileSystem.deleteIcon);
-                                        // remove the item optimistically and refresh to reconcile
-                                        item.remove();
-                                        me.refresh();
                                     }
                                 }
                             })

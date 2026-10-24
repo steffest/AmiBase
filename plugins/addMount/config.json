@@ -1,5 +1,5 @@
 {
-  "module": ["addMount.js"],
+  "module": ["addMount.js?v=3"],
   "styles": ["addmount.css"],
   "capabilities": ["crypto.sha256", "system.user", "ui.desktop"]
 }

@@ -15,9 +15,9 @@ let ImageViewer = function(){
             console.log("handle binary data");
             var img;
             if (file.filetype && file.filetype.handler && file.filetype.handler.parse){
-                img = file.filetype.handler.parse(file.binary,true);
+                img = await file.filetype.handler.parse(file.binary,true);
                 if (file.filetype.handler.toCanvas){
-                    img = file.filetype.handler.toCanvas(img);
+                    img = await file.filetype.handler.toCanvas(img);
                 }
             }else{
                 img = new Image();

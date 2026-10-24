@@ -1,0 +1,89 @@
+body.theme_ink{
+  #desktop{
+    background-color: #fff;
+
+    .icon.desktopicon{
+      width: 200px;
+      text-align: left;
+      height: 32px;
+
+      .label{
+        left: 0;
+
+        span{
+          left: 0;
+          max-width: 200px;
+        }
+      }
+    }
+  }
+
+  .icon.desktopicon{
+    width: 64px;
+    height: 64px;
+    .glyph{
+      display: none;
+    }
+
+    .label{
+      text-shadow: none;
+      padding: 0;
+      color: black;
+      font-size: 16px;
+      position: relative;
+    }
+
+    &.active{
+
+      .glyph {
+        box-shadow: none;
+      }
+
+      .label{
+
+      }
+    }
+  }
+
+  .list{
+    .listitem{
+      max-width: 200px;
+    }
+  }
+
+}
+body.theme_ink{
+  --panel-background: #ffffff;
+  --panel-text-color: #000;
+  --panel-text-color-highlight: #00c;
+  --button-background: #000;
+  --button-background-highlight: #000;
+  --button-background-highlight-transparent: #000;
+  --button-text-color: #fff;
+  --panel-border-dark: rgba(0, 0, 0, 0.5);
+  --panel-border-light: rgba(255, 255, 255, 0.2);
+  --input-background: #9aa7ab;
+  --input-text-color: #000000;
+  --window-background: #fff;
+  --window-shadow: none;
+  --window-border-color: #658FC3;
+  --window-caption-background: #658FC3;
+  --window-caption-color: white;
+  --window-icon-label-color: #000;
+  --icon-white-filter: invert(1);
+  --listitem-font-size: 16px;
+  --list-divider: rgba(0, 0, 0, 0.12);
+  --list-hover-background: rgba(0, 0, 0, 0.04);
+  --list-selected-background: rgba(0, 0, 204, 0.06);
+  --cell-label-background: rgba(0, 0, 0, 0.06);
+  --cell-label-color: #000;
+
+  .tabs .button,
+  .button.transparent{
+    color: var(--panel-text-color);
+  }
+
+  .button.transparent:hover{
+    color: var(--button-text-color);
+  }
+}

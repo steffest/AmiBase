@@ -31,26 +31,39 @@
         This file is used in the implicit grant oAuth flow as redirect page to collect the access token.
     */
 
-    let hash = window.location.hash;
+    let hash = window.location.hash || window.location.search
     let out = document.getElementById("out");
+    console.log("hash: "+ hash);
     if (hash){
         // find access_token
        let index = hash.indexOf("access_token=");
-       if (index>=0){
-           let token = hash.substring(index+13);
+       let codeIndex = hash.indexOf("code=");
+       if (index>=0) {
+           let token = hash.substring(index + 13);
            token = token.split("&")[0];
 
-                out.innerHTML += token;
+           out.innerHTML += token;
+           out.innerHTML += "<br>";
+           try{
+               out.innerHTML += window.opener ? window.opener.location : "no opener";
+           }catch (error){
+                out.innerHTML += "no opener";
+           }
 
-                out.innerHTML += "<br>";
-                out.innerHTML += +window.opener?window.opener.location:"no opener";
 
-                localStorage.setItem("exchange",token);
+           localStorage.setItem("exchangeToken", token);
 
-                window.close();
+           window.close();
 
 
            //console.error("window.opener: "+window.opener);
+       }else if (codeIndex>=0){
+           let code = hash.substring(codeIndex + 5);
+           code = code.split("&")[0];
+           out.innerHTML += "code";
+           localStorage.setItem("exchangeCode", code);
+           console.error("code: "+code);
+           window.close();
        }else{
            if (hash.indexOf("error=access_denied")>=0){
                out.innerHTML = "You declined access<br>to your dropbox account.";

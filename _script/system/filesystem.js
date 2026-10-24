@@ -50,9 +50,11 @@ let FileSystem = function(){
     };
 
     me.mount = function(drive){
+        if (drive.handler === "loazi") drive.handler = "laozi";
         let promise = new Promise(async function(next){
             const mountSource = drive.url || drive.path;
-            const existingMount = me.getMountByUrl(mountSource);
+            // Different Laozi keys can export different folders at the same URL.
+            const existingMount = drive.handler === "laozi" ? null : me.getMountByUrl(mountSource);
             if (existingMount){
                 // Keep caller object aligned so follow-up openFolder(drive) still works.
                 drive.volume = existingMount.volume;
@@ -156,6 +158,10 @@ let FileSystem = function(){
     async function applyDriveMeta(drive){
         try{
             let meta = await me.readJson(drive.path + ".aminfo");
+            if (drive.filesystemName === "laozi" && meta){
+                // Remote metadata may customize appearance, never mount identity or routing.
+                meta = Object.fromEntries(Object.entries(meta).filter(([key])=>["icon","iconClass","label"].includes(key)));
+            }
             if (meta) me.parseMeta(meta,drive);
         }catch(e){
             // handler may not support reading a root-level file - icon override
@@ -179,6 +185,8 @@ let FileSystem = function(){
         }
 
         if (volumeKey && volumeKey !== "ram" && volumeKey !== "desktop"){
+            const mount = mounts[volumeKey];
+            if (mount && typeof mount.handler?.disconnect === "function") mount.handler.disconnect(mount);
             delete mounts[volumeKey];
         }
     };
@@ -308,7 +316,7 @@ let FileSystem = function(){
         let mount = me.getMount(file);
         if (typeof mount.readOnly === "boolean") return mount.readOnly;
         let fs = mount.handler;
-        if (fs && typeof fs.isReadOnly === "function") return fs.isReadOnly(file);
+        if (fs && typeof fs.isReadOnly === "function") return fs.isReadOnly(file,mount);
         return true;
     }
 
@@ -497,39 +505,35 @@ let FileSystem = function(){
     }
 
 
-    me.writeFile = function(file,content,binary,onProgress){
+    me.writeFile = async function(file,content,binary,onProgress){
         notification.toast("waiting");
         file = normalize(file);
-        return new Promise(async next => {
-            var mount = me.getMount(file.path);
-            await me.whenReady(mount);
-            let fs = mount.handler;
-            if (fs){
-                let response = await fs.writeFile(file.path,content,binary,mount,progress=>{
-                    if (onProgress) onProgress(progress);
-                },file);
-                notification.toast({type:"success",timeout:10});
-                next(response);
-            }else{
-                notification.toast({type:"success",timeout:30});
-                console.error("no handler");
-                next();
-            }
-        });
+        var mount = me.getMount(file.path);
+        await me.whenReady(mount);
+        let fs = mount.handler;
+        if (fs){
+            let response = await fs.writeFile(file.path,content,binary,mount,progress=>{
+                if (onProgress) onProgress(progress);
+            },file);
+            notification.toast({type:response === false ? "error" : "success",timeout:10});
+            return response;
+        }else{
+            notification.toast({type:"error",timeout:30});
+            console.error("no handler");
+            return;
+        }
     };
 
-    me.getFileProperties = function(file){
-        return new Promise(async next => {
-            var mount = me.getMount(file.path);
-            await me.whenReady(mount);
-            let fs = mount.handler;
-            if (fs && fs.getInfo){
-                let response = await fs.getInfo(file.path,mount);
-                next(response);
-            }else{
-                next({name:file.name});
-            }
-        });
+    me.getFileProperties = async function(file){
+        var mount = me.getMount(file.path);
+        await me.whenReady(mount);
+        let fs = mount.handler;
+        if (fs && fs.getInfo){
+            let response = await fs.getInfo(file.path,mount);
+            return response;
+        }else{
+            return {name:file.name};
+        }
     }
 
     me.getDownloadUrl = function(path){
@@ -540,128 +544,121 @@ let FileSystem = function(){
         return path;
     };
 
-    me.copyFile = function(file,toPath){
-        return new Promise(async next => {
-            let fromPath = file.path;
-            console.log("Copy File",fromPath,toPath);
-            let mount = me.getMount(fromPath);
-            let targetMount = me.getMount(toPath);
-            await Promise.all([me.whenReady(mount),me.whenReady(targetMount)]);
-            let fs = mount.handler;
-            let targetFs = targetMount.handler;
+    me.copyFile = async function(file,toPath){
+        let fromPath = file.path;
+        console.log("Copy File",fromPath,toPath);
+        let mount = me.getMount(fromPath);
+        let targetMount = me.getMount(toPath);
+        await Promise.all([me.whenReady(mount),me.whenReady(targetMount)]);
+        let fs = mount.handler;
+        let targetFs = targetMount.handler;
 
-            if (fs){
-                if (mount.path === targetMount.path && fs.copyFile){
-                    // copy inside same volume
-                    var result = await fs.copyFile(fromPath,toPath,mount);
-                    next(result);
-                }else{
-                    let content = await fs.readFile(fromPath,true,mount);
-                    toPath = toPath + '/' + file.name;
+        if (fs){
+            if (mount.path === targetMount.path && fs.copyFile){
+                // copy inside same volume
+                var result = await fs.copyFile(fromPath,toPath,mount);
+                return result;
+            }else{
+                let content = await fs.readFile(fromPath,true,mount);
+                if (content == null) return false;
+                toPath = toPath.replace(/\/+$/,"") + '/' + file.name;
 
-                    let notification = {
-                        label:"Copying",
-                        text:file.name
-                    }
-                    notification.id = desktop.showNotification(notification);
+                let notification = {
+                    label:"Copying",
+                    text:file.name
+                }
+                notification.id = desktop.showNotification(notification);
 
-                    let written = await targetFs.writeFile(toPath,content,true,targetMount,(progress)=>{
-                        console.error("progress",progress);
+                let written;
+                try{
+                    written = await targetFs.writeFile(toPath,content,true,targetMount,(progress)=>{
                         if (progress.computable) notification.progress = progress.loaded/progress.total;
                         notification.progressText = formatSize(progress.loaded) + " of " + formatSize(progress.total);
                         desktop.showNotification(notification);
                     });
-                    desktop.hideNotification(notification.id);
-                    console.log("result:",written);
-                    next(written);
-                }
-            }else{
-                console.warn("can't copy file - no handler");
-                next();
+                }finally{desktop.hideNotification(notification.id);}
+                console.log("result:",written);
+                return written;
             }
-        });
+        }else{
+            console.warn("can't copy file - no handler");
+            return;
+        }
 
     };
 
-    me.moveFile = function(file,fromPath,toPath){
-        return new Promise(async next => {
-            console.log("Move File",file,fromPath,toPath);
-            let mount = me.getMount(fromPath);
-            let targetMount = me.getMount(toPath);
-            await Promise.all([me.whenReady(mount),me.whenReady(targetMount)]);
-            let fs = mount.handler;
-            let targetFs = targetMount.handler;
-            //fromPath = fromPath + '/' + file.name;
+    me.moveFile = async function(file,fromPath,toPath){
+        console.log("Move File",file,fromPath,toPath);
+        let mount = me.getMount(fromPath);
+        let targetMount = me.getMount(toPath);
+        await Promise.all([me.whenReady(mount),me.whenReady(targetMount)]);
+        let fs = mount.handler;
+        let targetFs = targetMount.handler;
+        //fromPath = fromPath + '/' + file.name;
 
-            if (fs){
-                if (mount.path === targetMount.path && fs.moveFile){
-                    // move inside same volume
-                    console.log("move into same volume");
-                    var result = await fs.moveFile(fromPath,toPath,mount);
-                    next(result);
-                }else{
-                    let content = await fs.readFile(fromPath,true,mount);
-                    toPath = toPath + '/' + file.name;
-                    let written = await targetFs.writeFile(toPath,content,true,targetMount);
-                    let deleted;
-                    if (written) deleted = await fs.deleteFile(fromPath,mount);
-                    console.log("result:",written,deleted);
-                    next(written && deleted);
-                }
+        if (fs){
+            if (mount.path === targetMount.path && fs.moveFile){
+                // move inside same volume
+                console.log("move into same volume");
+                var result = await fs.moveFile(fromPath,toPath,mount);
+                return result;
             }else{
-                console.warn("can't move file - no handler");
-                next();
+                let content = await fs.readFile(fromPath,true,mount);
+                if (content == null) return false;
+                toPath = toPath.replace(/\/+$/,"") + '/' + file.name;
+                let written = await targetFs.writeFile(toPath,content,true,targetMount);
+                let deleted;
+                if (written) deleted = await fs.deleteFile(fromPath,mount);
+                console.log("result:",written,deleted);
+                return written && deleted;
             }
-        });
+        }else{
+            console.warn("can't move file - no handler");
+            return;
+        }
 
 
     };
 
-    me.deleteFile = function(file){
-        return new Promise(async next => {
-            console.log("Delete",file);
-            let mount = me.getMount(file.path);
-            await me.whenReady(mount);
-            let fs = mount.handler;
-            if (fs){
-                var result = await fs.deleteFile(file.path,mount);
-                next(result);
-            }else{
-                // can't get file - no handler
-                console.warn("can't delete file - no handler");
-            }
-        });
+    me.deleteFile = async function(file){
+        console.log("Delete",file);
+        let mount = me.getMount(file.path);
+        await me.whenReady(mount);
+        let fs = mount.handler;
+        if (fs){
+            var result = await fs.deleteFile(file.path,mount);
+            return result;
+        }else{
+            // can't get file - no handler
+            console.warn("can't delete file - no handler");
+        }
     };
 
-    me.deleteDirectory = function(folder){
-        return new Promise(async next => {
-            console.log("Delete",folder);
-            let mount = me.getMount(folder.path);
-            await me.whenReady(mount);
-            let fs = mount.handler;
-            if (fs){
-                var result = await fs.deleteDirectory(folder.path,mount);
-                next(result);
-            }else{
-                console.warn("can't delete folder - no handler");
-            }
-        });
+    me.deleteDirectory = async function(folder){
+        console.log("Delete",folder);
+        let mount = me.getMount(folder.path);
+        await me.whenReady(mount);
+        let fs = mount.handler;
+        if (fs){
+            var result = await fs.deleteDirectory(folder.path,mount);
+            return result;
+        }else{
+            console.warn("can't delete folder - no handler");
+        }
     }
 
-    me.rename = function(path,newName){
-        return new Promise(async next => {
-            console.log("Rename",path,newName);
-            var mount = me.getMount(path);
-            await me.whenReady(mount);
-            let fs = mount.handler;
-            if  (fs){
-                var result = await fs.renameFile(path,newName,mount);
-                next(result);
-            }else{
-                // can't get file - no handler
-                console.warn("can't rename file - no handler");
-            }
-        });
+    me.rename = async function(path,newName){
+        console.log("Rename",path,newName);
+        var mount = me.getMount(path);
+        await me.whenReady(mount);
+        let fs = mount.handler;
+        if  (fs){
+            var result = await fs.renameFile(path,newName,mount);
+            return result;
+        }else{
+            // can't get file - no handler
+            console.warn("can't rename file - no handler");
+        }
     };
 
     me.deleteStorage = async function(drive){
@@ -673,56 +670,52 @@ let FileSystem = function(){
         }
     };
 
-    me.deleteIcon = function(icon,object){
-        return new Promise(async next => {
-            let deleteObject = async (obj) => {
-                if (!obj) return;
-                if (obj.type === "folder") {
-                    await me.deleteDirectory(obj);
-                } else {
-                    await me.deleteFile(obj);
-                }
-            };
+    me.deleteIcon = async function(icon,object){
+        let deleteObject = async (obj) => {
+            if (!obj) return;
+            if (obj.type === "folder") {
+                return me.deleteDirectory(obj);
+            } else {
+                return me.deleteFile(obj);
+            }
+        };
 
-            let parent = icon && icon.parent;
-            let selectedIcons = parent && parent.getSelectedIcons ? parent.getSelectedIcons() : [];
-            let targetIcons = icon ? (selectedIcons.includes(icon) ? selectedIcons : [icon]) : [];
+        let parent = icon && icon.parent;
+        let selectedIcons = parent && parent.getSelectedIcons ? parent.getSelectedIcons() : [];
+        let targetIcons = icon ? (selectedIcons.includes(icon) ? selectedIcons : [icon]) : [];
 
-            if (targetIcons.length) {
-                for (let targetIcon of targetIcons) {
-                    let obj = targetIcon.object;
-                    if (obj) {
-                        await deleteObject(obj);
-                        if (parent && parent.removeIcon) {
-                            parent.removeIcon(targetIcon);
-                        }
+        if (targetIcons.length) {
+            for (let targetIcon of targetIcons) {
+                let obj = targetIcon.object;
+                if (obj) {
+                    if (await deleteObject(obj) === false) return false;
+                    if (parent && parent.removeIcon) {
+                        parent.removeIcon(targetIcon);
                     }
                 }
-            } else if (object) {
-                // no icon context (e.g. deleted from the file manager) - delete the object directly
-                await deleteObject(object);
             }
+        } else if (object) {
+            // no icon context (e.g. deleted from the file manager) - delete the object directly
+            if (await deleteObject(object) === false) return false;
+        }
 
-            if (parent && parent.sendMessage) {
-                parent.sendMessage("refresh");
-            }
-            next(true);
-        });
+        if (parent && parent.sendMessage) {
+            parent.sendMessage("refresh");
+        }
+        return true;
     };
 
-    me.getUniqueName = function(path,name){
-        return new Promise(async next => {
-            var mount = me.getMount(path);
-            await me.whenReady(mount);
-            let fs = mount.handler;
-            if (fs){
-                var result = await fs.getUniqueName(path,name,mount);
-                next(result);
-            }else{
-                // can't get file - no handler
-                console.warn("can't get unique name - no handler");
-            }
-        });
+    me.getUniqueName = async function(path,name){
+        var mount = me.getMount(path);
+        await me.whenReady(mount);
+        let fs = mount.handler;
+        if (fs){
+            var result = await fs.getUniqueName(path,name,mount);
+            return result;
+        }else{
+            // can't get file - no handler
+            console.warn("can't get unique name - no handler");
+        }
     }
 
     me.wrap = function(list){

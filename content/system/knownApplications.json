@@ -2,6 +2,8 @@
   {"name": "Notepad", "category": "Office", "plugin": "notepad", "openWith": true},
   {"name": "Hex Editor", "category": "Dev", "icon": "hex", "plugin": "hex", "openWith": true, "skipMenu": true},
   {"name": "Monaco", "category": "Dev", "icon": "vs", "plugin": "monaco", "openWith": true},
+  {"name": "Shell", "category": "Dev", "plugin": "terminal"},
+  {"name": "Agent", "category": "Dev", "plugin": "agent"},
   {"name": "Image Viewer", "category": "Graphics", "icon": "imageviewer", "plugin": "imageviewer", "openWith": true},
   {"name": "Media Player", "category": "Audio", "icon": "mediaplayer", "plugin": "mediaplayer", "hasCustomUI": true, "openWith": true},
   {"name": "Video Player", "category": "Video", "icon": "videoplayer", "plugin": "videoplayer", "openWith": true, "skipMenu": true},
@@ -15,6 +17,7 @@
   {"name": "HexIt", "category": "Dev", "url": "https://hexed.it/"},
   {"name": "FeedReader", "category": "Office","url": "https://www.amibase.com/apps/feedreader/"},
   {"name": "Open Reel", "category": "Video","url": "https://app.openreel.video/#/editor"},
+  {"name": "Open DAW", "category": "Audio","url": "https://opendaw.studio/"},
   {"name": "Omni clip", "category": "Video","url": "https://omniclip.app/#/editor"},
   {"name": "LiveCodes", "category": "Dev","url": "https://livecodes.io/"},
   {"name": "Dillinger", "category": "Dev","url": "https://dillinger.io/"},
@@ -31,6 +34,8 @@
   {"name": "Emulator JS", "category": "Games","url": "https://demo.emulatorjs.org/"},
   {"name": "Emerald Mines", "category": "Games","url": "https://www.emeraldmines.net/play/"},
   {"name": "A Dark room", "category": "Games","url": "https://adarkroom.doublespeakgames.com/"},
-  {"name": "File Manager", "category": "Office","plugin": "filemanager"}
+  {"name": "File Manager", "category": "Office","plugin": "filemanager"},
+  {"name": "PDF Editor", "category": "Office","url": "plugins/puter/src/pdf/dist/index.html", "width": 1100, "height": 700},
+  {"name": "Signal Midi", "category": "Audio","url": "https://signalmidi.app/edit"}
 ]
 

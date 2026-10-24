@@ -1,0 +1,152 @@
+<html>
+<head>
+    <style>
+        html, body{
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body{
+            background: #002026;
+        }
+
+        #container{
+            width: 100%;
+            height: 100%;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;
+            transition: all 0.5s ease-in-out;
+            display: flex;
+        }
+
+        iframe{
+            margin: auto;
+        }
+    </style>
+
+</head>
+<body>
+
+<div id="container"></div>
+
+<script>
+
+    let slideIndex =0;
+    let container = document.getElementById("container");
+
+    let slides = [
+        "00.png",
+        "01.png",
+        "01amibase.jpg",
+        "everything.jpg",
+        "web.jpg",
+        "freedom.jpg",
+        "pricing.jpg",
+        "consent.jpg",
+        "photopea.jpg",
+        "adobe.jpg",
+        "opensource.jpg",
+        "dependencies.jpg",
+        "dependenciesbad.jpg",
+        "dependenciesbad2.jpg",
+        "freedom.jpg",
+        "diy.jpg",
+        "roger.jpg",
+        "bassoon.jpg",
+        "everything.jpg",
+        "everything2.jpg",
+        "no1.jpg",
+        "no2.jpg",
+        "no3.jpg",
+        "no4.jpg",
+        "no5.jpg",
+        "no6.jpg",
+        "no7.jpg",
+        "no8.jpg",
+        "01amibase.jpg",
+        "demo.jpg",
+        "amibasef.jpg",
+        "caveats.jpg",
+        "security.jpg",
+        "users.jpg",
+        "users2.jpg",
+        "futureplans.jpg",
+        "friendos.jpg",
+        "webserial.jpg",
+        "10_amiga500.png",
+        "meshatastic.jpg",
+        "feedback.jpg",
+        "00.png",
+    ]
+
+    function showSlide(index){
+        container.innerHTML = "";
+        container.style.backgroundImage = "none";
+        let slide = slides[index];
+        let ext = slide.split(".").pop();
+        if (ext==="png" || ext==="jpg" || ext==="jpeg" || ext==="gif") {
+            showImage(slide);
+        }
+        if (ext==="mp4" || ext==="webm" || ext==="ogg") {
+            showVideo(slide);
+        }
+        if (ext==="html") {
+            showFrame(slide);
+        }
+    }
+
+    function showImage(url){
+        container.innerHTML = "";
+        container.style.backgroundImage = "url('"+url+"')";
+    }
+
+    function showVideo(url){
+        let video = document.createElement("video");
+        video.src = url;
+        video.autoplay = true;
+        video.loop = false;
+        video.controls = true;
+        video.style.width = "100%";
+        video.style.height = "100%";
+        video.style.objectFit = "contain";
+        container.appendChild(video);
+    }
+
+    function showFrame(url){
+        let frame = document.createElement("iframe");
+        frame.src = url;
+        frame.style.width = "90%";
+        frame.style.height = "90%";
+        frame.style.border = "none";
+        container.appendChild(frame);
+    }
+
+    function next(){
+        slideIndex++;
+        if (slideIndex>=slides.length) slideIndex = 0;
+        showSlide(slideIndex);
+    }
+
+    function prev(){
+        slideIndex--;
+        if (slideIndex<0) slideIndex = slides.length-1;
+        showSlide(slideIndex);
+    }
+
+    document.addEventListener("keydown",function(e){
+        if (e.key==="ArrowRight") next();
+        if (e.key==="ArrowLeft") prev();
+    });
+
+    showSlide(slideIndex);
+
+
+</script>
+
+</body>
+</html>

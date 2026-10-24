@@ -315,15 +315,6 @@ let MainMenu = function(){
                         }
                     },
                     {
-                        label:"Open File",
-                        action: async ()=>{
-                            let file = await system.requestFileOpen();
-                            if (file){
-                                system.openFile(file)
-                            }
-                        }
-                    },
-                    {
                         label:"Open Website",
                         action: function(){
                             showOpenWebsiteDialog();
@@ -336,15 +327,54 @@ let MainMenu = function(){
                         }
                     },
                     {
-                        label:"Upload File",
-                        action: function(){
-                            desktop.uploadFile();
-                        }
-                    },
-                    {
                         label:"Mount Drive",
                         action: function(){
                             desktop.mountWithDialog();
+                        }
+                    },
+                    {
+                        label:"Settings",
+                        action: function(){
+                            system.launchProgram({
+                                url: "plugin:settings",
+                                width: 400,
+                                height: 200
+                            });
+                        }
+                    },
+                    {
+                        label:"Connect",
+                        action: function(){
+                            showConnectDialog();
+                        }
+                    },
+                    {
+                        label:"Reset",
+                        action: async function(){
+                            await system.reset(true);
+                            setTimeout(()=>{
+                                window.location.reload();
+                            },500);
+                        }
+                    }
+                ]
+            },
+            {
+                label:"File",
+                items:[
+                    {
+                        label:"Open",
+                        action: async ()=>{
+                            let file = await system.requestFileOpen();
+                            if (file){
+                                system.openFile(file)
+                            }
+                        }
+                    },
+                    {
+                        label:"Upload",
+                        action: function(){
+                            desktop.uploadFile();
                         }
                     },
                     {
@@ -385,31 +415,6 @@ let MainMenu = function(){
                                 }
                             }
                         ]
-                    },
-                    {
-                        label:"Settings",
-                        action: function(){
-                            system.launchProgram({
-                                url: "plugin:settings",
-                                width: 400,
-                                height: 200
-                            });
-                        }
-                    },
-                    {
-                        label:"Connect",
-                        action: function(){
-                            showConnectDialog();
-                        }
-                    },
-                    {
-                        label:"Reset",
-                        action: async function(){
-                            await system.reset(true);
-                            setTimeout(()=>{
-                                window.location.reload();
-                            },500);
-                        }
                     }
                 ]
             }
@@ -429,7 +434,9 @@ let MainMenu = function(){
                     }
                 });
             });
-            mainMenu.push(themes);
+            let systemItems = mainMenu[0].items;
+            let settingsIndex = systemItems.findIndex(item=>item.label === "Settings");
+            systemItems.splice(settingsIndex + 1, 0, themes);
         }
 
         // Add programs

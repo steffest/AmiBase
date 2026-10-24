@@ -1,5 +1,5 @@
 {
-  "dependencies": ["binaryStream.js"],
+  "dependencies": [],
   "module": "detect.js",
   "styles": [],
   "templates" : [],

@@ -5,6 +5,10 @@ let Settings = ()=>{
     let panel;
     let settings = {};
     let currentWindow;
+    let fileTypes = [];
+    let fileAssociationsChanged = false;
+    let fileAssociations = {};
+    let associationsStatus;
 
     me.init = (amiWindow,host)=>{
         console.log("init settings",amiWindow,host);
@@ -12,6 +16,9 @@ let Settings = ()=>{
             if (host){
                 amiBase = host;
                 settings = await amiBase.user.getAmiSettings();
+                fileTypes = await amiBase.getFileTypes();
+                fileAssociations = structuredClone(settings.fileAssociations || {});
+                fileAssociationsChanged = false;
             }
 
             amiWindow.setContent(createUI());
@@ -27,7 +34,7 @@ let Settings = ()=>{
 
 
 
-            amiWindow.setSize(584,400);
+            amiWindow.setSize(740,500);
 
             //plugin:wallpaper
 
@@ -48,6 +55,7 @@ let Settings = ()=>{
                 $(".button",{onClick:()=>{showSetting("UI")}},"Desktop"),
                 $(".button",{onClick:()=>{amiBase.launchProgram("plugin:wallpaper")}},"Wallpaper"),
                 $(".button",{onClick:()=>{showSetting("system")}},"System"),
+                $(".button",{onClick:()=>{showSetting("fileAssociations")}},"File associations"),
                 $(".button",{onClick:()=>{showSetting("other")}},"Other"),
             ),
             $(".panel.transparent.full",
@@ -85,6 +93,24 @@ let Settings = ()=>{
             }
         }
 
+        if (fileAssociationsChanged){
+            let associations = fileAssociations;
+            for (let actions of Object.values(associations)){
+                let labels = new Set();
+                for (let action of actions){
+                    let label = action.label.trim();
+                    if (!label || !action.plugin || labels.has(label.toLowerCase())){
+                        showSetting("fileAssociations");
+                        associationsStatus.textContent = "Each action needs a unique name and an application. Check your changes before saving.";
+                        return;
+                    }
+                    labels.add(label.toLowerCase());
+                    action.label = label;
+                }
+            }
+            await amiBase.setFileAssociations(associations);
+            settings.fileAssociations = associations;
+        }
         amiBase.user.setAmiSettings(settings);
         currentWindow.close();
     }
@@ -101,6 +127,7 @@ let Settings = ()=>{
 
     function showSetting(setting,values){
         panel.innerHTML = "";
+        panel.classList.remove("association-panel");
         values = values || settings[setting] || [];
 
         switch (setting){
@@ -129,6 +156,10 @@ let Settings = ()=>{
                 });
 
                 $(".button.inline",{parent:panel,onClick:()=>{values.push({id:uuid()});showSetting(setting,values)}},"Add Mount");
+                break;
+
+            case "fileAssociations":
+                renderFileAssociations();
                 break;
 
             case "UI":
@@ -381,6 +412,109 @@ let Settings = ()=>{
                 break;
             }
         }
+    }
+
+    function renderFileAssociations(){
+        panel.classList.add("association-panel");
+        panel.appendChild($("h3","File associations"));
+        panel.appendChild($("p.association-help","Link actions to apps. Select the launch icon for the default action. Save to apply."));
+        let search = $("input.association-search",{type:"text",placeholder:"Search format or extension",ariaLabel:"Search file formats"});
+        let formats = $("div.association-formats.list",{role:"listbox",ariaLabel:"File format"});
+        let selectedFormat;
+        let editor = $("div.association-editor");
+        associationsStatus = $("p.association-status",{role:"status"});
+        panel.append($("div.association-layout.ui-master-detail",
+            $("div.association-sidebar.ui-stack",search,formats),
+            $("div.association-main",editor,associationsStatus)));
+        let applications = amiBase.getRegisteredApplications().filter(app=>app.plugin)
+            .sort((a,b)=>a.name.localeCompare(b.name));
+
+        function update(actions){
+            fileAssociations[selectedFormat] = actions;
+            fileAssociationsChanged = true;
+            associationsStatus.textContent = "Unsaved changes";
+        }
+
+        function renderActions(){
+            editor.replaceChildren();
+            let type = fileTypes.find(type=>type.key === selectedFormat);
+            if (!type) return;
+            let overrides = fileAssociations;
+            let actions = (Object.hasOwn(overrides,type.key) ? overrides[type.key] : type.defaultActions).map(action=>({...action}));
+            let restore = $("button.association-icon",{type:"button",title:"Restore defaults",ariaLabel:"Restore defaults",onclick:()=>{
+                delete fileAssociations[type.key];
+                fileAssociationsChanged = true;
+                renderActions();
+                associationsStatus.textContent = "Defaults restored. Save to apply.";
+            }},"↻");
+            let add = $("button.association-icon",{type:"button",title:"Add action",ariaLabel:"Add action",onclick:()=>{
+                actions.push({label:"",plugin:""}); update(actions); renderActions();
+                editor.querySelector(".association-action:last-child input[type=text]").focus();
+            }},"+");
+            editor.appendChild($("div.association-toolbar.ui-toolbar",$("h4",type.name),restore,add));
+            if (!actions.length) editor.appendChild($("p","No actions configured. Add an action to open this format."));
+            let defaultGroup = uuid();
+            actions.forEach((action,index)=>{
+                let label = $("input",{type:"text",value:action.label,placeholder:"View, Edit, Play…",ariaLabel:"Action name"});
+                let application = $("select",{ariaLabel:"Application"},$("option",{value:""},"Choose application…"));
+                applications.forEach(app=>application.appendChild($("option",{value:app.plugin},app.name)));
+                if (action.plugin && !applications.some(app=>app.plugin === action.plugin)){
+                    application.appendChild($("option",{value:action.plugin},action.plugin + " (current plugin)"));
+                }
+                application.value = action.plugin || "";
+                label.oninput = ()=>{action.label = label.value; update(actions)};
+                application.onchange = ()=>{action.plugin = application.value; update(actions)};
+                let defaultInput = $("input",{type:"radio",name:defaultGroup,checked:index===0,ariaLabel:"Use " + (action.label || "action") + " as default",onchange:()=>{
+                    actions.unshift(actions.splice(index,1)[0]); update(actions); renderActions();
+                    editor.querySelector("input[type=radio]").focus();
+                }});
+                let makeDefault = $("label.association-default",{title:index===0 ? "Default action" : "Set as default"},defaultInput,$("span","↗"));
+                let remove = $("button.association-icon.association-remove",{type:"button",title:"Remove action",ariaLabel:"Remove action",onclick:()=>{
+                    actions.splice(index,1); update(actions); renderActions();
+                }},"×");
+                editor.appendChild($("div.association-action",makeDefault,label,application,remove));
+            });
+        }
+
+        function selectFormat(key){
+            selectedFormat = key;
+            Array.from(formats.children).forEach(item=>{
+                let selected = item.dataset.key === key;
+                item.classList.toggle("selected",selected);
+                item.setAttribute("aria-selected",String(selected));
+                item.tabIndex = selected ? 0 : -1;
+            });
+            associationsStatus.textContent = fileAssociationsChanged ? "Unsaved changes" : "";
+            renderActions();
+        }
+
+        function filterFormats(){
+            let query = search.value.trim().toLowerCase();
+            let matches = fileTypes.filter(type=>(type.name + " " + type.key + " " + type.fileExtensions.join(" ")).toLowerCase().includes(query));
+            formats.replaceChildren(...matches.map(type=>{
+                let item = $("button.listitem",{type:"button",role:"option",onclick:()=>selectFormat(type.key)},
+                    type.name + (type.fileExtensions.length ? " (." + type.fileExtensions.join(", .") + ")" : ""));
+                item.dataset.key = type.key;
+                return item;
+            }));
+            selectFormat(matches.some(type=>type.key === selectedFormat) ? selectedFormat : matches[0]?.key);
+            if (!matches.length) editor.appendChild($("p","No matching formats."));
+        }
+        search.oninput = filterFormats;
+        formats.onkeydown = (event)=>{
+            let items = Array.from(formats.children);
+            let index = items.indexOf(document.activeElement);
+            let next;
+            if (event.key === "ArrowDown") next = Math.min(index + 1,items.length - 1);
+            if (event.key === "ArrowUp") next = Math.max(index - 1,0);
+            if (event.key === "Home") next = 0;
+            if (event.key === "End") next = items.length - 1;
+            if (next === undefined || !items[next]) return;
+            event.preventDefault();
+            selectFormat(items[next].dataset.key);
+            items[next].focus();
+        };
+        filterFormats();
     }
 
     function renderProperty(name,property,parent,onUpdate,options){

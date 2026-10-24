@@ -102,10 +102,14 @@ let AmiIcon = function(object){
                                 let input = $("input",{value:object.name});
                                 let modal = Modal({
                                     content:input,
-                                    onClose:(isOk)=>{
+                                    onClose:async(isOk)=>{
                                         let newName = isOk?input.value:object.name;
                                         if (newName !== object.name){
-                                            fileSystem.rename(object.path,newName);
+                                            if (await fileSystem.rename(object.path,newName) === false) newName = object.name;
+                                            else{
+                                                object.path = fileSystem.getParentPath(object.path) + newName + (object.type === "folder" ? "/" : "");
+                                                object.name = newName;
+                                            }
                                         }
                                         me.setLabel(newName);
                                         icon.classList.add("draggable");
@@ -122,7 +126,7 @@ let AmiIcon = function(object){
             }
         });
     var img = $div("glyph " + object.type);
-    var label = $div("label","","<span>" + (object.label || object.name) + "</span>");
+    var label = $(".label",$("span",object.label || object.name));
 
     function renderVisual(){
         img.className = "glyph " + object.type;
@@ -254,7 +258,7 @@ let AmiIcon = function(object){
 
 
     me.setLabel = function(name){
-        label.innerHTML = "<span>" + name + "</span>";
+        label.replaceChildren($("span",name));
         me.name = name;
     };
 

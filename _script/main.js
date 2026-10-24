@@ -2,6 +2,7 @@ import system from "./system/system.js";
 import desktop from "./ui/desktop.js";
 import input from "./input.js";
 import ui from "./ui/ui.js";
+import spotlight from "./ui/spotlight.js";
 import settings from "./settings.js";
 import user from "./user.js";
 import network from "./system/network.js";
@@ -25,6 +26,7 @@ var Main=function(){
 
         await desktop.loadTheme(await user.getTheme());
         input.init();
+        spotlight.init();
         desktop.init();
         ui.init();
 

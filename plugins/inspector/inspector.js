@@ -3,6 +3,7 @@ import system from "../../_script/system/system.js";
 import $,{$div} from "../../_script/util/dom.js";
 import filesystem from "../../_script/system/filesystem.js";
 import iconLibrary from "../../_script/ui/iconLibrary.js";
+import {createPropertyRow} from "../../design-system/patterns/properties.js";
 let Inspector = function(){
     var me = {};
 
@@ -58,17 +59,18 @@ let Inspector = function(){
         console.error(target);
 
         let panel;
-        let element = $(".content",panel = $(".panel.full"));
+        let element = $(".content",panel = $("dl.panel.full.ui-properties"));
         let canEdit = !filesystem.isReadOnly(target);
 
         function renderProperty(name,value,key){
             if (!value) return;
 
-            let editBox = $(".value.cel",value);
-            let label = $(".label.cel.relative",name);
+            let row = createPropertyRow(name,value);
+            let editBox = row.querySelector(".ui-property-value");
+            let label = row.querySelector(".ui-property-caption");
             if (key && canEdit){
-                $(".iconbutton.left.edit",{parent:label,onClick:()=>{
-                    let input = $("input",{value:value});
+                let editButton = $("button.iconbutton.edit.ui-property-edit",{type:"button",ariaLabel:"Edit " + name,onclick:()=>{
+                    let input = $("input",{type:"text",value:value,ariaLabel:name});
                     let newValue = value;
                     input.oninput = (e)=>{
                         newValue = e.target.value;
@@ -90,12 +92,10 @@ let Inspector = function(){
                         input.focus();
                         },50);
                     }});
+                label.prepend(editButton);
             }
 
-            $(".property.panel.light",{parent:panel},
-                label,
-                editBox,
-            );
+            panel.appendChild(row);
         }
 
         async function renderIconProperty(target,refresh,icon){
@@ -104,7 +104,7 @@ let Inspector = function(){
             preview.style.height = "32px";
             preview.style.display = "inline-block";
             preview.style.verticalAlign = "middle";
-            let previewWrap = $(".icon",{style:{position:"relative",display:"inline-block"}},preview);
+            let previewWrap = $(".icon.ui-property-icon",preview);
 
             if (target.icon){
                 let url = await resolveIconPreviewUrl(target.icon);
@@ -115,15 +115,11 @@ let Inspector = function(){
                 preview.classList.add(target.iconClass || "defaultfile");
             }
 
-            let editBox = $(".value.cel",previewWrap);
+            let content = $("div.ui-row",previewWrap);
             if (canEdit){
-                $(".button.inline",{parent:editBox,style:{marginLeft:"8px"},onClick:()=>openIconPicker(target,refresh,icon)},"Change...");
+                $("button",{parent:content,type:"button",onclick:()=>openIconPicker(target,refresh,icon)},"Change...");
             }
-
-            $(".property.panel.light",{parent:panel},
-                $(".label.cel.relative","Icon"),
-                editBox,
-            );
+            panel.appendChild(createPropertyRow("Icon",content));
         }
 
 
@@ -186,8 +182,8 @@ let Inspector = function(){
 
 
         if (actions){
-            let actionPanel = $(".value.cel");
-            $(".property.panel.light",{parent:panel},$(".label.cel","Actions"),actionPanel);
+            let actionPanel = $("div.ui-row");
+            panel.appendChild(createPropertyRow("Actions",actionPanel));
 
             actions.forEach(action=>{
                 var command = action.label;

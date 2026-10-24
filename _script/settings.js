@@ -6,11 +6,11 @@ var Settings = {
     useCustomMousePointer:false,
     dragOnGrid: true,
     themes: [
-        {label:"Light", name: "tangerine"},
+        {label:"Light", name: "mist"},
         {label:"Dark", name: "dark"},
         {label:"E-ink", name: "ink"}
     ],
-    defaultTheme: "tangerine"
+    defaultTheme: "mist"
 };
 
 export default Settings;

@@ -422,6 +422,9 @@ let AmiWindow = function(config){
                 top = 20;
             }
 
+            // keep the caption below the menu bar
+            if (top < 20) top = 20;
+
             me.left = left;
             me.top = top;
             amiWindow.style.transform = "translate(" + left + "px," + top + "px)";

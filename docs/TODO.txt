@@ -7,3 +7,10 @@ https://interactjs.io/ seems to have a really performant drag/drop system
 
 Next:
 finish drag drop system between windows
+
+Mount Git repository as file system.
+easy path: git REST api, drawback: 1 commit per file write.
+
+Full git
+https://github.com/isomorphic-git/isomorphic-git
+drawback: needs proxy as no CORS

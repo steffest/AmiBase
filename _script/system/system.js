@@ -267,6 +267,17 @@ let System = function(){
         return knownApplications;
     }
 
+    me.getFileTypes = async function(){
+        let library = await me.loadLibrary("filetypes");
+        return library.getFileTypes();
+    };
+
+    me.setFileAssociations = async function(associations){
+        let library = await me.loadLibrary("filetypes");
+        settings.fileAssociations = associations;
+        library.applyAssociations(associations);
+    };
+
     me.getPluginConfig = function(pluginName){
         let plugin = plugins[pluginName];
         return plugin && plugin.config ? plugin.config : null;
@@ -384,6 +395,7 @@ let System = function(){
      // execute an action on a file
      me.openFile = async function(file,plugin,action){
          console.log("openFile",file,plugin,action);
+         if (action) file = {...file, action};
          if (plugin){
              if (plugin === "iframe"){
                  desktop.launchUrl(file);
@@ -418,10 +430,11 @@ let System = function(){
              if (filetype){
                  let fileAction;
                  if (action && filetype.actions) fileAction = filetype.actions.find(a=>a.label === action);
-                 if (!fileAction && filetype.handler) fileAction = filetype.handler.handle(file.file);
+                 if (!fileAction && !filetype.customActions && filetype.handler) fileAction = filetype.handler.handle(file.file);
                  if (!fileAction && filetype.actions) fileAction=filetype.actions[0];
 
                  if (fileAction){
+                     file = {...file, action: fileAction.label};
                      if (fileAction.plugin){
                          if (fileAction.plugin === "iframe"){
                              desktop.launchUrl(file);
